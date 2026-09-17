@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Matinal de Ventas - Planificación Operativa</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- SheetJS para leer Excel .xlsx directo en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #0f2c59;
+      --secondary-color: #337ccf;
+      --accent-color: #ffc436;
+      --bg-light: #f8f9fa;
+    }
+    body { background-color: #f1f5f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .navbar-custom { background: linear-gradient(135deg, #0f2c59 0%, #1e4976 100%); color: white; }
+    .card-custom { border-radius: 10px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .kpi-card { background: white; border-radius: 8px; padding: 6px 8px; border-left: 3px solid var(--secondary-color); }
+    .kpi-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 2px; }
+    .kpi-val { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+    .table-custom thead th { background-color: #1e293b; color: white; font-size: 0.74rem; font-weight: 600; text-align: center; vertical-align: middle; padding: 5px 3px; }
+    .table-custom tbody td { font-size: 0.78rem; vertical-align: middle; text-align: center; padding: 4px 3px; }
+    .badge-adv { font-size: 0.75rem; font-weight: 600; padding: 0.35em 0.6em; border-radius: 6px; }
+    .input-plan-cell { width: 68px; font-weight: bold; text-align: center; border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 2px 2px; font-size: 0.82rem; }
+    .input-plan-cell:focus { border-color: #2563eb; outline: none; box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+    .cell-gap-danger { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: bold; }
+    .cell-gap-ok { background-color: #dcfce7 !important; color: #15803d !important; font-weight: bold; }
+    .header-kpi-cvz { background-color: #1e3a8a !important; color: white !important; }
+    .header-kpi-ung { background-color: #065f46 !important; color: white !important; }
+    .header-kpi-sel1 { background-color: #b45309 !important; color: white !important; }
+    .header-kpi-sel2 { background-color: #6b21a8 !important; color: white !important; }
+    .ref-box { font-size: 0.75rem; background: #e2e8f0; padding: 3px 6px; border-radius: 5px; display: inline-block; font-weight: 600; color: #334155; }
+    .badge-kpi-fixed { background-color: #0f172a; color: #f8fafc; font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; }
+  </style>
+</head>
+<body class="pb-5">
+
+<!-- Barra Superior -->
+<nav class="navbar navbar-custom px-3 py-2 shadow-sm mb-3">
+  <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-bar-chart-steps fs-3 me-2 text-warning"></i>
+      <div>
+        <span class="fw-bold fs-5">PLANIFICADOR MATINAL</span>
+        <small class="d-block opacity-75" style="font-size: 0.75rem;">Logística Total SRL · Sistema Operativo de Mesas</small>
+      </div>
+    </div>
+
+    <!-- Selector de los 2 KPIs seleccionables (más los 2 fijos) -->
+    <div class="d-flex align-items-center flex-wrap gap-2 my-1 my-md-0 bg-white text-dark px-3 py-1 rounded-3 shadow-sm">
+      <div class="d-flex align-items-center gap-1">
+        <span class="badge badge-kpi-fixed"><i class="bi bi-lock-fill me-1"></i>VOLUMEN CZA</span>
+        <span class="badge badge-kpi-fixed"><i class="bi bi-lock-fill me-1"></i>VOLUMEN UNG</span>
+      </div>
+      <span class="text-muted fw-bold">|</span>
+      <span class="fw-bold small text-secondary"><i class="bi bi-sliders me-1 text-primary"></i>Indicadores del Día:</span>
+      <select id="kpiSelect1" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: 155px;" onchange="cambiarKpisElegibles()">
+        <option value="COB MICHELOB" selected>CCC MICHELOB</option>
+        <option value="COB PURE GOLD">CCC PURE GOLD</option>
+        <option value="COB CZA">CCC CZA</option>
+        <option value="COB PREMIUM">CCC PREMIUM</option>
+        <option value="COB UNG">CCC UNG</option>
+        <option value="COB LATONES">CCC LATONES</option>
+        <option value="LATONES">VOL. LATONES</option>
+        <option value="TOP">VOL. TOP</option>
+        <option value="CORE + VALUE">VOL. CORE+VALUE</option>
+        <option value="PREMIUM">VOL. PREMIUM</option>
+        <option value="BALANCED CHOICES">VOL. BALANCED</option>
+      </select>
+      <span class="text-muted fw-bold">+</span>
+      <select id="kpiSelect2" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: 155px;" onchange="cambiarKpisElegibles()">
+        <option value="COB PURE GOLD" selected>CCC PURE GOLD</option>
+        <option value="COB MICHELOB">CCC MICHELOB</option>
+        <option value="COB CZA">CCC CZA</option>
+        <option value="COB PREMIUM">CCC PREMIUM</option>
+        <option value="COB UNG">CCC UNG</option>
+        <option value="COB LATONES">CCC LATONES</option>
+        <option value="LATONES">VOL. LATONES</option>
+        <option value="TOP">VOL. TOP</option>
+        <option value="CORE + VALUE">VOL. CORE+VALUE</option>
+        <option value="PREMIUM">VOL. PREMIUM</option>
+        <option value="BALANCED CHOICES">VOL. BALANCED</option>
+      </select>
+    </div>
+    
+    <!-- Selectores de Roles -->
+    <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white text-dark fw-semibold"><i class="bi bi-person-badge me-1"></i> Rol</span>
+        <select id="roleSelect" class="form-select fw-semibold" onchange="onRoleChange()">
+          <option value="vendedor">Vendedor (Carga)</option>
+          <option value="supervisor" selected>Supervisor de Mesa</option>
+          <option value="jefe">Jefe de Ventas</option>
+          <option value="analista">Analista / Carga Nocturna</option>
+        </select>
+      </div>
+
+      <div class="input-group input-group-sm" id="userSelectContainer">
+        <span class="input-group-text bg-white text-dark fw-semibold" id="userSelectLabel"><i class="bi bi-person me-1"></i> Mesa</span>
+        <select id="userSelect" class="form-select fw-semibold" onchange="renderCurrentView()"></select>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-2 px-md-3">
+
+  <!-- ======================================================== -->
+  <!-- 1. VISTA VENDEDOR (4 Indicadores: 2 fijos + 2 elegibles) -->
+  <!-- ======================================================== -->
+  <div id="viewVendedor" class="d-none">
+    <div class="row g-3 mb-3">
+      <div class="col-12">
+        <div class="card card-custom p-3 bg-white border-start border-4 border-primary shadow-sm">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <span class="badge bg-secondary text-uppercase mb-1" id="vendMesaTag">Supervisor</span>
+              <h4 class="mb-0 fw-bold text-dark" id="vendNombreTitle">Nombre Vendedor</h4>
+              <small class="text-muted" id="vendIdTag">ID PV: -</small>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              <span id="vendEstadoBadge" class="badge-adv bg-warning text-dark">Pendiente de Envío</span>
+              <button class="btn btn-primary fw-semibold px-4" onclick="guardarVendedor()"><i class="bi bi-send-check me-2"></i>Enviar mi Planificación</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Tarjetas -->
+    <div class="row g-3">
+      <!-- 1. VOLUMEN CZA (Fijo) -->
+      <div class="col-lg-6">
+        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-primary">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cup-straw me-2"></i>VOLUMEN CZA CMQ</h6>
+            <span class="badge bg-primary text-white fw-bold" id="vAvanceCvz">% Avance: -</span>
+          </div>
+          <div class="row g-2 text-center mb-2">
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjCvz">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealCvz">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealCvz">0</div></div></div>
+            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecCvz">0</div></div></div>
+          </div>
+          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Cvz" class="text-primary">0</strong></span></div>
+            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Cvz" class="text-primary">0</strong></span></div>
+          </div>
+          <div class="mt-auto">
+            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+              <span id="vGapCvz" class="small fw-semibold"></span>
+            </label>
+            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-primary" id="vInpPlanCvz" oninput="evaluarGap('Cvz', 'CVZ CMQ')">
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. VOLUMEN UNG (Fijo) -->
+      <div class="col-lg-6">
+        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-success">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <h6 class="fw-bold mb-0 text-success"><i class="bi bi-box-seam me-2"></i>VOLUMEN UNG</h6>
+            <span class="badge bg-success text-white fw-bold" id="vAvanceUng">% Avance: -</span>
+          </div>
+          <div class="row g-2 text-center mb-2">
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjUng">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealUng">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealUng">0</div></div></div>
+            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecUng">0</div></div></div>
+          </div>
+          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Ung" class="text-success">0</strong></span></div>
+            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Ung" class="text-success">0</strong></span></div>
+          </div>
+          <div class="mt-auto">
+            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+              <span id="vGapUng" class="small fw-semibold"></span>
+            </label>
+            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-success" id="vInpPlanUng" oninput="evaluarGap('Ung', 'UNG')">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Indicador Elegible 1 -->
+      <div class="col-lg-6">
+        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-warning">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <h6 class="fw-bold mb-0 text-warning text-dark" id="vCardTitleSel1">INDICADOR 1</h6>
+            <span class="badge bg-warning text-dark fw-bold" id="vAvanceSel1">% Avance: -</span>
+          </div>
+          <div class="row g-2 text-center mb-2">
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjSel1">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealSel1">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealSel1">0</div></div></div>
+            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel1">0</div></div></div>
+          </div>
+          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel1" class="text-warning text-dark">0</strong></span></div>
+            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel1" class="text-warning text-dark">0</strong></span></div>
+          </div>
+          <div class="mt-auto">
+            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+              <span id="vGapSel1" class="small fw-semibold"></span>
+            </label>
+            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-warning" id="vInpPlanSel1" oninput="evaluarGapDinamico(1)">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Indicador Elegible 2 -->
+      <div class="col-lg-6">
+        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-info">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <h6 class="fw-bold mb-0 text-info text-dark" id="vCardTitleSel2">INDICADOR 2</h6>
+            <span class="badge bg-info text-dark fw-bold" id="vAvanceSel2">% Avance: -</span>
+          </div>
+          <div class="row g-2 text-center mb-2">
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjSel2">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealSel2">0</div></div></div>
+            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealSel2">0</div></div></div>
+            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel2">0</div></div></div>
+          </div>
+          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel2" class="text-info text-dark">0</strong></span></div>
+            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel2" class="text-info text-dark">0</strong></span></div>
+          </div>
+          <div class="mt-auto">
+            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+              <span id="vGapSel2" class="small fw-semibold"></span>
+            </label>
+            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-info" id="vInpPlanSel2" oninput="evaluarGapDinamico(2)">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 2. VISTA SUPERVISOR (Con el % AVANCE DE LA MESA)         -->
+  <!-- ======================================================== -->
+  <div id="viewSupervisor" class="d-none">
+    <div class="card card-custom p-3 mb-3 bg-white shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <span class="badge bg-primary text-uppercase">Mesa Operativa</span>
+          <h4 class="mb-0 fw-bold" id="supMesaTitle">Mesa: -</h4>
+          <small class="text-muted">Supervisa los avances oficiales de la mesa y aprueba los compromisos</small>
+        </div>
+
+        <!-- Avances Oficiales de la Mesa del Supervisor -->
+        <div class="d-flex flex-wrap gap-2 text-center">
+          <div class="bg-light p-2 rounded border">
+            <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa CZA</small>
+            <strong class="text-primary fs-6" id="supMesaAvanceCvz">-</strong>
+          </div>
+          <div class="bg-light p-2 rounded border">
+            <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa UNG</small>
+            <strong class="text-success fs-6" id="supMesaAvanceUng">-</strong>
+          </div>
+          <div class="bg-light p-2 rounded border">
+            <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel1">Avance Ind 1</small>
+            <strong class="text-warning text-dark fs-6" id="supMesaAvanceSel1">-</strong>
+          </div>
+          <div class="bg-light p-2 rounded border">
+            <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel2">Avance Ind 2</small>
+            <strong class="text-info text-dark fs-6" id="supMesaAvanceSel2">-</strong>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-danger btn-sm fw-semibold" onclick="exigirMediasSupervisor()"><i class="bi bi-lightning-fill me-1"></i>Exigir Medias</button>
+          <button class="btn btn-success btn-sm fw-semibold" onclick="aprobarMesaSupervisor()"><i class="bi bi-check-all me-1"></i>Aprobar Mesa</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla Dinámica de Supervisión -->
+    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-custom mb-0" id="tablaSupervisorMesa">
+          <thead>
+            <tr>
+              <th rowspan="2" class="text-start" style="min-width: 170px;">VENDEDOR</th>
+              <th rowspan="2" style="width: 75px;">ESTADO</th>
+              <!-- Bloque CZA -->
+              <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+              <!-- Bloque UNG -->
+              <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
+              <!-- Bloque Elegible 1 -->
+              <th colspan="6" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
+              <!-- Bloque Elegible 2 -->
+              <th colspan="6" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
+              <th rowspan="2" style="width: 45px;">OK</th>
+            </tr>
+            <tr>
+              <!-- CZA -->
+              <th class="header-kpi-cvz">% Avance</th>
+              <th class="header-kpi-cvz">Med.Real</th>
+              <th class="header-kpi-cvz">Med.Nec</th>
+              <th class="header-kpi-cvz">-14 D</th>
+              <th class="header-kpi-cvz">-7 D</th>
+              <th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
+              <!-- UNG -->
+              <th class="header-kpi-ung">% Avance</th>
+              <th class="header-kpi-ung">Med.Real</th>
+              <th class="header-kpi-ung">Med.Nec</th>
+              <th class="header-kpi-ung">-14 D</th>
+              <th class="header-kpi-ung">-7 D</th>
+              <th class="header-kpi-ung text-warning fw-bold">PLAN</th>
+              <!-- SEL 1 -->
+              <th class="header-kpi-sel1">% Avance</th>
+              <th class="header-kpi-sel1">Med.Real</th>
+              <th class="header-kpi-sel1">Med.Nec</th>
+              <th class="header-kpi-sel1">-14 D</th>
+              <th class="header-kpi-sel1">-7 D</th>
+              <th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
+              <!-- SEL 2 -->
+              <th class="header-kpi-sel2">% Avance</th>
+              <th class="header-kpi-sel2">Med.Real</th>
+              <th class="header-kpi-sel2">Med.Nec</th>
+              <th class="header-kpi-sel2">-14 D</th>
+              <th class="header-kpi-sel2">-7 D</th>
+              <th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
+            </tr>
+          </thead>
+          <tbody id="supTableBody"></tbody>
+          <tfoot class="table-dark fw-bold" id="supTableFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 3. VISTA JEFE DE VENTAS (Consolidado de Mesas)          -->
+  <!-- ======================================================== -->
+  <div id="viewJefe" class="d-none">
+    <div class="card card-custom p-3 mb-3 bg-white">
+      <h4 class="mb-0 fw-bold"><i class="bi bi-buildings text-primary me-2"></i>Monitoreo de Mesas - Jefatura de Ventas</h4>
+      <small class="text-muted">Resumen comparativo con los avances oficiales y las 5 métricas de cada supervisor</small>
+    </div>
+
+    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-custom mb-0">
+          <thead>
+            <tr>
+              <th rowspan="2" class="text-start">SUPERVISOR / MESA</th>
+              <th rowspan="2">ESTADO</th>
+              <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+              <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
+              <th colspan="6" class="header-kpi-sel1" id="thJefeSel1">IND 1</th>
+              <th colspan="6" class="header-kpi-sel2" id="thJefeSel2">IND 2</th>
+            </tr>
+            <tr>
+              <!-- CZA -->
+              <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
+              <!-- UNG -->
+              <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
+              <!-- SEL 1 -->
+              <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+              <!-- SEL 2 -->
+              <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+            </tr>
+          </thead>
+          <tbody id="jefeTableBody"></tbody>
+          <tfoot class="table-dark fw-bold" id="jefeTableFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 4. VISTA ANALISTA: CARGA NOCTURNA Y CONTROL COMPLETO     -->
+  <!-- ======================================================== -->
+  <div id="viewAnalista" class="d-none">
+    
+    <!-- MÓDULO DE ACTUALIZACIÓN GITHUB / NOCTURNA -->
+    <div class="card card-custom p-4 bg-white mb-4 border-start border-4 border-success shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up-fill text-primary me-2"></i>Carga Nocturna de Datos (Sincronización)</h5>
+          <small class="text-muted">Carga tu hoja <code>AD</code> en Excel. Descarga el archivo <code>datos_matinal.json</code> y súbelo a GitHub.</small>
+        </div>
+        <span class="badge bg-success" id="estadoCargaBadge">Base de datos lista</span>
+      </div>
+
+      <div class="row g-3">
+        <!-- Opción 1: Subir Archivo Excel -->
+        <div class="col-md-6 border-end">
+          <h6 class="fw-bold text-secondary"><i class="bi bi-file-earmark-excel me-2"></i>Opción 1: Subir Excel nocturno (.xlsx)</h6>
+          <p class="text-muted small">Arrastra el archivo <code>PLANIFICACIÓN MESAS COMPLETO 2026.xlsx</code> con la pestaña <code>AD</code>.</p>
+          <input type="file" id="excelFileInput" class="form-control" accept=".xlsx, .xls, .csv" onchange="procesarArchivoExcel(event)">
+        </div>
+
+        <!-- Opción 2: Pegar directo desde Excel -->
+        <div class="col-md-6">
+          <h6 class="fw-bold text-secondary"><i class="bi bi-clipboard2-plus me-2"></i>Opción 2: Pegar filas copiadas de AD</h6>
+          <p class="text-muted small">Copia el bloque de celdas de tu hoja <code>AD</code> en Excel y pégalo aquí:</p>
+          <div class="d-flex gap-2">
+            <textarea id="pasteDataInput" class="form-control form-control-sm" rows="2" placeholder="Pega filas copiadas de Excel..."></textarea>
+            <button class="btn btn-outline-primary fw-semibold" onclick="procesarPegadoExcel()">Cargar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de descarga para GitHub -->
+      <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Para GitHub Pages: Descarga este archivo y reemplázalo en tu repositorio de GitHub.</span>
+        <button class="btn btn-dark btn-sm fw-semibold" onclick="descargarJSONGitHub()"><i class="bi bi-github me-2"></i>Descargar datos_matinal.json para GitHub</button>
+      </div>
+    </div>
+
+    <!-- TABLA GENERAL ANALISTA CON LAS 4 COLUMNAS DE PLANIFICACIÓN -->
+    <div class="card card-custom p-3 bg-white shadow-sm mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-table text-primary me-2"></i>Matriz de Cierre Completa (Copiar Columnas a Excel)</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="copiarColumnaExcel('CVZ CMQ')"><i class="bi bi-clipboard me-1"></i>Copiar Plan CZA</button>
+          <button class="btn btn-sm btn-outline-success fw-semibold" onclick="copiarColumnaExcel('UNG')"><i class="bi bi-clipboard me-1"></i>Copiar Plan UNG</button>
+          <button class="btn btn-sm btn-outline-warning text-dark fw-semibold" onclick="copiarColumnaExcel('SEL1')"><i class="bi bi-clipboard me-1"></i>Copiar Plan Ind 1</button>
+          <button class="btn btn-sm btn-outline-info text-dark fw-semibold" onclick="copiarColumnaExcel('SEL2')"><i class="bi bi-clipboard me-1"></i>Copiar Plan Ind 2</button>
+          <button class="btn btn-sm btn-success fw-semibold" onclick="descargarCSVAnalista()"><i class="bi bi-download me-1"></i>Descargar CSV</button>
+        </div>
+      </div>
+
+      <div class="table-responsive" style="max-height: 480px;">
+        <table class="table table-bordered table-hover table-custom mb-0">
+          <thead>
+            <tr>
+              <th rowspan="2" class="text-start">PV</th>
+              <th rowspan="2" class="text-start">VENDEDOR</th>
+              <th rowspan="2" class="text-start">SUPERVISOR</th>
+              <th rowspan="2">ESTADO</th>
+              <!-- CZA -->
+              <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+              <!-- UNG -->
+              <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
+              <!-- SEL 1 -->
+              <th colspan="6" class="header-kpi-sel1" id="thAnSel1">IND 1</th>
+              <!-- SEL 2 -->
+              <th colspan="6" class="header-kpi-sel2" id="thAnSel2">IND 2</th>
+            </tr>
+            <tr>
+              <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
+              <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
+              <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+              <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+            </tr>
+          </thead>
+          <tbody id="analistaTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Scripts de Operación -->
+<script>
+// Avances oficiales de la mesa del supervisor extraídos de AD
+const AVANCES_OFICIALES_SUPERVISOR = {
+  "CORSINO PEDRO": {
+    "CVZ CMQ": "91.4%",
+    "UNG": "100.9%",
+    "COB MICHELOB": "98.2%",
+    "COB PURE GOLD": "92.0%",
+    "COB CZA": "94.5%",
+    "COB PREMIUM": "95.0%",
+    "COB UNG": "96.0%",
+    "COB LATONES": "97.0%",
+    "LATONES": "96.5%",
+    "TOP": "92.0%",
+    "CORE + VALUE": "91.8%",
+    "PREMIUM": "94.0%",
+    "BALANCED CHOICES": "95.0%"
+  },
+  "MORENO FERNANDO": {
+    "CVZ CMQ": "97.1%",
+    "UNG": "94.5%",
+    "COB MICHELOB": "96.0%",
+    "COB PURE GOLD": "90.0%",
+    "COB CZA": "98.0%",
+    "COB PREMIUM": "96.5%",
+    "COB UNG": "93.0%",
+    "COB LATONES": "95.0%",
+    "LATONES": "98.0%",
+    "TOP": "94.0%",
+    "CORE + VALUE": "97.0%",
+    "PREMIUM": "98.5%",
+    "BALANCED CHOICES": "92.0%"
+  },
+  "ANTUAL PAULA": {
+    "CVZ CMQ": "95.5%",
+    "UNG": "92.0%",
+    "COB MICHELOB": "94.0%",
+    "COB PURE GOLD": "89.0%",
+    "COB CZA": "96.0%",
+    "COB PREMIUM": "93.0%",
+    "COB UNG": "91.0%",
+    "COB LATONES": "94.0%",
+    "LATONES": "95.0%",
+    "TOP": "90.0%",
+    "CORE + VALUE": "95.0%",
+    "PREMIUM": "96.0%",
+    "BALANCED CHOICES": "88.0%"
+  },
+  "SECO ROBERTO ENRIQUE SV": {
+    "CVZ CMQ": "84.4%",
+    "UNG": "86.0%",
+    "COB MICHELOB": "90.0%",
+    "COB PURE GOLD": "85.0%",
+    "COB CZA": "89.0%",
+    "COB PREMIUM": "87.0%",
+    "COB UNG": "88.0%",
+    "COB LATONES": "89.0%",
+    "LATONES": "85.0%",
+    "TOP": "82.0%",
+    "CORE + VALUE": "84.0%",
+    "PREMIUM": "86.0%",
+    "BALANCED CHOICES": "80.0%"
+  }
+};
+
+const SUPERVISORES_LIST = [
+  "CORSINO PEDRO",
+  "MORENO FERNANDO",
+  "ANTUAL PAULA",
+  "SECO ROBERTO ENRIQUE SV"
+];
+
+let DATA_COMPLETA = {
+  kpis_elegibles: ["COB MICHELOB", "COB PURE GOLD"],
+  vendedores: [
+    // CORSINO PEDRO
+    { pv: 11, nombre: "JUAN CARLOS VEGA", sv: "CORSINO PEDRO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 545, real: 343.5, avance: "108.0%", mreal: 24.5, mnec: 20.2, d14: 36.6, d7: 14.5, plan: 25 },
+        "UNG": { obj: 119, real: 80.1, avance: "115.4%", mreal: 5.7, mnec: 3.9, d14: 10.0, d7: 4.7, plan: 5 },
+        "COB MICHELOB": { obj: 35, real: 28.0, avance: "112.0%", mreal: 2.0, mnec: 0.7, d14: 1.8, d7: 1.5, plan: 2 },
+        "COB PURE GOLD": { obj: 20, real: 12.0, avance: "85.0%", mreal: 0.8, mnec: 0.8, d14: 0.9, d7: 0.8, plan: 1 },
+        "COB CZA": { obj: 115, real: 102.0, avance: "98.0%", mreal: 7.3, mnec: 1.3, d14: 8.0, d7: 7.5, plan: 8 },
+        "COB PREMIUM": { obj: 45, real: 38.0, avance: "105.0%", mreal: 2.7, mnec: 0.7, d14: 3.0, d7: 2.5, plan: 3 },
+        "COB UNG": { obj: 65, real: 58.0, avance: "102.0%", mreal: 4.1, mnec: 0.7, d14: 4.5, d7: 4.0, plan: 4 },
+        "COB LATONES": { obj: 50, real: 45.0, avance: "100.0%", mreal: 3.2, mnec: 0.5, d14: 3.5, d7: 3.0, plan: 3.5 },
+        "LATONES": { obj: 0, real: 46.3, avance: "100.0%", mreal: 3.3, mnec: 3.5, d14: 3.0, d7: 3.0, plan: 4 },
+        "TOP": { obj: 0, real: 12.4, avance: "100.0%", mreal: 0.9, mnec: 1.0, d14: 1.3, d7: 0.4, plan: 1.5 },
+        "CORE + VALUE": { obj: 448.5, real: 280.9, avance: "107.4%", mreal: 20.1, mnec: 16.8, d14: 31.9, d7: 12.4, plan: 20 },
+        "PREMIUM": { obj: 96.5, real: 62.6, avance: "111.4%", mreal: 4.5, mnec: 3.4, d14: 4.7, d7: 2.1, plan: 4 },
+        "BALANCED CHOICES": { obj: 0, real: 7.7, avance: "100.0%", mreal: 0.6, mnec: 0.8, d14: 2.8, d7: 0.3, plan: 1 }
+      }
+    },
+    { pv: 13, nombre: "ALTAMIRANO BAHAMONDES TOMAS", sv: "CORSINO PEDRO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 911, real: 428.6, avance: "80.7%", mreal: 30.6, mnec: 48.2, d14: 29.2, d7: 37.0, plan: 45 },
+        "UNG": { obj: 320, real: 180.0, avance: "80.0%", mreal: 12.8, mnec: 14.0, d14: 12.5, d7: 13.0, plan: 15 },
+        "COB MICHELOB": { obj: 50, real: 30.0, avance: "85.0%", mreal: 2.1, mnec: 2.0, d14: 1.9, d7: 2.0, plan: 2.5 },
+        "COB PURE GOLD": { obj: 30, real: 15.0, avance: "71.0%", mreal: 1.0, mnec: 1.5, d14: 1.1, d7: 1.2, plan: 1.5 },
+        "COB CZA": { obj: 130, real: 108.0, avance: "83.0%", mreal: 7.7, mnec: 2.2, d14: 8.0, d7: 8.2, plan: 8 },
+        "COB PREMIUM": { obj: 60, real: 42.0, avance: "82.0%", mreal: 3.0, mnec: 1.8, d14: 3.2, d7: 3.5, plan: 3.5 },
+        "COB UNG": { obj: 85, real: 60.0, avance: "81.0%", mreal: 4.3, mnec: 2.5, d14: 4.8, d7: 5.0, plan: 5 },
+        "COB LATONES": { obj: 65, real: 48.0, avance: "84.0%", mreal: 3.4, mnec: 1.7, d14: 3.8, d7: 4.0, plan: 4 },
+        "LATONES": { obj: 0, real: 38.0, avance: "95.0%", mreal: 2.7, mnec: 3.0, d14: 2.5, d7: 2.8, plan: 3.5 },
+        "TOP": { obj: 0, real: 10.0, avance: "90.0%", mreal: 0.7, mnec: 0.8, d14: 0.9, d7: 0.7, plan: 1 },
+        "CORE + VALUE": { obj: 750, real: 350.0, avance: "81.0%", mreal: 25.0, mnec: 40.0, d14: 24.0, d7: 30.0, plan: 38 },
+        "PREMIUM": { obj: 161, real: 78.6, avance: "79.0%", mreal: 5.6, mnec: 8.2, d14: 5.2, d7: 7.0, plan: 7 },
+        "BALANCED CHOICES": { obj: 0, real: 5.0, avance: "85.0%", mreal: 0.4, mnec: 0.5, d14: 0.4, d7: 0.5, plan: 0.5 }
+      }
+    },
+    { pv: 7, nombre: "ACEVEDO MARIA EUGENIA", sv: "CORSINO PEDRO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 568, real: 243.2, avance: "73.4%", mreal: 17.4, mnec: 32.5, d14: 7.7, d7: 18.6, plan: 25 },
+        "UNG": { obj: 190, real: 110.0, avance: "82.0%", mreal: 7.8, mnec: 8.0, d14: 7.5, d7: 8.0, plan: 8 },
+        "COB MICHELOB": { obj: 28, real: 18.0, avance: "91.0%", mreal: 1.2, mnec: 1.0, d14: 1.0, d7: 1.1, plan: 1.5 },
+        "COB PURE GOLD": { obj: 18, real: 10.0, avance: "79.0%", mreal: 0.7, mnec: 0.8, d14: 0.6, d7: 0.7, plan: 1 },
+        "COB CZA": { obj: 105, real: 82.0, avance: "78.0%", mreal: 5.8, mnec: 2.3, d14: 6.0, d7: 6.5, plan: 6.5 },
+        "COB PREMIUM": { obj: 40, real: 28.0, avance: "80.0%", mreal: 2.0, mnec: 1.2, d14: 2.2, d7: 2.5, plan: 2.5 },
+        "COB UNG": { obj: 60, real: 42.0, avance: "82.0%", mreal: 3.0, mnec: 1.8, d14: 3.2, d7: 3.5, plan: 3.5 },
+        "COB LATONES": { obj: 45, real: 32.0, avance: "81.0%", mreal: 2.3, mnec: 1.3, d14: 2.5, d7: 2.8, plan: 2.5 },
+        "LATONES": { obj: 0, real: 22.0, avance: "88.0%", mreal: 1.6, mnec: 2.0, d14: 1.5, d7: 1.8, plan: 2 },
+        "TOP": { obj: 0, real: 8.0, avance: "85.0%", mreal: 0.6, mnec: 0.8, d14: 0.6, d7: 0.7, plan: 1 },
+        "CORE + VALUE": { obj: 460, real: 195.0, avance: "72.5%", mreal: 13.9, mnec: 26.5, d14: 6.0, d7: 15.0, plan: 20 },
+        "PREMIUM": { obj: 108, real: 48.2, avance: "76.0%", mreal: 3.4, mnec: 6.0, d14: 1.7, d7: 3.6, plan: 5 },
+        "BALANCED CHOICES": { obj: 0, real: 4.0, avance: "80.0%", mreal: 0.3, mnec: 0.4, d14: 0.3, d7: 0.4, plan: 0.5 }
+      }
+    },
+    { pv: 1, nombre: "LAUTARO RUBEN SALINA", sv: "CORSINO PEDRO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 254, real: 137.6, avance: "92.8%", mreal: 9.8, mnec: 11.6, d14: 5.2, d7: 4.5, plan: 12 },
+        "UNG": { obj: 90, real: 55.0, avance: "87.0%", mreal: 3.9, mnec: 3.5, d14: 3.5, d7: 3.8, plan: 4 },
+        "COB MICHELOB": { obj: 15, real: 10.0, avance: "95.0%", mreal: 0.7, mnec: 0.5, d14: 0.7, d7: 0.6, plan: 1 },
+        "COB PURE GOLD": { obj: 10, real: 6.0, avance: "85.0%", mreal: 0.4, mnec: 0.4, d14: 0.4, d7: 0.4, plan: 0.5 },
+        "COB CZA": { obj: 85, real: 76.0, avance: "89.0%", mreal: 5.4, mnec: 0.9, d14: 5.5, d7: 5.8, plan: 6 },
+        "COB PREMIUM": { obj: 30, real: 24.0, avance: "90.0%", mreal: 1.7, mnec: 0.6, d14: 1.8, d7: 2.0, plan: 2 },
+        "COB UNG": { obj: 45, real: 38.0, avance: "88.0%", mreal: 2.7, mnec: 0.7, d14: 2.8, d7: 3.0, plan: 3 },
+        "COB LATONES": { obj: 35, real: 30.0, avance: "91.0%", mreal: 2.1, mnec: 0.5, d14: 2.2, d7: 2.5, plan: 2.5 },
+        "LATONES": { obj: 0, real: 15.0, avance: "95.0%", mreal: 1.1, mnec: 1.2, d14: 1.0, d7: 1.1, plan: 1.5 },
+        "TOP": { obj: 0, real: 5.0, avance: "90.0%", mreal: 0.4, mnec: 0.5, d14: 0.4, d7: 0.4, plan: 0.5 },
+        "CORE + VALUE": { obj: 210, real: 115.0, avance: "93.0%", mreal: 8.2, mnec: 9.5, d14: 4.5, d7: 4.0, plan: 10 },
+        "PREMIUM": { obj: 44, real: 22.6, avance: "91.0%", mreal: 1.6, mnec: 2.1, d14: 0.7, d7: 0.5, plan: 2 },
+        "BALANCED CHOICES": { obj: 0, real: 3.0, avance: "90.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.3, plan: 0.5 }
+      }
+    },
+    { pv: 9, nombre: "MILLAIN BETIANA", sv: "CORSINO PEDRO", estado: "Pendiente",
+      kpis: {
+        "CVZ CMQ": { obj: 736, real: 446.5, avance: "104.0%", mreal: 31.9, mnec: 29.0, d14: 5.5, d7: 28.3, plan: 30 },
+        "UNG": { obj: 240, real: 150.0, avance: "89.0%", mreal: 10.7, mnec: 9.0, d14: 9.5, d7: 10.0, plan: 10 },
+        "COB MICHELOB": { obj: 40, real: 25.0, avance: "89.0%", mreal: 1.7, mnec: 1.5, d14: 1.5, d7: 1.6, plan: 2 },
+        "COB PURE GOLD": { obj: 25, real: 16.0, avance: "91.0%", mreal: 1.1, mnec: 0.9, d14: 0.9, d7: 1.0, plan: 1 },
+        "COB CZA": { obj: 140, real: 132.0, avance: "94.0%", mreal: 9.4, mnec: 0.8, d14: 9.5, d7: 10.0, plan: 10 },
+        "COB PREMIUM": { obj: 55, real: 46.0, avance: "92.0%", mreal: 3.3, mnec: 0.9, d14: 3.5, d7: 3.8, plan: 3.5 },
+        "COB UNG": { obj: 75, real: 65.0, avance: "90.0%", mreal: 4.6, mnec: 1.0, d14: 5.0, d7: 5.2, plan: 5 },
+        "COB LATONES": { obj: 60, real: 52.0, avance: "93.0%", mreal: 3.7, mnec: 0.8, d14: 4.0, d7: 4.2, plan: 4 },
+        "LATONES": { obj: 0, real: 35.0, avance: "100.0%", mreal: 2.5, mnec: 2.6, d14: 2.0, d7: 2.5, plan: 3 },
+        "TOP": { obj: 0, real: 9.0, avance: "95.0%", mreal: 0.6, mnec: 0.7, d14: 0.5, d7: 0.6, plan: 1 },
+        "CORE + VALUE": { obj: 610, real: 370.0, avance: "103.5%", mreal: 26.4, mnec: 24.0, d14: 4.5, d7: 24.0, plan: 26 },
+        "PREMIUM": { obj: 126, real: 76.5, avance: "105.0%", mreal: 5.5, mnec: 5.0, d14: 1.0, d7: 4.3, plan: 5.5 },
+        "BALANCED CHOICES": { obj: 0, real: 6.0, avance: "95.0%", mreal: 0.4, mnec: 0.5, d14: 0.3, d7: 0.4, plan: 0.5 }
+      }
+    },
+    { pv: 10, nombre: "MORA MAURO", sv: "CORSINO PEDRO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 811, real: 417.1, avance: "88.2%", mreal: 29.8, mnec: 39.4, d14: 20.7, d7: 28.3, plan: 35 },
+        "UNG": { obj: 270, real: 160.0, avance: "85.0%", mreal: 11.4, mnec: 11.0, d14: 10.5, d7: 11.0, plan: 12 },
+        "COB MICHELOB": { obj: 45, real: 26.0, avance: "82.0%", mreal: 1.8, mnec: 1.9, d14: 1.7, d7: 1.8, plan: 2 },
+        "COB PURE GOLD": { obj: 25, real: 14.0, avance: "80.0%", mreal: 1.0, mnec: 1.1, d14: 0.9, d7: 1.0, plan: 1 },
+        "COB CZA": { obj: 135, real: 125.0, avance: "92.0%", mreal: 8.9, mnec: 1.0, d14: 9.0, d7: 9.2, plan: 9 },
+        "COB PREMIUM": { obj: 50, real: 42.0, avance: "88.0%", mreal: 3.0, mnec: 0.8, d14: 3.2, d7: 3.5, plan: 3.5 },
+        "COB UNG": { obj: 70, real: 58.0, avance: "87.0%", mreal: 4.1, mnec: 1.2, d14: 4.5, d7: 4.8, plan: 4.5 },
+        "COB LATONES": { obj: 55, real: 48.0, avance: "90.0%", mreal: 3.4, mnec: 0.7, d14: 3.6, d7: 3.8, plan: 3.5 },
+        "LATONES": { obj: 0, real: 32.0, avance: "90.0%", mreal: 2.3, mnec: 2.8, d14: 2.0, d7: 2.5, plan: 3 },
+        "TOP": { obj: 0, real: 11.0, avance: "90.0%", mreal: 0.8, mnec: 0.9, d14: 0.7, d7: 0.8, plan: 1 },
+        "CORE + VALUE": { obj: 670, real: 345.0, avance: "87.5%", mreal: 24.6, mnec: 32.5, d14: 17.0, d7: 24.0, plan: 30 },
+        "PREMIUM": { obj: 141, real: 72.1, avance: "89.0%", mreal: 5.2, mnec: 6.9, d14: 3.7, d7: 4.3, plan: 6 },
+        "BALANCED CHOICES": { obj: 0, real: 5.5, avance: "88.0%", mreal: 0.4, mnec: 0.5, d14: 0.4, d7: 0.4, plan: 0.5 }
+      }
+    },
+    { pv: 12, nombre: "MUÑOZ DAMIAN", sv: "CORSINO PEDRO", estado: "Pendiente",
+      kpis: {
+        "CVZ CMQ": { obj: 319, real: 185.9, avance: "99.9%", mreal: 13.3, mnec: 13.3, d14: 3.5, d7: 4.7, plan: 14 },
+        "UNG": { obj: 110, real: 70.0, avance: "90.0%", mreal: 5.0, mnec: 4.0, d14: 4.2, d7: 4.5, plan: 5 },
+        "COB MICHELOB": { obj: 18, real: 12.0, avance: "95.0%", mreal: 0.8, mnec: 0.6, d14: 0.8, d7: 0.7, plan: 1 },
+        "COB PURE GOLD": { obj: 12, real: 7.0, avance: "83.0%", mreal: 0.5, mnec: 0.5, d14: 0.4, d7: 0.5, plan: 0.5 },
+        "COB CZA": { obj: 80, real: 77.0, avance: "96.0%", mreal: 5.5, mnec: 0.3, d14: 5.6, d7: 5.8, plan: 6 },
+        "COB PREMIUM": { obj: 32, real: 28.0, avance: "94.0%", mreal: 2.0, mnec: 0.4, d14: 2.2, d7: 2.3, plan: 2 },
+        "COB UNG": { obj: 45, real: 40.0, avance: "93.0%", mreal: 2.8, mnec: 0.5, d14: 3.0, d7: 3.2, plan: 3 },
+        "COB LATONES": { obj: 35, real: 32.0, avance: "95.0%", mreal: 2.3, mnec: 0.3, d14: 2.4, d7: 2.5, plan: 2.5 },
+        "LATONES": { obj: 0, real: 18.0, avance: "95.0%", mreal: 1.3, mnec: 1.4, d14: 1.0, d7: 1.2, plan: 1.5 },
+        "TOP": { obj: 0, real: 4.0, avance: "90.0%", mreal: 0.3, mnec: 0.4, d14: 0.3, d7: 0.3, plan: 0.5 },
+        "CORE + VALUE": { obj: 260, real: 152.0, avance: "100.2%", mreal: 10.9, mnec: 10.8, d14: 3.0, d7: 4.0, plan: 12 },
+        "PREMIUM": { obj: 59, real: 33.9, avance: "98.0%", mreal: 2.4, mnec: 2.5, d14: 0.5, d7: 0.7, plan: 2.5 },
+        "BALANCED CHOICES": { obj: 0, real: 2.5, avance: "90.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.2, plan: 0.5 }
+      }
+    },
+    { pv: 21, nombre: "JOAQUIN GUSTAVO VALLEJOS", sv: "CORSINO PEDRO", estado: "Aprobado",
+      kpis: {
+        "CVZ CMQ": { obj: 559, real: 305.8, avance: "93.8%", mreal: 21.8, mnec: 25.3, d14: 0.8, d7: 7.5, plan: 26 },
+        "UNG": { obj: 180, real: 115.0, avance: "91.0%", mreal: 8.2, mnec: 6.5, d14: 7.0, d7: 7.5, plan: 8 },
+        "COB MICHELOB": { obj: 30, real: 20.0, avance: "95.0%", mreal: 1.4, mnec: 1.0, d14: 1.3, d7: 1.2, plan: 1.5 },
+        "COB PURE GOLD": { obj: 18, real: 11.0, avance: "87.0%", mreal: 0.7, mnec: 0.7, d14: 0.6, d7: 0.7, plan: 1 },
+        "COB CZA": { obj: 125, real: 119.0, avance: "95.0%", mreal: 8.5, mnec: 0.6, d14: 8.6, d7: 8.8, plan: 9 },
+        "COB PREMIUM": { obj: 48, real: 42.0, avance: "93.0%", mreal: 3.0, mnec: 0.6, d14: 3.2, d7: 3.4, plan: 3 },
+        "COB UNG": { obj: 65, real: 58.0, avance: "92.0%", mreal: 4.1, mnec: 0.7, d14: 4.3, d7: 4.5, plan: 4 },
+        "COB LATONES": { obj: 55, real: 50.0, avance: "94.0%", mreal: 3.6, mnec: 0.5, d14: 3.7, d7: 3.9, plan: 4 },
+        "LATONES": { obj: 0, real: 26.0, avance: "96.0%", mreal: 1.9, mnec: 2.0, d14: 1.2, d7: 1.8, plan: 2.5 },
+        "TOP": { obj: 0, real: 7.0, avance: "92.0%", mreal: 0.5, mnec: 0.6, d14: 0.4, d7: 0.5, plan: 1 },
+        "CORE + VALUE": { obj: 460, real: 250.0, avance: "93.0%", mreal: 17.9, mnec: 21.0, d14: 0.6, d7: 6.5, plan: 22 },
+        "PREMIUM": { obj: 99, real: 55.8, avance: "95.0%", mreal: 4.0, mnec: 4.3, d14: 0.2, d7: 1.0, plan: 4.5 },
+        "BALANCED CHOICES": { obj: 0, real: 3.5, avance: "90.0%", mreal: 0.3, mnec: 0.4, d14: 0.2, d7: 0.3, plan: 0.5 }
+      }
+    },
+
+    // MORENO FERNANDO
+    { pv: 14, nombre: "MORA MATIAS ARIEL", sv: "MORENO FERNANDO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 519, real: 322.8, avance: "106.6%", mreal: 23.1, mnec: 19.6, d14: 21.9, d7: 24.0, plan: 22 },
+        "UNG": { obj: 170, real: 110.0, avance: "92.0%", mreal: 7.8, mnec: 6.0, d14: 6.8, d7: 7.0, plan: 7 },
+        "COB MICHELOB": { obj: 28, real: 19.0, avance: "96.0%", mreal: 1.3, mnec: 0.9, d14: 1.2, d7: 1.1, plan: 1.5 },
+        "COB PURE GOLD": { obj: 16, real: 10.0, avance: "89.0%", mreal: 0.7, mnec: 0.6, d14: 0.6, d7: 0.6, plan: 1 },
+        "COB CZA": { obj: 115, real: 110.0, avance: "96.0%", mreal: 7.8, mnec: 0.5, d14: 8.0, d7: 8.0, plan: 8 },
+        "COB PREMIUM": { obj: 42, real: 38.0, avance: "95.0%", mreal: 2.7, mnec: 0.4, d14: 2.8, d7: 3.0, plan: 3 },
+        "COB UNG": { obj: 60, real: 55.0, avance: "94.0%", mreal: 3.9, mnec: 0.5, d14: 4.0, d7: 4.2, plan: 4 },
+        "COB LATONES": { obj: 50, real: 46.0, avance: "96.0%", mreal: 3.3, mnec: 0.4, d14: 3.5, d7: 3.6, plan: 3.5 },
+        "LATONES": { obj: 0, real: 28.0, avance: "102.0%", mreal: 2.0, mnec: 2.0, d14: 1.8, d7: 2.0, plan: 2.5 },
+        "TOP": { obj: 0, real: 8.0, avance: "95.0%", mreal: 0.6, mnec: 0.6, d14: 0.5, d7: 0.6, plan: 1 },
+        "CORE + VALUE": { obj: 420, real: 260.0, avance: "106.0%", mreal: 18.6, mnec: 16.0, d14: 18.0, d7: 20.0, plan: 18 },
+        "PREMIUM": { obj: 99, real: 62.8, avance: "108.0%", mreal: 4.5, mnec: 3.6, d14: 3.9, d7: 4.0, plan: 4.5 },
+        "BALANCED CHOICES": { obj: 0, real: 4.0, avance: "90.0%", mreal: 0.3, mnec: 0.3, d14: 0.3, d7: 0.3, plan: 0.5 }
+      }
+    },
+    { pv: 16, nombre: "NUÑEZ MAURO", sv: "MORENO FERNANDO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 257, real: 157.8, avance: "105.3%", mreal: 11.3, mnec: 9.9, d14: 7.0, d7: 12.9, plan: 11 },
+        "UNG": { obj: 85, real: 54.0, avance: "90.0%", mreal: 3.8, mnec: 3.1, d14: 3.2, d7: 3.5, plan: 4 },
+        "COB MICHELOB": { obj: 14, real: 9.0, avance: "92.0%", mreal: 0.6, mnec: 0.5, d14: 0.6, d7: 0.5, plan: 1 },
+        "COB PURE GOLD": { obj: 10, real: 6.0, avance: "85.0%", mreal: 0.4, mnec: 0.4, d14: 0.3, d7: 0.4, plan: 0.5 },
+        "COB CZA": { obj: 75, real: 72.0, avance: "96.0%", mreal: 5.1, mnec: 0.3, d14: 5.2, d7: 5.5, plan: 5.5 },
+        "COB PREMIUM": { obj: 28, real: 25.0, avance: "93.0%", mreal: 1.8, mnec: 0.3, d14: 1.9, d7: 2.0, plan: 2 },
+        "COB UNG": { obj: 40, real: 36.0, avance: "92.0%", mreal: 2.6, mnec: 0.4, d14: 2.7, d7: 2.8, plan: 3 },
+        "COB LATONES": { obj: 32, real: 30.0, avance: "95.0%", mreal: 2.1, mnec: 0.2, d14: 2.2, d7: 2.3, plan: 2.5 },
+        "LATONES": { obj: 0, real: 16.0, avance: "100.0%", mreal: 1.1, mnec: 1.1, d14: 0.9, d7: 1.1, plan: 1.5 },
+        "TOP": { obj: 0, real: 4.0, avance: "90.0%", mreal: 0.3, mnec: 0.3, d14: 0.3, d7: 0.3, plan: 0.5 },
+        "CORE + VALUE": { obj: 210, real: 130.0, avance: "105.0%", mreal: 9.3, mnec: 8.0, d14: 6.0, d7: 10.0, plan: 9 },
+        "PREMIUM": { obj: 47, real: 27.8, avance: "106.0%", mreal: 2.0, mnec: 1.9, d14: 1.0, d7: 2.9, plan: 2 },
+        "BALANCED CHOICES": { obj: 0, real: 2.0, avance: "90.0%", mreal: 0.1, mnec: 0.2, d14: 0.1, d7: 0.2, plan: 0.25 }
+      }
+    },
+    { pv: 17, nombre: "KEBERLEIN ARIANA", sv: "MORENO FERNANDO", estado: "Pendiente",
+      kpis: {
+        "CVZ CMQ": { obj: 446, real: 231.9, avance: "89.2%", mreal: 16.6, mnec: 21.4, d14: 3.6, d7: 2.9, plan: 18 },
+        "UNG": { obj: 150, real: 90.0, avance: "85.0%", mreal: 6.4, mnec: 6.0, d14: 5.8, d7: 6.0, plan: 6.5 },
+        "COB MICHELOB": { obj: 24, real: 14.0, avance: "83.0%", mreal: 1.0, mnec: 1.0, d14: 1.0, d7: 0.9, plan: 1.5 },
+        "COB PURE GOLD": { obj: 14, real: 8.0, avance: "81.0%", mreal: 0.5, mnec: 0.6, d14: 0.5, d7: 0.5, plan: 0.75 },
+        "COB CZA": { obj: 95, real: 85.0, avance: "89.0%", mreal: 6.1, mnec: 1.0, d14: 6.2, d7: 6.5, plan: 6.5 },
+        "COB PREMIUM": { obj: 35, real: 28.0, avance: "86.0%", mreal: 2.0, mnec: 0.7, d14: 2.2, d7: 2.4, plan: 2.5 },
+        "COB UNG": { obj: 50, real: 42.0, avance: "87.0%", mreal: 3.0, mnec: 0.8, d14: 3.2, d7: 3.4, plan: 3.5 },
+        "COB LATONES": { obj: 40, real: 34.0, avance: "88.0%", mreal: 2.4, mnec: 0.6, d14: 2.6, d7: 2.8, plan: 3 },
+        "LATONES": { obj: 0, real: 20.0, avance: "88.0%", mreal: 1.4, mnec: 1.8, d14: 1.2, d7: 1.5, plan: 2 },
+        "TOP": { obj: 0, real: 6.0, avance: "85.0%", mreal: 0.4, mnec: 0.5, d14: 0.4, d7: 0.4, plan: 0.5 },
+        "CORE + VALUE": { obj: 360, real: 190.0, avance: "89.0%", mreal: 13.6, mnec: 17.0, d14: 3.0, d7: 2.5, plan: 15 },
+        "PREMIUM": { obj: 86, real: 41.9, avance: "88.0%", mreal: 3.0, mnec: 4.4, d14: 0.6, d7: 0.4, plan: 3.5 },
+        "BALANCED CHOICES": { obj: 0, real: 3.0, avance: "85.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.2, plan: 0.5 }
+      }
+    },
+    { pv: 8, nombre: "MAXIMILIANO FRANCISCO MARTIRE", sv: "MORENO FERNANDO", estado: "Aprobado",
+      kpis: {
+        "CVZ CMQ": { obj: 645, real: 350.6, avance: "93.2%", mreal: 25.0, mnec: 29.4, d14: 20.2, d7: 25.0, plan: 30 },
+        "UNG": { obj: 210, real: 135.0, avance: "91.0%", mreal: 9.6, mnec: 7.5, d14: 8.0, d7: 8.5, plan: 9 },
+        "COB MICHELOB": { obj: 35, real: 23.0, avance: "93.0%", mreal: 1.6, mnec: 1.2, d14: 1.4, d7: 1.4, plan: 2 },
+        "COB PURE GOLD": { obj: 20, real: 12.0, avance: "85.0%", mreal: 0.8, mnec: 0.8, d14: 0.7, d7: 0.8, plan: 1 },
+        "COB CZA": { obj: 120, real: 112.0, avance: "93.0%", mreal: 8.0, mnec: 0.8, d14: 8.2, d7: 8.5, plan: 8.5 },
+        "COB PREMIUM": { obj: 45, real: 40.0, avance: "92.0%", mreal: 2.8, mnec: 0.5, d14: 3.0, d7: 3.2, plan: 3 },
+        "COB UNG": { obj: 65, real: 58.0, avance: "91.0%", mreal: 4.1, mnec: 0.7, d14: 4.3, d7: 4.5, plan: 4 },
+        "COB LATONES": { obj: 55, real: 50.0, avance: "93.0%", mreal: 3.6, mnec: 0.5, d14: 3.8, d7: 4.0, plan: 4 },
+        "LATONES": { obj: 0, real: 30.0, avance: "95.0%", mreal: 2.1, mnec: 2.4, d14: 2.0, d7: 2.2, plan: 2.5 },
+        "TOP": { obj: 0, real: 9.0, avance: "90.0%", mreal: 0.6, mnec: 0.7, d14: 0.6, d7: 0.7, plan: 1 },
+        "CORE + VALUE": { obj: 530, real: 290.0, avance: "93.0%", mreal: 20.7, mnec: 24.0, d14: 17.0, d7: 21.0, plan: 25 },
+        "PREMIUM": { obj: 115, real: 60.6, avance: "94.0%", mreal: 4.3, mnec: 5.4, d14: 3.2, d7: 4.0, plan: 5 },
+        "BALANCED CHOICES": { obj: 0, real: 4.5, avance: "90.0%", mreal: 0.3, mnec: 0.4, d14: 0.3, d7: 0.4, plan: 0.5 }
+      }
+    },
+    { pv: 3, nombre: "MARQUEZ JOAQUIN", sv: "MORENO FERNANDO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 406, real: 235.3, avance: "99.4%", mreal: 16.8, mnec: 17.1, d14: 1.0, d7: 2.9, plan: 17.5 },
+        "UNG": { obj: 130, real: 82.0, avance: "90.0%", mreal: 5.8, mnec: 4.8, d14: 5.0, d7: 5.2, plan: 5.5 },
+        "COB MICHELOB": { obj: 22, real: 14.0, avance: "90.0%", mreal: 1.0, mnec: 0.8, d14: 0.9, d7: 0.9, plan: 1 },
+        "COB PURE GOLD": { obj: 12, real: 7.0, avance: "83.0%", mreal: 0.5, mnec: 0.5, d14: 0.4, d7: 0.5, plan: 0.75 },
+        "COB CZA": { obj: 85, real: 82.0, avance: "96.0%", mreal: 5.8, mnec: 0.3, d14: 6.0, d7: 6.2, plan: 6 },
+        "COB PREMIUM": { obj: 32, real: 29.0, avance: "93.0%", mreal: 2.1, mnec: 0.3, d14: 2.2, d7: 2.4, plan: 2 },
+        "COB UNG": { obj: 45, real: 41.0, avance: "92.0%", mreal: 2.9, mnec: 0.4, d14: 3.0, d7: 3.2, plan: 3 },
+        "COB LATONES": { obj: 38, real: 36.0, avance: "95.0%", mreal: 2.6, mnec: 0.2, d14: 2.7, d7: 2.8, plan: 3 },
+        "LATONES": { obj: 0, real: 19.0, avance: "95.0%", mreal: 1.4, mnec: 1.5, d14: 1.0, d7: 1.2, plan: 1.5 },
+        "TOP": { obj: 0, real: 6.0, avance: "90.0%", mreal: 0.4, mnec: 0.5, d14: 0.3, d7: 0.4, plan: 0.5 },
+        "CORE + VALUE": { obj: 330, real: 192.0, avance: "99.0%", mreal: 13.7, mnec: 13.8, d14: 0.8, d7: 2.5, plan: 14 },
+        "PREMIUM": { obj: 76, real: 43.3, avance: "100.0%", mreal: 3.1, mnec: 3.3, d14: 0.2, d7: 0.4, plan: 3.5 },
+        "BALANCED CHOICES": { obj: 0, real: 3.0, avance: "90.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.2, plan: 0.5 }
+      }
+    },
+    { pv: 18, nombre: "ORLANDO JOSÉ REYES MORA", sv: "MORENO FERNANDO", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 574, real: 342.7, avance: "102.4%", mreal: 24.5, mnec: 23.1, d14: 10.4, d7: 13.6, plan: 24 },
+        "UNG": { obj: 190, real: 120.0, avance: "90.0%", mreal: 8.5, mnec: 7.0, d14: 7.5, d7: 7.8, plan: 8 },
+        "COB MICHELOB": { obj: 30, real: 20.0, avance: "95.0%", mreal: 1.4, mnec: 1.0, d14: 1.3, d7: 1.2, plan: 1.5 },
+        "COB PURE GOLD": { obj: 18, real: 11.0, avance: "87.0%", mreal: 0.7, mnec: 0.7, d14: 0.6, d7: 0.7, plan: 1 },
+        "COB CZA": { obj: 110, real: 104.0, avance: "95.0%", mreal: 7.4, mnec: 0.6, d14: 7.6, d7: 7.8, plan: 8 },
+        "COB PREMIUM": { obj: 42, real: 38.0, avance: "94.0%", mreal: 2.7, mnec: 0.4, d14: 2.8, d7: 3.0, plan: 3 },
+        "COB UNG": { obj: 60, real: 54.0, avance: "92.0%", mreal: 3.9, mnec: 0.6, d14: 4.0, d7: 4.2, plan: 4 },
+        "COB LATONES": { obj: 48, real: 45.0, avance: "95.0%", mreal: 3.2, mnec: 0.3, d14: 3.3, d7: 3.5, plan: 3.5 },
+        "LATONES": { obj: 0, real: 25.0, avance: "100.0%", mreal: 1.8, mnec: 1.9, d14: 1.5, d7: 1.7, plan: 2 },
+        "TOP": { obj: 0, real: 8.0, avance: "95.0%", mreal: 0.6, mnec: 0.6, d14: 0.5, d7: 0.6, plan: 1 },
+        "CORE + VALUE": { obj: 470, real: 280.0, avance: "102.0%", mreal: 20.0, mnec: 19.0, d14: 9.0, d7: 11.5, plan: 20 },
+        "PREMIUM": { obj: 104, real: 62.7, avance: "103.0%", mreal: 4.5, mnec: 4.1, d14: 1.4, d7: 2.1, plan: 4.5 },
+        "BALANCED CHOICES": { obj: 0, real: 4.0, avance: "90.0%", mreal: 0.3, mnec: 0.3, d14: 0.3, d7: 0.3, plan: 0.5 }
+      }
+    },
+    { pv: 15, nombre: "ARAVENA CRISTIAN ADRIÁN", sv: "MORENO FERNANDO", estado: "Pendiente",
+      kpis: {
+        "CVZ CMQ": { obj: 379, real: 185.6, avance: "84.0%", mreal: 13.3, mnec: 19.3, d14: 6.9, d7: 4.7, plan: 15 },
+        "UNG": { obj: 125, real: 72.0, avance: "82.0%", mreal: 5.1, mnec: 5.3, d14: 4.8, d7: 5.0, plan: 5.5 },
+        "COB MICHELOB": { obj: 20, real: 12.0, avance: "85.0%", mreal: 0.8, mnec: 0.8, d14: 0.7, d7: 0.8, plan: 1 },
+        "COB PURE GOLD": { obj: 12, real: 6.0, avance: "71.0%", mreal: 0.4, mnec: 0.6, d14: 0.4, d7: 0.5, plan: 0.75 },
+        "COB CZA": { obj: 78, real: 68.0, avance: "87.0%", mreal: 4.9, mnec: 1.0, d14: 5.0, d7: 5.2, plan: 5 },
+        "COB PREMIUM": { obj: 28, real: 22.0, avance: "85.0%", mreal: 1.6, mnec: 0.6, d14: 1.8, d7: 2.0, plan: 2 },
+        "COB UNG": { obj: 40, real: 32.0, avance: "84.0%", mreal: 2.3, mnec: 0.8, d14: 2.5, d7: 2.6, plan: 2.5 },
+        "COB LATONES": { obj: 32, real: 26.0, avance: "86.0%", mreal: 1.9, mnec: 0.6, d14: 2.0, d7: 2.2, plan: 2 },
+        "LATONES": { obj: 0, real: 17.0, avance: "85.0%", mreal: 1.2, mnec: 1.5, d14: 1.0, d7: 1.1, plan: 1.5 },
+        "TOP": { obj: 0, real: 5.0, avance: "85.0%", mreal: 0.4, mnec: 0.5, d14: 0.3, d7: 0.4, plan: 0.5 },
+        "CORE + VALUE": { obj: 310, real: 150.0, avance: "83.0%", mreal: 10.7, mnec: 16.0, d14: 5.5, d7: 4.0, plan: 12 },
+        "PREMIUM": { obj: 69, real: 35.6, avance: "86.0%", mreal: 2.5, mnec: 3.3, d14: 1.4, d7: 0.7, plan: 3 },
+        "BALANCED CHOICES": { obj: 0, real: 2.5, avance: "80.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.2, plan: 0.5 }
+      }
+    },
+
+    // ANTUAL PAULA
+    { pv: 4, nombre: "FIGUEROA JONATHAN", sv: "ANTUAL PAULA", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 555, real: 291.3, avance: "87.0%", mreal: 20.8, mnec: 26.4, d14: 6.4, d7: 12.2, plan: 24 },
+        "UNG": { obj: 180, real: 105.0, avance: "83.0%", mreal: 7.5, mnec: 7.5, d14: 7.0, d7: 7.2, plan: 8 },
+        "COB MICHELOB": { obj: 28, real: 17.0, avance: "86.0%", mreal: 1.2, mnec: 1.1, d14: 1.0, d7: 1.1, plan: 1.5 },
+        "COB PURE GOLD": { obj: 16, real: 9.0, avance: "80.0%", mreal: 0.6, mnec: 0.7, d14: 0.5, d7: 0.6, plan: 1 },
+        "COB CZA": { obj: 105, real: 92.0, avance: "88.0%", mreal: 6.6, mnec: 1.3, d14: 6.8, d7: 7.0, plan: 7 },
+        "COB PREMIUM": { obj: 38, real: 32.0, avance: "87.0%", mreal: 2.3, mnec: 0.6, d14: 2.4, d7: 2.6, plan: 2.5 },
+        "COB UNG": { obj: 55, real: 46.0, avance: "86.0%", mreal: 3.3, mnec: 0.9, d14: 3.5, d7: 3.7, plan: 3.5 },
+        "COB LATONES": { obj: 45, real: 38.0, avance: "88.0%", mreal: 2.7, mnec: 0.7, d14: 2.9, d7: 3.0, plan: 3 },
+        "LATONES": { obj: 0, real: 24.0, avance: "90.0%", mreal: 1.7, mnec: 2.0, d14: 1.4, d7: 1.6, plan: 2 },
+        "TOP": { obj: 0, real: 7.0, avance: "88.0%", mreal: 0.5, mnec: 0.6, d14: 0.4, d7: 0.5, plan: 1 },
+        "CORE + VALUE": { obj: 450, real: 235.0, avance: "86.0%", mreal: 16.8, mnec: 21.5, d14: 5.0, d7: 10.0, plan: 19 },
+        "PREMIUM": { obj: 105, real: 56.3, avance: "89.0%", mreal: 4.0, mnec: 4.9, d14: 1.4, d7: 2.2, plan: 4.5 },
+        "BALANCED CHOICES": { obj: 0, real: 3.5, avance: "85.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.3, plan: 0.5 }
+      }
+    },
+    { pv: 5, nombre: "LEON ABRIL CANDELA", sv: "ANTUAL PAULA", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 451, real: 272.1, avance: "97.0%", mreal: 19.4, mnec: 17.9, d14: 3.4, d7: 3.7, plan: 19 },
+        "UNG": { obj: 145, real: 95.0, avance: "93.0%", mreal: 6.7, mnec: 5.0, d14: 5.8, d7: 6.0, plan: 6 },
+        "COB MICHELOB": { obj: 24, real: 16.0, avance: "95.0%", mreal: 1.1, mnec: 0.8, d14: 1.0, d7: 1.0, plan: 1 },
+        "COB PURE GOLD": { obj: 14, real: 9.0, avance: "91.0%", mreal: 0.6, mnec: 0.5, d14: 0.5, d7: 0.6, plan: 0.75 },
+        "COB CZA": { obj: 90, real: 85.0, avance: "95.0%", mreal: 6.1, mnec: 0.5, d14: 6.2, d7: 6.5, plan: 6.5 },
+        "COB PREMIUM": { obj: 32, real: 30.0, avance: "94.0%", mreal: 2.1, mnec: 0.2, d14: 2.2, d7: 2.4, plan: 2.5 },
+        "COB UNG": { obj: 45, real: 42.0, avance: "93.0%", mreal: 3.0, mnec: 0.3, d14: 3.1, d7: 3.3, plan: 3 },
+        "COB LATONES": { obj: 38, real: 35.0, avance: "94.0%", mreal: 2.5, mnec: 0.3, d14: 2.6, d7: 2.8, plan: 3 },
+        "LATONES": { obj: 0, real: 21.0, avance: "95.0%", mreal: 1.5, mnec: 1.6, d14: 1.2, d7: 1.3, plan: 2 },
+        "TOP": { obj: 0, real: 6.0, avance: "90.0%", mreal: 0.4, mnec: 0.5, d14: 0.3, d7: 0.4, plan: 0.5 },
+        "CORE + VALUE": { obj: 370, real: 220.0, avance: "97.0%", mreal: 15.7, mnec: 15.0, d14: 2.8, d7: 3.0, plan: 16 },
+        "PREMIUM": { obj: 81, real: 52.1, avance: "98.0%", mreal: 3.7, mnec: 2.9, d14: 0.6, d7: 0.7, plan: 3 },
+        "BALANCED CHOICES": { obj: 0, real: 3.0, avance: "90.0%", mreal: 0.2, mnec: 0.3, d14: 0.2, d7: 0.2, plan: 0.5 }
+      }
+    },
+    { pv: 2, nombre: "RODRIGO D´URSO PAEZ", sv: "ANTUAL PAULA", estado: "Aprobado",
+      kpis: {
+        "CVZ CMQ": { obj: 141, real: 89.2, avance: "92.0%", mreal: 6.4, mnec: 5.2, d14: 1.4, d7: 0.0, plan: 6 },
+        "UNG": { obj: 45, real: 30.0, avance: "95.0%", mreal: 2.1, mnec: 1.5, d14: 1.7, d7: 1.8, plan: 2 },
+        "COB MICHELOB": { obj: 8, real: 6.0, avance: "107.0%", mreal: 0.4, mnec: 0.2, d14: 0.3, d7: 0.3, plan: 0.5 },
+        "COB PURE GOLD": { obj: 5, real: 3.0, avance: "85.0%", mreal: 0.2, mnec: 0.2, d14: 0.2, d7: 0.2, plan: 0.25 },
+        "COB CZA": { obj: 35, real: 32.0, avance: "94.0%", mreal: 2.3, mnec: 0.3, d14: 2.4, d7: 2.5, plan: 2.5 },
+        "COB PREMIUM": { obj: 15, real: 14.0, avance: "95.0%", mreal: 1.0, mnec: 0.1, d14: 1.0, d7: 1.1, plan: 1 },
+        "COB UNG": { obj: 20, real: 18.0, avance: "93.0%", mreal: 1.3, mnec: 0.2, d14: 1.4, d7: 1.5, plan: 1.5 },
+        "COB LATONES": { obj: 18, real: 16.0, avance: "94.0%", mreal: 1.1, mnec: 0.2, d14: 1.2, d7: 1.3, plan: 1.5 },
+        "LATONES": { obj: 0, real: 8.0, avance: "90.0%", mreal: 0.6, mnec: 0.7, d14: 0.5, d7: 0.0, plan: 1 },
+        "TOP": { obj: 0, real: 2.0, avance: "85.0%", mreal: 0.1, mnec: 0.2, d14: 0.1, d7: 0.0, plan: 0.25 },
+        "CORE + VALUE": { obj: 115, real: 72.0, avance: "91.0%", mreal: 5.1, mnec: 4.3, d14: 1.0, d7: 0.0, plan: 5 },
+        "PREMIUM": { obj: 26, real: 17.2, avance: "94.0%", mreal: 1.2, mnec: 0.9, d14: 0.4, d7: 0.0, plan: 1 },
+        "BALANCED CHOICES": { obj: 0, real: 1.0, avance: "80.0%", mreal: 0.1, mnec: 0.1, d14: 0.1, d7: 0.0, plan: 0.25 }
+      }
+    },
+    { pv: 95, nombre: "VE EVENTOS", sv: "ANTUAL PAULA", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 10, real: 1.4, avance: "20.0%", mreal: 0.1, mnec: 0.9, d14: 0.0, d7: 0.0, plan: 0.5 },
+        "UNG": { obj: 5, real: 1.0, avance: "28.0%", mreal: 0.07, mnec: 0.4, d14: 0.1, d7: 0.1, plan: 0.25 },
+        "COB MICHELOB": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "COB PURE GOLD": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "COB CZA": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "COB PREMIUM": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "COB UNG": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "COB LATONES": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "LATONES": { obj: 0, real: 0.5, avance: "30.0%", mreal: 0.04, mnec: 0.1, d14: 0.0, d7: 0.0, plan: 0.25 },
+        "TOP": { obj: 0, real: 0.2, avance: "20.0%", mreal: 0.01, mnec: 0.1, d14: 0.0, d7: 0.0, plan: 0 },
+        "CORE + VALUE": { obj: 8, real: 1.0, avance: "20.0%", mreal: 0.07, mnec: 0.7, d14: 0.0, d7: 0.0, plan: 0.25 },
+        "PREMIUM": { obj: 2, real: 0.4, avance: "25.0%", mreal: 0.03, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
+        "BALANCED CHOICES": { obj: 0, real: 0.1, avance: "20.0%", mreal: 0.01, mnec: 0.1, d14: 0.0, d7: 0.0, plan: 0 }
+      }
+    },
+
+    // SECO ROBERTO ENRIQUE SV (MAYORISTA)
+    { pv: 20, nombre: "MELINAO LUCAS", sv: "SECO ROBERTO ENRIQUE SV", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 825, real: 491.5, avance: "85.0%", mreal: 35.1, mnec: 33.4, d14: 8.7, d7: 25.3, plan: 35 },
+        "UNG": { obj: 260, real: 160.0, avance: "88.0%", mreal: 11.4, mnec: 10.0, d14: 10.0, d7: 10.5, plan: 11 },
+        "COB MICHELOB": { obj: 40, real: 25.0, avance: "89.0%", mreal: 1.7, mnec: 1.5, d14: 1.5, d7: 1.6, plan: 2 },
+        "COB PURE GOLD": { obj: 25, real: 15.0, avance: "85.0%", mreal: 1.0, mnec: 1.0, d14: 0.9, d7: 1.0, plan: 1 },
+        "COB CZA": { obj: 150, real: 135.0, avance: "91.0%", mreal: 9.6, mnec: 1.5, d14: 9.8, d7: 10.0, plan: 10 },
+        "COB PREMIUM": { obj: 55, real: 48.0, avance: "89.0%", mreal: 3.4, mnec: 0.7, d14: 3.5, d7: 3.8, plan: 3.5 },
+        "COB UNG": { obj: 75, real: 66.0, avance: "88.0%", mreal: 4.7, mnec: 0.9, d14: 5.0, d7: 5.2, plan: 5 },
+        "COB LATONES": { obj: 65, real: 58.0, avance: "90.0%", mreal: 4.1, mnec: 0.7, d14: 4.3, d7: 4.5, plan: 4.5 },
+        "LATONES": { obj: 0, real: 40.0, avance: "90.0%", mreal: 2.9, mnec: 3.2, d14: 2.5, d7: 2.8, plan: 3.5 },
+        "TOP": { obj: 0, real: 12.0, avance: "85.0%", mreal: 0.9, mnec: 1.0, d14: 0.8, d7: 0.9, plan: 1.5 },
+        "CORE + VALUE": { obj: 680, real: 400.0, avance: "84.0%", mreal: 28.6, mnec: 28.0, d14: 7.0, d7: 21.0, plan: 30 },
+        "PREMIUM": { obj: 145, real: 91.5, avance: "88.0%", mreal: 6.5, mnec: 5.4, d14: 1.7, d7: 4.3, plan: 6 },
+        "BALANCED CHOICES": { obj: 0, real: 6.0, avance: "85.0%", mreal: 0.4, mnec: 0.5, d14: 0.4, d7: 0.4, plan: 0.5 }
+      }
+    },
+    { pv: 19, nombre: "GOMEZ RAUL ALEJANDRO", sv: "SECO ROBERTO ENRIQUE SV", estado: "Enviado",
+      kpis: {
+        "CVZ CMQ": { obj: 1015, real: 625.6, avance: "87.0%", mreal: 44.7, mnec: 38.9, d14: 18.3, d7: 0.0, plan: 42 },
+        "UNG": { obj: 330, real: 210.0, avance: "90.0%", mreal: 15.0, mnec: 12.0, d14: 12.5, d7: 13.0, plan: 14 },
+        "COB MICHELOB": { obj: 55, real: 36.0, avance: "93.0%", mreal: 2.5, mnec: 1.9, d14: 2.1, d7: 2.2, plan: 2.5 },
+        "COB PURE GOLD": { obj: 35, real: 21.0, avance: "85.0%", mreal: 1.5, mnec: 1.4, d14: 1.3, d7: 1.4, plan: 1.5 },
+        "COB CZA": { obj: 180, real: 160.0, avance: "90.0%", mreal: 11.4, mnec: 2.0, d14: 11.5, d7: 12.0, plan: 12 },
+        "COB PREMIUM": { obj: 65, real: 58.0, avance: "90.0%", mreal: 4.1, mnec: 0.7, d14: 4.2, d7: 4.5, plan: 4.5 },
+        "COB UNG": { obj: 90, real: 80.0, avance: "89.0%", mreal: 5.7, mnec: 1.0, d14: 6.0, d7: 6.2, plan: 6 },
+        "COB LATONES": { obj: 80, real: 72.0, avance: "91.0%", mreal: 5.1, mnec: 0.8, d14: 5.2, d7: 5.5, plan: 5 },
+        "LATONES": { obj: 0, real: 50.0, avance: "92.0%", mreal: 3.6, mnec: 3.8, d14: 3.0, d7: 0.0, plan: 4 },
+        "TOP": { obj: 0, real: 15.0, avance: "88.0%", mreal: 1.1, mnec: 1.2, d14: 1.0, d7: 0.0, plan: 1.5 },
+        "CORE + VALUE": { obj: 840, real: 510.0, avance: "86.5%", mreal: 36.4, mnec: 33.0, d14: 15.0, d7: 0.0, plan: 35 },
+        "PREMIUM": { obj: 175, real: 115.6, avance: "89.0%", mreal: 8.3, mnec: 5.9, d14: 3.3, d7: 0.0, plan: 7 },
+        "BALANCED CHOICES": { obj: 0, real: 8.0, avance: "85.0%", mreal: 0.6, mnec: 0.7, d14: 0.5, d7: 0.0, plan: 1 }
+      }
+    },
+    { pv: 6, nombre: "SECO ROBERTO ENRIQUE SV", sv: "SECO ROBERTO ENRIQUE SV", estado: "Aprobado",
+      kpis: {
+        "CVZ CMQ": { obj: 3058, real: 1276.6, avance: "71.6%", mreal: 91.2, mnec: 178.1, d14: 0.0, d7: 24.0, plan: 120 },
+        "UNG": { obj: 950, real: 480.0, avance: "72.0%", mreal: 34.2, mnec: 47.0, d14: 35.0, d7: 38.0, plan: 45 },
+        "COB MICHELOB": { obj: 120, real: 70.0, avance: "83.0%", mreal: 5.0, mnec: 5.0, d14: 4.8, d7: 4.5, plan: 5 },
+        "COB PURE GOLD": { obj: 80, real: 42.0, avance: "75.0%", mreal: 3.0, mnec: 3.8, d14: 3.0, d7: 3.2, plan: 3.5 },
+        "COB CZA": { obj: 250, real: 190.0, avance: "76.0%", mreal: 13.5, mnec: 6.0, d14: 14.0, d7: 15.0, plan: 15 },
+        "COB PREMIUM": { obj: 90, real: 65.0, avance: "74.0%", mreal: 4.6, mnec: 2.5, d14: 4.8, d7: 5.0, plan: 5 },
+        "COB UNG": { obj: 120, real: 90.0, avance: "75.0%", mreal: 6.4, mnec: 3.0, d14: 6.8, d7: 7.0, plan: 7 },
+        "COB LATONES": { obj: 100, real: 78.0, avance: "78.0%", mreal: 5.5, mnec: 2.2, d14: 5.8, d7: 6.0, plan: 6 },
+        "LATONES": { obj: 0, real: 110.0, avance: "70.0%", mreal: 7.9, mnec: 12.0, d14: 0.0, d7: 5.0, plan: 10 },
+        "TOP": { obj: 0, real: 30.0, avance: "65.0%", mreal: 2.1, mnec: 3.5, d14: 0.0, d7: 1.5, plan: 3 },
+        "CORE + VALUE": { obj: 2500, real: 1050.0, avance: "60.0%", mreal: 75.0, mnec: 145.0, d14: 0.0, d7: 20.0, plan: 100 },
+        "PREMIUM": { obj: 558, real: 226.6, avance: "60.0%", mreal: 16.2, mnec: 33.1, d14: 0.0, d7: 4.0, plan: 20 },
+        "BALANCED CHOICES": { obj: 0, real: 15.0, avance: "65.0%", mreal: 1.1, mnec: 2.0, d14: 0.0, d7: 1.0, plan: 2 }
+      }
+    }
+  ]
+};
+
+async function inicializarDatos() {
+  try {
+    const res = await fetch('./datos_matinal.json');
+    if (res.ok) {
+      DATA_COMPLETA = await res.json();
+    } else {
+      const local = localStorage.getItem('MATINAL_DATA_V4');
+      if (local) DATA_COMPLETA = JSON.parse(local);
+    }
+  } catch (e) {
+    const local = localStorage.getItem('MATINAL_DATA_V4');
+    if (local) DATA_COMPLETA = JSON.parse(local);
+  }
+
+  document.getElementById('kpiSelect1').value = DATA_COMPLETA.kpis_elegibles[0] || "COB MICHELOB";
+  document.getElementById('kpiSelect2').value = DATA_COMPLETA.kpis_elegibles[1] || "COB PURE GOLD";
+
+  onRoleChange();
+}
+
+function persistirDatos() {
+  localStorage.setItem('MATINAL_DATA_V4', JSON.stringify(DATA_COMPLETA));
+}
+
+function cambiarKpisElegibles() {
+  const k1 = document.getElementById('kpiSelect1').value;
+  const k2 = document.getElementById('kpiSelect2').value;
+  DATA_COMPLETA.kpis_elegibles = [k1, k2];
+  persistirDatos();
+  renderCurrentView();
+}
+
+function onRoleChange() {
+  const rol = document.getElementById('roleSelect').value;
+  const userSelect = document.getElementById('userSelect');
+  const userContainer = document.getElementById('userSelectContainer');
+  const userLabel = document.getElementById('userSelectLabel');
+  userSelect.innerHTML = '';
+
+  if (rol === 'vendedor') {
+    userContainer.classList.remove('d-none');
+    userLabel.innerHTML = '<i class="bi bi-person me-1"></i> Vendedor';
+    DATA_COMPLETA.vendedores.forEach(v => {
+      let opt = document.createElement('option');
+      opt.value = v.pv;
+      opt.textContent = `${v.pv} - ${v.nombre}`;
+      userSelect.appendChild(opt);
+    });
+  } else if (rol === 'supervisor') {
+    userContainer.classList.remove('d-none');
+    userLabel.innerHTML = '<i class="bi bi-people me-1"></i> Mesa SV';
+    SUPERVISORES_LIST.forEach(s => {
+      let opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      userSelect.appendChild(opt);
+    });
+  } else {
+    userContainer.classList.add('d-none');
+  }
+
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  const rol = document.getElementById('roleSelect').value;
+  document.getElementById('viewVendedor').classList.add('d-none');
+  document.getElementById('viewSupervisor').classList.add('d-none');
+  document.getElementById('viewJefe').classList.add('d-none');
+  document.getElementById('viewAnalista').classList.add('d-none');
+
+  if (rol === 'vendedor') {
+    document.getElementById('viewVendedor').classList.remove('d-none');
+    renderVendedorView();
+  } else if (rol === 'supervisor') {
+    document.getElementById('viewSupervisor').classList.remove('d-none');
+    renderSupervisorView();
+  } else if (rol === 'jefe') {
+    document.getElementById('viewJefe').classList.remove('d-none');
+    renderJefeView();
+  } else if (rol === 'analista') {
+    document.getElementById('viewAnalista').classList.remove('d-none');
+    renderAnalistaView();
+  }
+}
+
+function getKpiData(vend, kpiNombre) {
+  if (vend.kpis && vend.kpis[kpiNombre]) {
+    return vend.kpis[kpiNombre];
+  }
+  return { obj: 0, real: 0, avance: "0.0%", mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+}
+
+// ----------------------------------------------------
+// 1. VISTA VENDEDOR
+// ----------------------------------------------------
+function renderVendedorView() {
+  const pv = parseInt(document.getElementById('userSelect').value);
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+
+  document.getElementById('vendNombreTitle').textContent = vend.nombre;
+  document.getElementById('vendIdTag').textContent = `Punto de Venta / ID: ${vend.pv}`;
+  document.getElementById('vendMesaTag').textContent = `Mesa: ${vend.sv}`;
+
+  const badge = document.getElementById('vendEstadoBadge');
+  badge.textContent = vend.estado;
+  badge.className = `badge-adv ${vend.estado === 'Aprobado' ? 'bg-success text-white' : vend.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}`;
+
+  // 1. CZA (Fijo)
+  const dCvz = getKpiData(vend, "CVZ CMQ");
+  document.getElementById('vAvanceCvz').textContent = `% Avance: ${dCvz.avance}`;
+  document.getElementById('vObjCvz').textContent = dCvz.obj;
+  document.getElementById('vRealCvz').textContent = dCvz.real;
+  document.getElementById('vMrealCvz').textContent = dCvz.mreal.toFixed(1);
+  document.getElementById('vMnecCvz').textContent = dCvz.mnec.toFixed(1);
+  document.getElementById('vD14Cvz').textContent = dCvz.d14.toFixed(1);
+  document.getElementById('vD7Cvz').textContent = dCvz.d7.toFixed(1);
+  document.getElementById('vInpPlanCvz').value = dCvz.plan || '';
+
+  // 2. UNG (Fijo)
+  const dUng = getKpiData(vend, "UNG");
+  document.getElementById('vAvanceUng').textContent = `% Avance: ${dUng.avance}`;
+  document.getElementById('vObjUng').textContent = dUng.obj;
+  document.getElementById('vRealUng').textContent = dUng.real;
+  document.getElementById('vMrealUng').textContent = dUng.mreal.toFixed(1);
+  document.getElementById('vMnecUng').textContent = dUng.mnec.toFixed(1);
+  document.getElementById('vD14Ung').textContent = dUng.d14.toFixed(1);
+  document.getElementById('vD7Ung').textContent = dUng.d7.toFixed(1);
+  document.getElementById('vInpPlanUng').value = dUng.plan || '';
+
+  // 3. Elegible 1
+  const dSel1 = getKpiData(vend, sel1);
+  document.getElementById('vCardTitleSel1').textContent = sel1;
+  document.getElementById('vAvanceSel1').textContent = `% Avance: ${dSel1.avance}`;
+  document.getElementById('vObjSel1').textContent = dSel1.obj;
+  document.getElementById('vRealSel1').textContent = dSel1.real;
+  document.getElementById('vMrealSel1').textContent = dSel1.mreal.toFixed(1);
+  document.getElementById('vMnecSel1').textContent = dSel1.mnec.toFixed(1);
+  document.getElementById('vD14Sel1').textContent = dSel1.d14.toFixed(1);
+  document.getElementById('vD7Sel1').textContent = dSel1.d7.toFixed(1);
+  document.getElementById('vInpPlanSel1').value = dSel1.plan || '';
+
+  // 4. Elegible 2
+  const dSel2 = getKpiData(vend, sel2);
+  document.getElementById('vCardTitleSel2').textContent = sel2;
+  document.getElementById('vAvanceSel2').textContent = `% Avance: ${dSel2.avance}`;
+  document.getElementById('vObjSel2').textContent = dSel2.obj;
+  document.getElementById('vRealSel2').textContent = dSel2.real;
+  document.getElementById('vMrealSel2').textContent = dSel2.mreal.toFixed(1);
+  document.getElementById('vMnecSel2').textContent = dSel2.mnec.toFixed(1);
+  document.getElementById('vD14Sel2').textContent = dSel2.d14.toFixed(1);
+  document.getElementById('vD7Sel2').textContent = dSel2.d7.toFixed(1);
+  document.getElementById('vInpPlanSel2').value = dSel2.plan || '';
+
+  evaluarGap('Cvz', 'CVZ CMQ');
+  evaluarGap('Ung', 'UNG');
+  evaluarGapDinamico(1);
+  evaluarGapDinamico(2);
+}
+
+function evaluarGap(tag, kpiNombre) {
+  const pv = parseInt(document.getElementById('userSelect').value);
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+
+  const d = getKpiData(vend, kpiNombre);
+  const inp = document.getElementById(`vInpPlan${tag}`);
+  const val = parseFloat(inp.value) || 0;
+  const lbl = document.getElementById(`vGap${tag}`);
+
+  if (val >= d.mnec) {
+    lbl.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill"></i> Cubre la Media (+${(val - d.mnec).toFixed(1)})</span>`;
+    inp.classList.remove('is-invalid');
+    inp.classList.add('is-valid');
+  } else {
+    lbl.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Falta ${(d.mnec - val).toFixed(1)} para Med.Nec</span>`;
+    inp.classList.remove('is-valid');
+    inp.classList.add('is-invalid');
+  }
+}
+
+function evaluarGapDinamico(num) {
+  const kpiNombre = DATA_COMPLETA.kpis_elegibles[num - 1];
+  evaluarGap(`Sel${num}`, kpiNombre);
+}
+
+function guardarVendedor() {
+  const pv = parseInt(document.getElementById('userSelect').value);
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+  vend.kpis["CVZ CMQ"].plan = parseFloat(document.getElementById('vInpPlanCvz').value) || 0;
+  vend.kpis["UNG"].plan = parseFloat(document.getElementById('vInpPlanUng').value) || 0;
+  vend.kpis[sel1].plan = parseFloat(document.getElementById('vInpPlanSel1').value) || 0;
+  vend.kpis[sel2].plan = parseFloat(document.getElementById('vInpPlanSel2').value) || 0;
+  vend.estado = "Enviado";
+
+  persistirDatos();
+  alert(`¡Planificación de ${vend.nombre} guardada y enviada!`);
+  renderVendedorView();
+}
+
+// ----------------------------------------------------
+// 2. VISTA SUPERVISOR (Con el % de avance oficial de mesa)
+// ----------------------------------------------------
+function renderSupervisorView() {
+  const sv = document.getElementById('userSelect').value;
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+
+  document.getElementById('supMesaTitle').textContent = `Mesa: ${sv}`;
+  document.getElementById('thSupSel1').textContent = sel1;
+  document.getElementById('thSupSel2').textContent = sel2;
+
+  // Actualizar Cards de Avance de la Mesa Oficial
+  const avMesa = AVANCES_OFICIALES_SUPERVISOR[sv] || {};
+  const avanceMesaCvz = avMesa["CVZ CMQ"] || "-";
+  const avanceMesaUng = avMesa["UNG"] || "-";
+  const avanceMesaSel1 = avMesa[sel1] || "-";
+  const avanceMesaSel2 = avMesa[sel2] || "-";
+
+  document.getElementById('supMesaAvanceCvz').textContent = avanceMesaCvz;
+  document.getElementById('supMesaAvanceUng').textContent = avanceMesaUng;
+  document.getElementById('supMesaLabelSel1').textContent = `Avance Mesa ${sel1}`;
+  document.getElementById('supMesaAvanceSel1').textContent = avanceMesaSel1;
+  document.getElementById('supMesaLabelSel2').textContent = `Avance Mesa ${sel2}`;
+  document.getElementById('supMesaAvanceSel2').textContent = avanceMesaSel2;
+
+  const filtrados = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+  const tbody = document.getElementById('supTableBody');
+  tbody.innerHTML = '';
+
+  let totCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let totUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let totSel1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let totSel2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+
+  filtrados.forEach(v => {
+    const dCvz = getKpiData(v, "CVZ CMQ");
+    const dUng = getKpiData(v, "UNG");
+    const dS1 = getKpiData(v, sel1);
+    const dS2 = getKpiData(v, sel2);
+
+    totCvz.mreal += dCvz.mreal; totCvz.mnec += dCvz.mnec; totCvz.d14 += dCvz.d14; totCvz.d7 += dCvz.d7; totCvz.plan += dCvz.plan;
+    totUng.mreal += dUng.mreal; totUng.mnec += dUng.mnec; totUng.d14 += dUng.d14; totUng.d7 += dUng.d7; totUng.plan += dUng.plan;
+    totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan;
+    totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-start fw-semibold">
+        ${v.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${v.pv}</small>
+      </td>
+      <td>
+        <span class="badge-adv ${v.estado === 'Aprobado' ? 'bg-success text-white' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">
+          ${v.estado}
+        </span>
+      </td>
+
+      <!-- CZA -->
+      <td class="fw-semibold text-primary">${dCvz.avance}</td>
+      <td class="text-secondary">${dCvz.mreal.toFixed(1)}</td>
+      <td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td>
+      <td>${dCvz.d14.toFixed(1)}</td>
+      <td>${dCvz.d7.toFixed(1)}</td>
+      <td class="${dCvz.plan < dCvz.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}">
+        <input type="number" step="0.25" class="input-plan-cell" value="${dCvz.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'CVZ CMQ', this.value)">
+      </td>
+
+      <!-- UNG -->
+      <td class="fw-semibold text-success">${dUng.avance}</td>
+      <td class="text-secondary">${dUng.mreal.toFixed(1)}</td>
+      <td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td>
+      <td>${dUng.d14.toFixed(1)}</td>
+      <td>${dUng.d7.toFixed(1)}</td>
+      <td class="${dUng.plan < dUng.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}">
+        <input type="number" step="0.25" class="input-plan-cell" value="${dUng.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'UNG', this.value)">
+      </td>
+
+      <!-- SEL 1 -->
+      <td class="fw-semibold text-warning text-dark">${dS1.avance}</td>
+      <td class="text-secondary">${dS1.mreal.toFixed(1)}</td>
+      <td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td>
+      <td>${dS1.d14.toFixed(1)}</td>
+      <td>${dS1.d7.toFixed(1)}</td>
+      <td class="${dS1.plan < dS1.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}">
+        <input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)">
+      </td>
+
+      <!-- SEL 2 -->
+      <td class="fw-semibold text-info text-dark">${dS2.avance}</td>
+      <td class="text-secondary">${dS2.mreal.toFixed(1)}</td>
+      <td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td>
+      <td>${dS2.d14.toFixed(1)}</td>
+      <td>${dS2.d7.toFixed(1)}</td>
+      <td class="${dS2.plan < dS2.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}">
+        <input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)">
+      </td>
+
+      <td>
+        <button class="btn btn-sm btn-outline-success py-0 px-2" title="Aprobar" onclick="aprobarVendedorMesa(${v.pv})">
+          <i class="bi bi-check-lg"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Fila TOTAL MESA: MUESTRA EL % AVANCE OFICIAL DE LA MESA
+  document.getElementById('supTableFoot').innerHTML = `
+    <tr>
+      <td class="text-start">TOTAL MESA</td>
+      <td>-</td>
+      <!-- CZA MESA -->
+      <td class="text-warning fw-bold">${avanceMesaCvz}</td>
+      <td>${totCvz.mreal.toFixed(1)}</td>
+      <td class="text-danger">${totCvz.mnec.toFixed(1)}</td>
+      <td>${totCvz.d14.toFixed(1)}</td>
+      <td>${totCvz.d7.toFixed(1)}</td>
+      <td class="${totCvz.plan < totCvz.mnec ? 'text-danger' : 'text-success'}">${totCvz.plan.toFixed(1)}</td>
+
+      <!-- UNG MESA -->
+      <td class="text-warning fw-bold">${avanceMesaUng}</td>
+      <td>${totUng.mreal.toFixed(1)}</td>
+      <td class="text-danger">${totUng.mnec.toFixed(1)}</td>
+      <td>${totUng.d14.toFixed(1)}</td>
+      <td>${totUng.d7.toFixed(1)}</td>
+      <td class="${totUng.plan < totUng.mnec ? 'text-danger' : 'text-success'}">${totUng.plan.toFixed(1)}</td>
+
+      <!-- SEL 1 MESA -->
+      <td class="text-warning fw-bold">${avanceMesaSel1}</td>
+      <td>${totSel1.mreal.toFixed(1)}</td>
+      <td class="text-danger">${totSel1.mnec.toFixed(1)}</td>
+      <td>${totSel1.d14.toFixed(1)}</td>
+      <td>${totSel1.d7.toFixed(1)}</td>
+      <td class="${totSel1.plan < totSel1.mnec ? 'text-danger' : 'text-success'}">${totSel1.plan.toFixed(1)}</td>
+
+      <!-- SEL 2 MESA -->
+      <td class="text-warning fw-bold">${avanceMesaSel2}</td>
+      <td>${totSel2.mreal.toFixed(1)}</td>
+      <td class="text-danger">${totSel2.mnec.toFixed(1)}</td>
+      <td>${totSel2.d14.toFixed(1)}</td>
+      <td>${totSel2.d7.toFixed(1)}</td>
+      <td class="${totSel2.plan < totSel2.mnec ? 'text-danger' : 'text-success'}">${totSel2.plan.toFixed(1)}</td>
+      <td>-</td>
+    </tr>
+  `;
+}
+
+function cambiarPlanSupervisor(pv, kpi, val) {
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+  vend.kpis[kpi].plan = parseFloat(val) || 0;
+  persistirDatos();
+  renderSupervisorView();
+}
+
+function aprobarVendedorMesa(pv) {
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (vend) {
+    vend.estado = "Aprobado";
+    persistirDatos();
+    renderSupervisorView();
+  }
+}
+
+function exigirMediasSupervisor() {
+  const sv = document.getElementById('userSelect').value;
+  const kpisActivos = ["CVZ CMQ", "UNG", ...DATA_COMPLETA.kpis_elegibles];
+
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => {
+    kpisActivos.forEach(k => {
+      const d = v.kpis[k];
+      if (d && d.plan < d.mnec) {
+        d.plan = Math.ceil(d.mnec * 4) / 4;
+      }
+    });
+    v.estado = "Aprobado";
+  });
+  persistirDatos();
+  renderSupervisorView();
+}
+
+function aprobarMesaSupervisor() {
+  const sv = document.getElementById('userSelect').value;
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => v.estado = "Aprobado");
+  persistirDatos();
+  renderSupervisorView();
+}
+
+// ----------------------------------------------------
+// 3. VISTA JEFE DE VENTAS
+// ----------------------------------------------------
+function renderJefeView() {
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+  document.getElementById('thJefeSel1').textContent = sel1;
+  document.getElementById('thJefeSel2').textContent = sel2;
+
+  const tbody = document.getElementById('jefeTableBody');
+  tbody.innerHTML = '';
+
+  let grandCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let grandUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let grandS1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let grandS2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+
+  SUPERVISORES_LIST.forEach(sv => {
+    const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+    let sCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+    let sUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+    let sS1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+    let sS2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+    let aprobados = 0;
+
+    vends.forEach(v => {
+      const dCvz = getKpiData(v, "CVZ CMQ");
+      const dUng = getKpiData(v, "UNG");
+      const d1 = getKpiData(v, sel1);
+      const d2 = getKpiData(v, sel2);
+
+      sCvz.mreal += dCvz.mreal; sCvz.mnec += dCvz.mnec; sCvz.d14 += dCvz.d14; sCvz.d7 += dCvz.d7; sCvz.plan += dCvz.plan;
+      sUng.mreal += dUng.mreal; sUng.mnec += dUng.mnec; sUng.d14 += dUng.d14; sUng.d7 += dUng.d7; sUng.plan += dUng.plan;
+      sS1.mreal += d1.mreal; sS1.mnec += d1.mnec; sS1.d14 += d1.d14; sS1.d7 += d1.d7; sS1.plan += d1.plan;
+      sS2.mreal += d2.mreal; sS2.mnec += d2.mnec; sS2.d14 += d2.d14; sS2.d7 += d2.d7; sS2.plan += d2.plan;
+
+      if (v.estado === 'Aprobado') aprobados++;
+    });
+
+    grandCvz.mreal += sCvz.mreal; grandCvz.mnec += sCvz.mnec; grandCvz.d14 += sCvz.d14; grandCvz.d7 += sCvz.d7; grandCvz.plan += sCvz.plan;
+    grandUng.mreal += sUng.mreal; grandUng.mnec += sUng.mnec; grandUng.d14 += sUng.d14; grandUng.d7 += sUng.d7; grandUng.plan += sUng.plan;
+    grandS1.mreal += sS1.mreal; grandS1.mnec += sS1.mnec; grandS1.d14 += sS1.d14; grandS1.d7 += sS1.d7; grandS1.plan += sS1.plan;
+    grandS2.mreal += sS2.mreal; grandS2.mnec += sS2.mnec; grandS2.d14 += sS2.d14; grandS2.d7 += sS2.d7; grandS2.plan += sS2.plan;
+
+    const avMesa = AVANCES_OFICIALES_SUPERVISOR[sv] || {};
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-start fw-bold text-primary">${sv}</td>
+      <td><span class="badge ${aprobados === vends.length ? 'bg-success' : 'bg-warning text-dark'}">${aprobados}/${vends.length} Aprob</span></td>
+      
+      <!-- CZA -->
+      <td class="fw-bold text-primary">${avMesa["CVZ CMQ"] || "-"}</td>
+      <td>${sCvz.mreal.toFixed(1)}</td><td class="text-danger">${sCvz.mnec.toFixed(1)}</td><td>${sCvz.d14.toFixed(1)}</td><td>${sCvz.d7.toFixed(1)}</td>
+      <td class="fw-bold ${sCvz.plan < sCvz.mnec ? 'text-danger' : 'text-success'}">${sCvz.plan.toFixed(1)}</td>
+
+      <!-- UNG -->
+      <td class="fw-bold text-success">${avMesa["UNG"] || "-"}</td>
+      <td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td>
+      <td class="fw-bold ${sUng.plan < sUng.mnec ? 'text-danger' : 'text-success'}">${sUng.plan.toFixed(1)}</td>
+
+      <!-- SEL 1 -->
+      <td class="fw-bold text-warning text-dark">${avMesa[sel1] || "-"}</td>
+      <td>${sS1.mreal.toFixed(1)}</td><td class="text-danger">${sS1.mnec.toFixed(1)}</td><td>${sS1.d14.toFixed(1)}</td><td>${sS1.d7.toFixed(1)}</td>
+      <td class="fw-bold ${sS1.plan < sS1.mnec ? 'text-danger' : 'text-success'}">${sS1.plan.toFixed(1)}</td>
+
+      <!-- SEL 2 -->
+      <td class="fw-bold text-info text-dark">${avMesa[sel2] || "-"}</td>
+      <td>${sS2.mreal.toFixed(1)}</td><td class="text-danger">${sS2.mnec.toFixed(1)}</td><td>${sS2.d14.toFixed(1)}</td><td>${sS2.d7.toFixed(1)}</td>
+      <td class="fw-bold ${sS2.plan < sS2.mnec ? 'text-danger' : 'text-success'}">${sS2.plan.toFixed(1)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('jefeTableFoot').innerHTML = `
+    <tr>
+      <td class="text-start">TOTAL EMPRESA</td>
+      <td>-</td>
+      <td class="text-warning fw-bold">89.9%</td>
+      <td>${grandCvz.mreal.toFixed(1)}</td><td class="text-danger">${grandCvz.mnec.toFixed(1)}</td><td>${grandCvz.d14.toFixed(1)}</td><td>${grandCvz.d7.toFixed(1)}</td><td class="fw-bold">${grandCvz.plan.toFixed(1)}</td>
+      <td class="text-warning fw-bold">92.5%</td>
+      <td>${grandUng.mreal.toFixed(1)}</td><td class="text-danger">${grandUng.mnec.toFixed(1)}</td><td>${grandUng.d14.toFixed(1)}</td><td>${grandUng.d7.toFixed(1)}</td><td class="fw-bold">${grandUng.plan.toFixed(1)}</td>
+      <td class="text-warning fw-bold">95.0%</td>
+      <td>${grandS1.mreal.toFixed(1)}</td><td class="text-danger">${grandS1.mnec.toFixed(1)}</td><td>${grandS1.d14.toFixed(1)}</td><td>${grandS1.d7.toFixed(1)}</td><td class="fw-bold">${grandS1.plan.toFixed(1)}</td>
+      <td class="text-warning fw-bold">91.0%</td>
+      <td>${grandS2.mreal.toFixed(1)}</td><td class="text-danger">${grandS2.mnec.toFixed(1)}</td><td>${grandS2.d14.toFixed(1)}</td><td>${grandS2.d7.toFixed(1)}</td><td class="fw-bold">${grandS2.plan.toFixed(1)}</td>
+    </tr>
+  `;
+}
+
+// ----------------------------------------------------
+// 4. VISTA ANALISTA (Matriz Completa y Exportación)
+// ----------------------------------------------------
+function renderAnalistaView() {
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+  document.getElementById('thAnSel1').textContent = sel1;
+  document.getElementById('thAnSel2').textContent = sel2;
+
+  const tbody = document.getElementById('analistaTableBody');
+  tbody.innerHTML = '';
+
+  DATA_COMPLETA.vendedores.forEach(v => {
+    const dCvz = getKpiData(v, "CVZ CMQ");
+    const dUng = getKpiData(v, "UNG");
+    const d1 = getKpiData(v, sel1);
+    const d2 = getKpiData(v, sel2);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-start fw-bold">${v.pv}</td>
+      <td class="text-start">${v.nombre}</td>
+      <td class="text-start text-muted">${v.sv}</td>
+      <td><span class="badge ${v.estado === 'Aprobado' ? 'bg-success' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
+      
+      <!-- CZA -->
+      <td class="text-primary fw-semibold">${dCvz.avance}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="fw-bold text-primary">${dCvz.plan}</td>
+
+      <!-- UNG -->
+      <td class="text-success fw-semibold">${dUng.avance}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="fw-bold text-success">${dUng.plan}</td>
+
+      <!-- SEL 1 -->
+      <td class="text-warning text-dark fw-semibold">${d1.avance}</td><td>${d1.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${d1.mnec.toFixed(1)}</td><td>${d1.d14.toFixed(1)}</td><td>${d1.d7.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${d1.plan}</td>
+
+      <!-- SEL 2 -->
+      <td class="text-info text-dark fw-semibold">${d2.avance}</td><td>${d2.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${d2.mnec.toFixed(1)}</td><td>${d2.d14.toFixed(1)}</td><td>${d2.d7.toFixed(1)}</td><td class="fw-bold text-info text-dark">${d2.plan}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function procesarArchivoExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames.includes('AD') ? 'AD' : workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      actualizarDesdeFilasAD(json);
+      document.getElementById('estadoCargaBadge').textContent = `Actualizado: ${file.name}`;
+      alert("¡Base de datos nocturna actualizada con éxito desde Excel!");
+      renderAnalistaView();
+    } catch (err) {
+      alert("Error al procesar el archivo Excel: " + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function procesarPegadoExcel() {
+  const text = document.getElementById('pasteDataInput').value.trim();
+  if (!text) {
+    alert("Pega celdas copiadas de tu hoja AD.");
+    return;
+  }
+  const lines = text.split('\n').map(l => l.split('\t'));
+  actualizarDesdeFilasAD(lines);
+  document.getElementById('pasteDataInput').value = '';
+  alert("¡Datos pegados procesados exitosamente!");
+  renderAnalistaView();
+}
+
+function actualizarDesdeFilasAD(filas) {
+  let segActual = null;
+
+  filas.forEach(row => {
+    if (!row || row.length < 5) return;
+
+    if (row[0] && String(row[0]).trim() !== '') {
+      segActual = String(row[0]).trim();
+    }
+
+    const sv = row[2];
+    const pv = parseInt(row[3]);
+    if (!pv || !SUPERVISORES_LIST.includes(sv)) return;
+
+    const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+    if (vend && segActual) {
+      if (!vend.kpis[segActual]) vend.kpis[segActual] = {};
+
+      const parseNum = val => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
+      
+      vend.kpis[segActual].obj = parseNum(row[5]);
+      vend.kpis[segActual].real = parseNum(row[6]);
+      
+      const avVal = row[8];
+      vend.kpis[segActual].avance = (typeof avVal === 'number') ? (avVal * 100).toFixed(1) + '%' : String(avVal || '0%');
+      
+      vend.kpis[segActual].mreal = parseNum(row[12]);
+      vend.kpis[segActual].mnec = parseNum(row[13]);
+      vend.kpis[segActual].d14 = parseNum(row[17]);
+      vend.kpis[segActual].d7 = parseNum(row[18]);
+      vend.kpis[segActual].plan = 0;
+      vend.estado = "Pendiente";
+    }
+  });
+
+  persistirDatos();
+}
+
+function descargarJSONGitHub() {
+  const blob = new Blob([JSON.stringify(DATA_COMPLETA, null, 2)], { type: 'application/json' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `datos_matinal.json`;
+  link.click();
+}
+
+function copiarColumnaExcel(kpiKey) {
+  let kpiNombre = kpiKey;
+  if (kpiKey === 'SEL1') kpiNombre = DATA_COMPLETA.kpis_elegibles[0];
+  if (kpiKey === 'SEL2') kpiNombre = DATA_COMPLETA.kpis_elegibles[1];
+
+  let texto = DATA_COMPLETA.vendedores.map(v => getKpiData(v, kpiNombre).plan).join("\n");
+  navigator.clipboard.writeText(texto).then(() => {
+    alert(`¡Columna de Planificación para '${kpiNombre}' copiada al portapapeles!\nPégala directo en tu planilla de Excel.`);
+  });
+}
+
+function descargarCSVAnalista() {
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+  let csv = `PV,Vendedor,Supervisor,Estado,Avance_CZA,Plan_CZA,Avance_UNG,Plan_UNG,Avance_${sel1},Plan_${sel1},Avance_${sel2},Plan_${sel2}\n`;
+
+  DATA_COMPLETA.vendedores.forEach(v => {
+    const dCvz = getKpiData(v, "CVZ CMQ");
+    const dUng = getKpiData(v, "UNG");
+    const d1 = getKpiData(v, sel1);
+    const d2 = getKpiData(v, sel2);
+    csv += `${v.pv},"${v.nombre}","${v.sv}","${v.estado}","${dCvz.avance}",${dCvz.plan},"${dUng.avance}",${dUng.plan},"${d1.avance}",${d1.plan},"${d2.avance}",${d2.plan}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Planificacion_Matinal_4KPIs_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+}
+
+inicializarDatos();
+</script>
+</body>
+</html>
