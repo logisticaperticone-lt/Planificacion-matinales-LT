@@ -88,6 +88,9 @@
     
     <!-- Selectores de Roles -->
     <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+      <span id="syncStatusBadge" class="badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center">
+        <i class="bi bi-cloud-check-fill me-1"></i> Sincronizado
+      </span>
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-white text-dark fw-semibold"><i class="bi bi-person-badge me-1"></i> Rol</span>
         <select id="roleSelect" class="form-select fw-semibold" onchange="onRoleChange()">
@@ -464,6 +467,9 @@
 
 <!-- Scripts de Operación -->
 <script>
+// URL OFICIAL DE TU GOOGLE APPS SCRIPT
+const API_URL = "https://script.google.com/macros/s/AKfycbzwe_d4BKKm5XY4yiZDV4AKoN_XZFbvbfH2d8OnZG8XKbNzSpzRoXENxiOQKvPRrNZCvA/exec";
+
 // Avances oficiales de la mesa del supervisor extraídos de AD
 const AVANCES_OFICIALES_SUPERVISOR = {
   "CORSINO PEDRO": {
@@ -940,6 +946,65 @@ async function inicializarDatos() {
   document.getElementById('kpiSelect2').value = DATA_COMPLETA.kpis_elegibles[1] || "COB PURE GOLD";
 
   onRoleChange();
+
+  // Sincronizar de inmediato con Google Sheets y mantener sondeo cada 5 segundos
+  await sincronizarDesdeGoogleSheets();
+  setInterval(sincronizarDesdeGoogleSheets, 5000);
+}
+
+// Función que lee Google Sheets y actualiza la pantalla del supervisor/jefe/analista
+async function sincronizarDesdeGoogleSheets() {
+  const badge = document.getElementById('syncStatusBadge');
+  try {
+    const res = await fetch(API_URL);
+    if (res.ok) {
+      const planificaciones = await res.json();
+      if (!Array.isArray(planificaciones)) return;
+
+      let huboCambios = false;
+
+      // El Sheet guarda el historial: procesamos de arriba a abajo para que la última entrada de cada vendedor sea la que mande
+      planificaciones.forEach(p => {
+        const vend = DATA_COMPLETA.vendedores.find(v => v.pv === parseInt(p.pv));
+        if (vend) {
+          const pCza = parseFloat(p.planCza) || 0;
+          const pUng = parseFloat(p.planUng) || 0;
+          const pK3 = parseFloat(p.planKpi3) || 0;
+          const pK4 = parseFloat(p.planKpi4) || 0;
+
+          if (vend.kpis["CVZ CMQ"].plan !== pCza) { vend.kpis["CVZ CMQ"].plan = pCza; huboCambios = true; }
+          if (vend.kpis["UNG"].plan !== pUng) { vend.kpis["UNG"].plan = pUng; huboCambios = true; }
+          if (p.kpi3 && vend.kpis[p.kpi3] && vend.kpis[p.kpi3].plan !== pK3) { vend.kpis[p.kpi3].plan = pK3; huboCambios = true; }
+          if (p.kpi4 && vend.kpis[p.kpi4] && vend.kpis[p.kpi4].plan !== pK4) { vend.kpis[p.kpi4].plan = pK4; huboCambios = true; }
+          if (vend.estado !== p.estado && p.estado) { vend.estado = p.estado; huboCambios = true; }
+        }
+      });
+
+      if (badge) {
+        badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
+        badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)';
+      }
+
+      // Si hubo datos nuevos y el usuario no está tipeando en un input, refrescar vistas
+      if (huboCambios) {
+        persistirDatos();
+        const activeEl = document.activeElement;
+        const estaEscribiendo = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+        if (!estaEscribiendo) {
+          const rol = document.getElementById('roleSelect').value;
+          if (rol === 'supervisor') renderSupervisorView();
+          else if (rol === 'jefe') renderJefeView();
+          else if (rol === 'analista') renderAnalistaView();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Sondeo Google Sheets en espera...", err);
+    if (badge) {
+      badge.className = "badge bg-secondary-subtle text-secondary border fw-semibold py-2 px-2 d-flex align-items-center";
+      badge.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Conectando...';
+    }
+  }
 }
 
 function persistirDatos() {
@@ -1111,7 +1176,7 @@ function evaluarGapDinamico(num) {
   evaluarGap(`Sel${num}`, kpiNombre);
 }
 
-function guardarVendedor() {
+async function guardarVendedor() {
   const pv = parseInt(document.getElementById('userSelect').value);
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
   if (!vend) return;
@@ -1124,8 +1189,50 @@ function guardarVendedor() {
   vend.estado = "Enviado";
 
   persistirDatos();
-  alert(`¡Planificación de ${vend.nombre} guardada y enviada!`);
   renderVendedorView();
+
+  // Actualizar estado visual de sincronización
+  const badge = document.getElementById('syncStatusBadge');
+  if (badge) {
+    badge.className = "badge bg-warning-subtle text-dark border border-warning fw-semibold py-2 px-2 d-flex align-items-center";
+    badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Enviando...';
+  }
+
+  // Enviar a Google Sheets
+  try {
+    const payload = {
+      pv: vend.pv,
+      vendedor: vend.nombre,
+      supervisor: vend.sv,
+      planCza: vend.kpis["CVZ CMQ"].plan,
+      planUng: vend.kpis["UNG"].plan,
+      kpi3: sel1,
+      planKpi3: vend.kpis[sel1].plan,
+      kpi4: sel2,
+      planKpi4: vend.kpis[sel2].plan,
+      estado: "Enviado"
+    };
+
+    // Simple request text/plain avoids CORS preflight and executes doPost in Google Apps Script
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+
+    if (badge) {
+      badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
+      badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> Guardado en Nube';
+    }
+    alert(`¡Planificación de ${vend.nombre} enviada y guardada en Google Sheets con éxito!`);
+  } catch (err) {
+    console.error("Error al enviar a Google Sheets:", err);
+    if (badge) {
+      badge.className = "badge bg-danger-subtle text-danger border border-danger fw-semibold py-2 px-2 d-flex align-items-center";
+      badge.innerHTML = '<i class="bi bi-cloud-slash-fill me-1"></i> Error de red';
+    }
+    alert(`Guardado en el dispositivo. Si no hay conexión, se reenviará automáticamente.`);
+  }
 }
 
 // ----------------------------------------------------
@@ -1280,6 +1387,7 @@ function cambiarPlanSupervisor(pv, kpi, val) {
   vend.kpis[kpi].plan = parseFloat(val) || 0;
   persistirDatos();
   renderSupervisorView();
+  enviarModificacionSupervisor(vend);
 }
 
 function aprobarVendedorMesa(pv) {
@@ -1288,6 +1396,32 @@ function aprobarVendedorMesa(pv) {
     vend.estado = "Aprobado";
     persistirDatos();
     renderSupervisorView();
+    enviarModificacionSupervisor(vend);
+  }
+}
+
+async function enviarModificacionSupervisor(vend) {
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+  const payload = {
+    pv: vend.pv,
+    vendedor: vend.nombre,
+    supervisor: vend.sv,
+    planCza: vend.kpis["CVZ CMQ"].plan,
+    planUng: vend.kpis["UNG"].plan,
+    kpi3: sel1,
+    planKpi3: vend.kpis[sel1] ? vend.kpis[sel1].plan : 0,
+    kpi4: sel2,
+    planKpi4: vend.kpis[sel2] ? vend.kpis[sel2].plan : 0,
+    estado: vend.estado
+  };
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    console.error("Error al guardar cambio del supervisor en Sheets:", e);
   }
 }
 
