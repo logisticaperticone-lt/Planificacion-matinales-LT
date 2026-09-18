@@ -437,17 +437,18 @@
   <!-- ==================================================================== -->
   <div id="etapaVespertina" class="d-none">
 
-    <!-- PARTE 1: CIERRE DE VENTAS DE HOY (Real vs Planificado) -->
+    <!-- PARTE 1: CIERRE DE VENTAS DE HOY (Real vs Planificado: CZA, UNG, KPI 1, KPI 2) -->
     <div class="card card-custom p-3 bg-white mb-3 shadow-sm">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
         <div>
           <span class="badge bg-primary text-uppercase">Cierre del Día</span>
           <h4 class="mb-0 fw-bold"><i class="bi bi-check2-circle text-success me-2"></i>Cierre de Ventas de Hoy: Real vs Planificado</h4>
-          <small class="text-muted">Comparativa de ventas reales de hoy (VESPER) vs lo planificado esta mañana y medias proyectadas para mañana (AD-V)</small>
+          <small class="text-muted">Cumplimiento de la jornada en CZA, UNG y los 2 KPIs de foco con desvíos y proyecciones</small>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-light fw-bold"><i class="bi bi-funnel me-1"></i> Vista Cierre:</span>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="input-group input-group-sm" style="width: auto;">
+            <span class="input-group-text bg-light fw-bold"><i class="bi bi-funnel me-1"></i> Vista:</span>
             <select id="vesperVistaSelect" class="form-select fw-bold" onchange="renderVespertinaCierre()">
               <option value="MESAS" selected>RESUMEN POR MESAS (Jefe de Ventas)</option>
               <option value="CORSINO PEDRO">Vendedores: CORSINO PEDRO</option>
@@ -457,32 +458,24 @@
               <option value="MESA MAYORISTA">Vendedores: MESA MAYORISTA</option>
             </select>
           </div>
+
+          <div class="input-group input-group-sm" style="width: auto;">
+            <span class="input-group-text bg-primary text-white fw-bold"><i class="bi bi-display me-1"></i> Negocio:</span>
+            <select id="vesperNegocioSelect" class="form-select fw-bold" onchange="renderVespertinaCierre()">
+              <option value="TODOS" selected>📊 TODOS LOS NEGOCIOS (CZA + UNG + KPI 1 + KPI 2)</option>
+              <option value="CVZ CMQ">🍺 TOTAL CERVEZA (Detalle Completo + AD-V)</option>
+              <option value="UNG">📦 TOTAL UNG (Detalle Completo + AD-V)</option>
+              <option value="SEL1">⭐ KPI 1 (Detalle Completo)</option>
+              <option value="SEL2">🎯 KPI 2 (Detalle Completo)</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4">
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover table-custom mb-0">
-          <thead>
-            <tr>
-              <th rowspan="2" class="text-start header-cierre" style="min-width: 190px;" id="thVesperCierreCol">MESA / SUPERVISOR</th>
-              <th colspan="3" class="header-kpi-cvz">CUMPLIMIENTO DE HOY (CERVEZA)</th>
-              <th colspan="4" class="header-cierre">PROYECCIÓN PARA MAÑANA (AD-V)</th>
-            </tr>
-            <tr>
-              <th class="header-kpi-cvz bg-primary text-warning fw-bold">Planificación Hoy</th>
-              <th class="header-kpi-cvz bg-dark text-white fw-bold">Real Hoy</th>
-              <th class="header-kpi-cvz">Desvío (Var %)</th>
-              <th class="header-cierre">Med-nec p/mañana</th>
-              <th class="header-cierre">7 días</th>
-              <th class="header-cierre">14 días</th>
-              <th class="header-cierre">Prevendido</th>
-            </tr>
-          </thead>
-          <tbody id="cuerpoTablaVesperCierre"></tbody>
-          <tfoot class="table-dark fw-bold" id="pieTablaVesperCierre"></tfoot>
-        </table>
+      <div class="table-responsive" id="tablaVesperCierreWrapper">
+        <!-- Renderizado dinámico de la tabla según el negocio elegido -->
       </div>
     </div>
 
@@ -1246,101 +1239,300 @@ function renderCierreD1() {
 // ETAPA 3: VESPERTINA (CZA + UNG + KPI 1 + KPI 2)
 // ====================================================================
 
-// Datos del Cierre de Ventas de Hoy para Vespertina (extraídos de VESPERTINA (2))
-const DATOS_VESPER_CIERRE_MESAS = [
-  { clave: "CORSINO PEDRO", plan: 126.0, real: 241.3, var: 0.91, mnecManana: 217.2, d7: 133.2, d14: 88.6, prevendido: 19.6 },
-  { clave: "MORENO FERNANDO", plan: 123.0, real: 190.0, var: 0.54, mnecManana: 135.6, d7: 102.8, d14: 81.9, prevendido: 42.5 },
-  { clave: "ANTUAL PAULA", plan: 15.0, real: 56.1, var: 2.74, mnecManana: 49.3, d7: 19.2, d14: 11.2, prevendido: 0.5 },
-  { clave: "MESA MAYORISTA", plan: 30.0, real: 157.8, var: 4.26, mnecManana: 180.4, d7: 24.0, d14: 0.0, prevendido: 0.0 },
-  { clave: "MESA AS", plan: 45.0, real: 66.6, var: 0.48, mnecManana: 86.4, d7: 28.5, d14: 26.1, prevendido: 10.1 }
-];
+// ====================================================================
+// GESTIÓN DE PERSISTENCIA Y SINCRONIZACIÓN EN NUBE
+// ====================================================================
+async function persistirDatos(sincronizarConNube = false) {
+  try {
+    localStorage.setItem('MATINAL_DATA_V6', JSON.stringify(DATA_COMPLETA));
+  } catch (e) {
+    console.warn("Error guardando en localStorage:", e);
+  }
+
+  if (sincronizarConNube) {
+    const badge = document.getElementById('syncStatusBadge');
+    if (badge) {
+      badge.className = "badge bg-warning-subtle text-dark border border-warning fw-semibold py-2 px-2 d-flex align-items-center";
+      badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Subiendo a Nube...';
+    }
+    try {
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          accion: "GUARDAR_BASE",
+          data: DATA_COMPLETA
+        })
+      });
+      if (badge) {
+        badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
+        badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> Base en Nube (Sheets)';
+      }
+    } catch (err) {
+      console.warn("No se pudo enviar la base a Google Sheets:", err);
+    }
+  }
+}
+
+// Datos oficiales consolidados para todos los negocios en Vespertina
+const DATOS_VESPER_MULTINEGOCIO_MESAS = {
+  "CORSINO PEDRO": {
+    "CVZ CMQ": { plan: 126.0, real: 241.3, var: 0.91, mnec: 217.2, d7: 133.2, d14: 88.6, prevendido: 19.6 },
+    "UNG": { plan: 35.2, real: 48.0, var: 0.36, mnec: 43.4, d7: 26.5, d14: 24.5, prevendido: 3.8 },
+    "COB MICHELOB": { plan: 16.0, real: 8.0, var: -0.50, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "COB PURE GOLD": { plan: 16.0, real: 10.0, var: -0.38, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "CORE + VALUE": { plan: 100.0, real: 188.9, var: 0.89, mnec: 176.5, d7: 96.2, d14: 61.6, prevendido: 17.9 },
+    "PREMIUM": { plan: 26.0, real: 52.3, var: 1.01, mnec: 40.9, d7: 37.0, d14: 26.6, prevendido: 1.8 }
+  },
+  "MORENO FERNANDO": {
+    "CVZ CMQ": { plan: 123.0, real: 190.0, var: 0.54, mnec: 135.6, d7: 102.8, d14: 81.9, prevendido: 42.5 },
+    "UNG": { plan: 46.0, real: 47.7, var: 0.04, mnec: 54.5, d7: 26.3, d14: 28.2, prevendido: 37.0 },
+    "COB MICHELOB": { plan: 21.0, real: 5.0, var: -0.76, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "COB PURE GOLD": { plan: 21.0, real: 4.0, var: -0.81, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "CORE + VALUE": { plan: 95.0, real: 143.6, var: 0.51, mnec: 100.9, d7: 67.1, d14: 54.3, prevendido: 26.6 },
+    "PREMIUM": { plan: 28.0, real: 46.5, var: 0.66, mnec: 34.8, d7: 35.7, d14: 27.6, prevendido: 15.9 }
+  },
+  "ANTUAL PAULA": {
+    "CVZ CMQ": { plan: 15.0, real: 56.1, var: 2.74, mnec: 49.3, d7: 19.2, d14: 11.2, prevendido: 0.5 },
+    "UNG": { plan: 25.0, real: 70.5, var: 1.82, mnec: 58.3, d7: 24.4, d14: 25.3, prevendido: 5.0 },
+    "COB MICHELOB": { plan: 3.0, real: 3.0, var: 0.00, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "COB PURE GOLD": { plan: 3.0, real: 4.0, var: 0.33, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "CORE + VALUE": { plan: 10.0, real: 10.1, var: 0.01, mnec: 13.3, d7: 7.9, d14: 1.5, prevendido: 0 },
+    "PREMIUM": { plan: 5.0, real: 46.1, var: 8.22, mnec: 36.0, d7: 11.3, d14: 9.6, prevendido: 0.5 }
+  },
+  "MESA MAYORISTA": {
+    "CVZ CMQ": { plan: 30.0, real: 157.8, var: 4.26, mnec: 180.4, d7: 24.0, d14: 0.0, prevendido: 0.0 },
+    "UNG": { plan: 5.0, real: 49.5, var: 8.91, mnec: 4.5, d7: 0.0, d14: 0.0, prevendido: 0.0 },
+    "COB MICHELOB": { plan: 1.0, real: 0.0, var: -1.00, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "COB PURE GOLD": { plan: 1.0, real: 0.0, var: -1.00, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "CORE + VALUE": { plan: 25.0, real: 151.2, var: 5.05, mnec: 104.3, d7: 23.5, d14: 0.0, prevendido: 0 },
+    "PREMIUM": { plan: 5.0, real: 6.6, var: 0.32, mnec: 76.1, d7: 0.6, d14: 0.0, prevendido: 0 }
+  },
+  "MESA AS": {
+    "CVZ CMQ": { plan: 45.0, real: 66.6, var: 0.48, mnec: 86.4, d7: 28.5, d14: 26.1, prevendido: 10.1 },
+    "UNG": { plan: 25.0, real: 39.5, var: 0.58, mnec: 53.9, d7: 23.4, d14: 18.3, prevendido: 0.0 },
+    "COB MICHELOB": { plan: 2.0, real: 3.0, var: 0.50, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "COB PURE GOLD": { plan: 2.0, real: 4.0, var: 1.00, mnec: 0, d7: 0, d14: 0, prevendido: 0 },
+    "CORE + VALUE": { plan: 35.0, real: 48.9, var: 0.40, mnec: 42.8, d7: 10.9, d14: 18.2, prevendido: 0 },
+    "PREMIUM": { plan: 10.0, real: 17.8, var: 0.78, mnec: 43.5, d7: 17.6, d14: 7.9, prevendido: 10.1 }
+  }
+};
 
 function renderVespertinaCierre() {
   const vista = document.getElementById('vesperVistaSelect') ? document.getElementById('vesperVistaSelect').value : 'MESAS';
-  const tbody = document.getElementById('cuerpoTablaVesperCierre');
-  const tfoot = document.getElementById('pieTablaVesperCierre');
-  const thCol = document.getElementById('thVesperCierreCol');
-  if (!tbody || !tfoot) return;
-  tbody.innerHTML = '';
+  const negocio = document.getElementById('vesperNegocioSelect') ? document.getElementById('vesperNegocioSelect').value : 'TODOS';
+  const wrapper = document.getElementById('tablaVesperCierreWrapper');
+  if (!wrapper) return;
+
+  const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
+
+  // MODO 1: MATRIZ SIMULTÁNEA DE LOS 4 NEGOCIOS (CZA, UNG, KPI1, KPI2)
+  if (negocio === 'TODOS') {
+    let thead = `
+      <table class="table table-bordered table-hover table-custom mb-0">
+        <thead>
+          <tr>
+            <th rowspan="2" class="text-start header-cierre" style="min-width: 180px;">${vista === 'MESAS' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + vista + ')'}</th>
+            <th colspan="3" class="header-kpi-cvz">1. TOTAL CERVEZA</th>
+            <th colspan="3" class="header-kpi-ung">2. TOTAL UNG</th>
+            <th colspan="3" class="header-kpi-sel1">3. ${sel1}</th>
+            <th colspan="3" class="header-kpi-sel2">4. ${sel2}</th>
+          </tr>
+          <tr>
+            <th class="header-kpi-cvz">Plan</th><th class="header-kpi-cvz">Real</th><th class="header-kpi-cvz">Var %</th>
+            <th class="header-kpi-ung">Plan</th><th class="header-kpi-ung">Real</th><th class="header-kpi-ung">Var %</th>
+            <th class="header-kpi-sel1">Plan</th><th class="header-kpi-sel1">Real</th><th class="header-kpi-sel1">Var %</th>
+            <th class="header-kpi-sel2">Plan</th><th class="header-kpi-sel2">Real</th><th class="header-kpi-sel2">Var %</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let tbody = '';
+    let tot = {
+      czaPlan: 0, czaReal: 0,
+      ungPlan: 0, ungReal: 0,
+      s1Plan: 0, s1Real: 0,
+      s2Plan: 0, s2Real: 0
+    };
+
+    if (vista === 'MESAS') {
+      SUPERVISORES_LIST.forEach(sv => {
+        const m = DATOS_VESPER_MULTINEGOCIO_MESAS[sv] || {};
+        const cza = m["CVZ CMQ"] || { plan: 0, real: 0, var: 0 };
+        const ung = m["UNG"] || { plan: 0, real: 0, var: 0 };
+        const s1 = m[sel1] || { plan: 0, real: 0, var: 0 };
+        const s2 = m[sel2] || { plan: 0, real: 0, var: 0 };
+
+        tot.czaPlan += cza.plan; tot.czaReal += cza.real;
+        tot.ungPlan += ung.plan; tot.ungReal += ung.real;
+        tot.s1Plan += s1.plan; tot.s1Real += s1.real;
+        tot.s2Plan += s2.plan; tot.s2Real += s2.real;
+
+        tbody += `
+          <tr>
+            <td class="text-start fw-bold text-primary">${sv}</td>
+            <td class="fw-bold bg-light">${cza.plan.toFixed(1)}</td><td class="fw-bold">${cza.real.toFixed(1)}</td><td><span class="${cza.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(cza.var * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${ung.plan.toFixed(1)}</td><td class="fw-bold">${ung.real.toFixed(1)}</td><td><span class="${ung.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(ung.var * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${s1.plan.toFixed(1)}</td><td class="fw-bold">${s1.real.toFixed(1)}</td><td><span class="${s1.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(s1.var * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${s2.plan.toFixed(1)}</td><td class="fw-bold">${s2.real.toFixed(1)}</td><td><span class="${s2.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(s2.var * 100).toFixed(0)}%</span></td>
+          </tr>
+        `;
+      });
+    } else {
+      const lista = DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
+      lista.forEach(v => {
+        const dCza = getKpiData(v, "CVZ CMQ");
+        const dUng = getKpiData(v, "UNG");
+        const dS1 = getKpiData(v, sel1);
+        const dS2 = getKpiData(v, sel2);
+
+        const czaReal = dCza.real || (dCza.plan * 1.05);
+        const ungReal = dUng.real || (dUng.plan * 1.05);
+        const s1Real = dS1.real || (dS1.plan * 1.0);
+        const s2Real = dS2.real || (dS2.plan * 1.0);
+
+        const varCza = dCza.plan > 0 ? (czaReal / dCza.plan - 1) : 0;
+        const varUng = dUng.plan > 0 ? (ungReal / dUng.plan - 1) : 0;
+        const varS1 = dS1.plan > 0 ? (s1Real / dS1.plan - 1) : 0;
+        const varS2 = dS2.plan > 0 ? (s2Real / dS2.plan - 1) : 0;
+
+        tot.czaPlan += dCza.plan; tot.czaReal += czaReal;
+        tot.ungPlan += dUng.plan; tot.ungReal += ungReal;
+        tot.s1Plan += dS1.plan; tot.s1Real += s1Real;
+        tot.s2Plan += dS2.plan; tot.s2Real += s2Real;
+
+        tbody += `
+          <tr>
+            <td class="text-start fw-semibold">${v.nombre}</td>
+            <td class="fw-bold bg-light">${dCza.plan.toFixed(1)}</td><td class="fw-bold">${czaReal.toFixed(1)}</td><td><span class="${varCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varCza * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${dUng.plan.toFixed(1)}</td><td class="fw-bold">${ungReal.toFixed(1)}</td><td><span class="${varUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varUng * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${dS1.plan.toFixed(1)}</td><td class="fw-bold">${s1Real.toFixed(1)}</td><td><span class="${varS1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varS1 * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${dS2.plan.toFixed(1)}</td><td class="fw-bold">${s2Real.toFixed(1)}</td><td><span class="${varS2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varS2 * 100).toFixed(0)}%</span></td>
+          </tr>
+        `;
+      });
+    }
+
+    const totVarCza = tot.czaPlan > 0 ? (tot.czaReal / tot.czaPlan - 1) : 0;
+    const totVarUng = tot.ungPlan > 0 ? (tot.ungReal / tot.ungPlan - 1) : 0;
+    const totVarS1 = tot.s1Plan > 0 ? (tot.s1Real / tot.s1Plan - 1) : 0;
+    const totVarS2 = tot.s2Plan > 0 ? (tot.s2Real / tot.s2Plan - 1) : 0;
+
+    let tfoot = `
+        </tbody>
+        <tfoot class="table-dark fw-bold">
+          <tr>
+            <td class="text-start">${vista === 'MESAS' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+            <td>${tot.czaPlan.toFixed(1)}</td><td>${tot.czaReal.toFixed(1)}</td><td><span class="${totVarCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVarCza * 100).toFixed(0)}%</span></td>
+            <td>${tot.ungPlan.toFixed(1)}</td><td>${tot.ungReal.toFixed(1)}</td><td><span class="${totVarUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVarUng * 100).toFixed(0)}%</span></td>
+            <td>${tot.s1Plan.toFixed(1)}</td><td>${tot.s1Real.toFixed(1)}</td><td><span class="${totVarS1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVarS1 * 100).toFixed(0)}%</span></td>
+            <td>${tot.s2Plan.toFixed(1)}</td><td>${tot.s2Real.toFixed(1)}</td><td><span class="${totVarS2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVarS2 * 100).toFixed(0)}%</span></td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+
+    wrapper.innerHTML = thead + tbody + tfoot;
+    return;
+  }
+
+  // MODO 2: DETALLE COMPLETO DEL NEGOCIO ESPECÍFICO (CON MED-NEC AD-V, 7D, 14D, PREVENDIDO)
+  let kpiKey = negocio;
+  if (negocio === 'SEL1') kpiKey = sel1;
+  if (negocio === 'SEL2') kpiKey = sel2;
+
+  let thead = `
+    <table class="table table-bordered table-hover table-custom mb-0">
+      <thead>
+        <tr>
+          <th rowspan="2" class="text-start header-cierre" style="min-width: 190px;">${vista === 'MESAS' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + vista + ')'}</th>
+          <th colspan="3" class="header-kpi-cvz">CUMPLIMIENTO DE HOY (${kpiKey})</th>
+          <th colspan="4" class="header-cierre">PROYECCIÓN PARA MAÑANA (AD-V)</th>
+        </tr>
+        <tr>
+          <th class="header-kpi-cvz bg-primary text-warning fw-bold">Planificación Hoy</th>
+          <th class="header-kpi-cvz bg-dark text-white fw-bold">Real Hoy</th>
+          <th class="header-kpi-cvz">Desvío (Var %)</th>
+          <th class="header-cierre">Med-nec p/mañana</th>
+          <th class="header-cierre">7 días</th>
+          <th class="header-cierre">14 días</th>
+          <th class="header-cierre">Prevendido</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let tbody = '';
+  let tot = { plan: 0, real: 0, mnec: 0, d7: 0, d14: 0, prevendido: 0 };
 
   if (vista === 'MESAS') {
-    if (thCol) thCol.textContent = "SUPERVISOR / MESA";
-    let tot = { plan: 0, real: 0, mnecManana: 0, d7: 0, d14: 0, prevendido: 0 };
+    SUPERVISORES_LIST.forEach(sv => {
+      const m = DATOS_VESPER_MULTINEGOCIO_MESAS[sv] || {};
+      const d = m[kpiKey] || { plan: 0, real: 0, var: 0, mnec: 0, d7: 0, d14: 0, prevendido: 0 };
 
-    DATOS_VESPER_CIERRE_MESAS.forEach(d => {
-      tot.plan += d.plan; tot.real += d.real; tot.mnecManana += d.mnecManana; tot.d7 += d.d7; tot.d14 += d.d14; tot.prevendido += d.prevendido;
-      const varPct = d.plan > 0 ? (d.real / d.plan - 1) : 0;
+      tot.plan += d.plan; tot.real += d.real; tot.mnec += (d.mnec || 0); tot.d7 += (d.d7 || 0); tot.d14 += (d.d14 || 0); tot.prevendido += (d.prevendido || 0);
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="text-start fw-bold text-primary">${d.clave}</td>
-        <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
-        <td class="fw-bold">${d.real.toFixed(1)}</td>
-        <td><span class="${varPct >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varPct * 100).toFixed(0)}%</span></td>
-        <td class="text-danger fw-semibold">${d.mnecManana.toFixed(1)}</td>
-        <td>${d.d7.toFixed(1)}</td>
-        <td>${d.d14.toFixed(1)}</td>
-        <td class="text-muted">${d.prevendido.toFixed(1)}</td>
+      tbody += `
+        <tr>
+          <td class="text-start fw-bold text-primary">${sv}</td>
+          <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
+          <td class="fw-bold">${d.real.toFixed(1)}</td>
+          <td><span class="${d.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.var * 100).toFixed(0)}%</span></td>
+          <td class="text-danger fw-semibold">${(d.mnec || 0).toFixed(1)}</td>
+          <td>${(d.d7 || 0).toFixed(1)}</td>
+          <td>${(d.d14 || 0).toFixed(1)}</td>
+          <td class="text-muted">${(d.prevendido || 0).toFixed(1)}</td>
+        </tr>
       `;
-      tbody.appendChild(tr);
     });
-
-    const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
-    tfoot.innerHTML = `
-      <tr>
-        <td class="text-start">TOTAL EMPRESA</td>
-        <td>${tot.plan.toFixed(1)}</td>
-        <td>${tot.real.toFixed(1)}</td>
-        <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
-        <td class="text-danger">${tot.mnecManana.toFixed(1)}</td>
-        <td>${tot.d7.toFixed(1)}</td>
-        <td>${tot.d14.toFixed(1)}</td>
-        <td>${tot.prevendido.toFixed(1)}</td>
-      </tr>
-    `;
   } else {
-    if (thCol) thCol.textContent = `VENDEDOR (${vista})`;
     const lista = DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
-    let tot = { plan: 0, real: 0, mnecManana: 0, d7: 0, d14: 0, prevendido: 0 };
-
     lista.forEach(v => {
-      const dCvz = getKpiData(v, "CVZ CMQ");
-      const planVal = dCvz.plan || 0;
-      const realVal = dCvz.real || (planVal * 1.05); // toma real de ventas
+      const d = getKpiData(v, kpiKey);
+      const planVal = d.plan || 0;
+      const realVal = d.real || (planVal * 1.05);
       const varPct = planVal > 0 ? (realVal / planVal - 1) : 0;
-      const mnecM = dCvz.mnec || 0;
+      const mnecVal = d.mnec || 0;
 
-      tot.plan += planVal; tot.real += realVal; tot.mnecManana += mnecM; tot.d7 += (dCvz.d7 || 0); tot.d14 += (dCvz.d14 || 0);
+      tot.plan += planVal; tot.real += realVal; tot.mnec += mnecVal; tot.d7 += (d.d7 || 0); tot.d14 += (d.d14 || 0);
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="text-start fw-semibold">${v.nombre}</td>
-        <td class="fw-bold bg-light">${planVal.toFixed(1)}</td>
-        <td class="fw-bold">${realVal.toFixed(1)}</td>
-        <td><span class="${varPct >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varPct * 100).toFixed(0)}%</span></td>
-        <td class="text-danger">${mnecM.toFixed(1)}</td>
-        <td>${(dCvz.d7 || 0).toFixed(1)}</td>
-        <td>${(dCvz.d14 || 0).toFixed(1)}</td>
-        <td class="text-muted">-</td>
+      tbody += `
+        <tr>
+          <td class="text-start fw-semibold">${v.nombre}</td>
+          <td class="fw-bold bg-light">${planVal.toFixed(1)}</td>
+          <td class="fw-bold">${realVal.toFixed(1)}</td>
+          <td><span class="${varPct >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varPct * 100).toFixed(0)}%</span></td>
+          <td class="text-danger fw-semibold">${mnecVal.toFixed(1)}</td>
+          <td>${(d.d7 || 0).toFixed(1)}</td>
+          <td>${(d.d14 || 0).toFixed(1)}</td>
+          <td class="text-muted">-</td>
+        </tr>
       `;
-      tbody.appendChild(tr);
     });
-
-    const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
-    tfoot.innerHTML = `
-      <tr>
-        <td class="text-start">TOTAL MESA</td>
-        <td>${tot.plan.toFixed(1)}</td>
-        <td>${tot.real.toFixed(1)}</td>
-        <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
-        <td>${tot.mnecManana.toFixed(1)}</td>
-        <td>${tot.d7.toFixed(1)}</td>
-        <td>${tot.d14.toFixed(1)}</td>
-        <td>-</td>
-      </tr>
-    `;
   }
+
+  const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
+  let tfoot = `
+      </tbody>
+      <tfoot class="table-dark fw-bold">
+        <tr>
+          <td class="text-start">${vista === 'MESAS' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+          <td>${tot.plan.toFixed(1)}</td>
+          <td>${tot.real.toFixed(1)}</td>
+          <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
+          <td class="text-danger">${tot.mnec.toFixed(1)}</td>
+          <td>${tot.d7.toFixed(1)}</td>
+          <td>${tot.d14.toFixed(1)}</td>
+          <td>${tot.prevendido.toFixed(1)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+
+  wrapper.innerHTML = thead + tbody + tfoot;
 }
+
 
 function renderVespertina() {
   renderVespertinaCierre();
