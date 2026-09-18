@@ -660,7 +660,7 @@
 
 <!-- Scripts de Integración y Lógica -->
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzFop31XLWMCYicMuKAG9mKxSKvVIDevvKkUJnCII26pVo92NakM-eKNBS3PlcWLhLBNQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzgVq1z4_UrQletiPXAHcSRjaTxonCY3FO22YQqO2FGQxvH-jS_Sx6cI00ievVZb3OcaA/exec";
 
 // Avances oficiales de la mesa desagregando MESA AS y MESA MAYORISTA
 const AVANCES_OFICIALES_SUPERVISOR = {
@@ -2359,7 +2359,8 @@ function procesarArchivoExcel(evt) {
 
       actualizarDesdeFilasAD(json);
       document.getElementById('estadoCargaBadge').textContent = `Actualizado: ${file.name}`;
-      alert("¡Base de datos nocturna actualizada con éxito desde Excel!");
+      persistirDatos(true);
+      alert("¡Base de datos nocturna actualizada y guardada en la nube con éxito!");
       renderAnalistaView();
     } catch (err) {
       alert("Error al procesar el archivo Excel: " + err.message);
@@ -2407,7 +2408,7 @@ function actualizarDesdeFilasAD(filas) {
     }
   });
 
-  persistirDatos();
+  persistirDatos(true);
 }
 
 function descargarJSONGitHub() {
