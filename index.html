@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema Matinal de Ventas - Planificación Operativa</title>
+  <title>Sistema Comercial Integral - Matinal, Cierre y Vespertina</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- SheetJS para leer Excel .xlsx directo en el navegador -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --primary-color: #0f2c59;
-      --secondary-color: #337ccf;
+      --secondary-color: #1e4976;
       --accent-color: #ffc436;
-      --bg-light: #f8f9fa;
+      --bg-light: #f1f5f9;
     }
-    body { background-color: #f1f5f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    .navbar-custom { background: linear-gradient(135deg, #0f2c59 0%, #1e4976 100%); color: white; }
+    body { background-color: var(--bg-light); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .navbar-custom { background: linear-gradient(135deg, #0f2c59 0%, #1e3a8a 100%); color: white; }
+    .nav-phase-btn { font-weight: 700; font-size: 0.88rem; border-radius: 8px; padding: 6px 14px; transition: all 0.2s; border: none; }
+    .nav-phase-btn.active { background-color: #ffc436; color: #0f2c59; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .nav-phase-btn:not(.active) { background-color: rgba(255,255,255,0.15); color: white; }
+    .nav-phase-btn:not(.active):hover { background-color: rgba(255,255,255,0.25); }
     .card-custom { border-radius: 10px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .kpi-card { background: white; border-radius: 8px; padding: 6px 8px; border-left: 3px solid var(--secondary-color); }
+    .kpi-card { background: white; border-radius: 8px; padding: 6px 8px; border-left: 3px solid #3b82f6; }
     .kpi-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 2px; }
     .kpi-val { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
     .table-custom thead th { background-color: #1e293b; color: white; font-size: 0.74rem; font-weight: 600; text-align: center; vertical-align: middle; padding: 5px 3px; }
@@ -32,321 +35,430 @@
     .header-kpi-ung { background-color: #065f46 !important; color: white !important; }
     .header-kpi-sel1 { background-color: #b45309 !important; color: white !important; }
     .header-kpi-sel2 { background-color: #6b21a8 !important; color: white !important; }
+    .header-cierre { background-color: #334155 !important; color: white !important; }
+    .header-vesper { background-color: #0f172a !important; color: #38bdf8 !important; }
     .ref-box { font-size: 0.75rem; background: #e2e8f0; padding: 3px 6px; border-radius: 5px; display: inline-block; font-weight: 600; color: #334155; }
     .badge-kpi-fixed { background-color: #0f172a; color: #f8fafc; font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; }
+        .badge-cierre-pos { background-color: #dcfce7 !important; color: #15803d !important; font-weight: bold; border: 1px solid #86efac; border-radius: 6px; padding: 2px 7px; display: inline-block; font-size: 0.76rem; }
+    .badge-cierre-neg { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: bold; border: 1px solid #fca5a5; border-radius: 6px; padding: 2px 7px; display: inline-block; font-size: 0.76rem; }
+    .pos-val { color: #16a34a; font-weight: bold; }
+    .neg-val { color: #dc2626; font-weight: bold; }
+    .neg-val { color: #dc2626; font-weight: bold; }
   </style>
 </head>
 <body class="pb-5">
 
-<!-- Barra Superior -->
-<nav class="navbar navbar-custom px-3 py-2 shadow-sm mb-3">
-  <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center">
+<!-- Barra Superior con Segmentador de las 3 Etapas -->
+<nav class="navbar navbar-custom px-3 py-2 shadow-sm mb-3 sticky-top">
+  <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <!-- Logo y Título -->
     <div class="d-flex align-items-center">
       <i class="bi bi-bar-chart-steps fs-3 me-2 text-warning"></i>
       <div>
-        <span class="fw-bold fs-5">PLANIFICADOR MATINAL</span>
-        <small class="d-block opacity-75" style="font-size: 0.75rem;">Logística Total SRL · Sistema Operativo de Mesas</small>
+        <span class="fw-bold fs-5">SISTEMA MATINAL Y VESPERTINA</span>
+        <small class="d-block opacity-75" style="font-size: 0.72rem;">Logística Total SRL · Proceso Comercial Integrado</small>
       </div>
     </div>
 
-    <!-- Selector de los 2 KPIs seleccionables (más los 2 fijos) -->
-    <div class="d-flex align-items-center flex-wrap gap-2 my-1 my-md-0 bg-white text-dark px-3 py-1 rounded-3 shadow-sm">
-      <div class="d-flex align-items-center gap-1">
-        <span class="badge badge-kpi-fixed"><i class="bi bi-lock-fill me-1"></i>VOLUMEN CZA</span>
-        <span class="badge badge-kpi-fixed"><i class="bi bi-lock-fill me-1"></i>VOLUMEN UNG</span>
-      </div>
-      <span class="text-muted fw-bold">|</span>
-      <span class="fw-bold small text-secondary"><i class="bi bi-sliders me-1 text-primary"></i>Indicadores del Día:</span>
-      <select id="kpiSelect1" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: 155px;" onchange="cambiarKpisElegibles()">
-        <option value="COB MICHELOB" selected>CCC MICHELOB</option>
-        <option value="COB PURE GOLD">CCC PURE GOLD</option>
-        <option value="COB CZA">CCC CZA</option>
-        <option value="COB PREMIUM">CCC PREMIUM</option>
-        <option value="COB UNG">CCC UNG</option>
-        <option value="COB LATONES">CCC LATONES</option>
-        <option value="LATONES">VOL. LATONES</option>
-        <option value="TOP">VOL. TOP</option>
-        <option value="CORE + VALUE">VOL. CORE+VALUE</option>
-        <option value="PREMIUM">VOL. PREMIUM</option>
-        <option value="BALANCED CHOICES">VOL. BALANCED</option>
-      </select>
-      <span class="text-muted fw-bold">+</span>
-      <select id="kpiSelect2" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: 155px;" onchange="cambiarKpisElegibles()">
-        <option value="COB PURE GOLD" selected>CCC PURE GOLD</option>
-        <option value="COB MICHELOB">CCC MICHELOB</option>
-        <option value="COB CZA">CCC CZA</option>
-        <option value="COB PREMIUM">CCC PREMIUM</option>
-        <option value="COB UNG">CCC UNG</option>
-        <option value="COB LATONES">CCC LATONES</option>
-        <option value="LATONES">VOL. LATONES</option>
-        <option value="TOP">VOL. TOP</option>
-        <option value="CORE + VALUE">VOL. CORE+VALUE</option>
-        <option value="PREMIUM">VOL. PREMIUM</option>
-        <option value="BALANCED CHOICES">VOL. BALANCED</option>
-      </select>
+    <!-- Segmentador Principal de las 3 Etapas -->
+    <div class="d-flex gap-1 bg-black bg-opacity-25 p-1 rounded-3">
+      <button class="nav-phase-btn active" id="btnFaseCierre" onclick="cambiarFase('cierre')">
+        <i class="bi bi-calendar-check me-1"></i> 1. CIERRE D-1
+      </button>
+      <button class="nav-phase-btn" id="btnFasePlan" onclick="cambiarFase('plan')">
+        <i class="bi bi-pencil-square me-1"></i> 2. PLANIFICACIÓN
+      </button>
+      <button class="nav-phase-btn" id="btnFaseVesper" onclick="cambiarFase('vesper')">
+        <i class="bi bi-sunset me-1"></i> 3. VESPERTINA
+      </button>
+      <button class="nav-phase-btn" id="btnFaseAnalista" onclick="cambiarFase('analista')">
+        <i class="bi bi-gear-wide-connected me-1"></i> 4. ANALISTA
+      </button>
     </div>
-    
-    <!-- Selectores de Roles -->
-    <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+
+    <!-- Estado y Controles Rápidos -->
+    <div class="d-flex align-items-center gap-2">
       <span id="syncStatusBadge" class="badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center">
-        <i class="bi bi-cloud-check-fill me-1"></i> Sincronizado
+        <i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)
       </span>
-      <div class="input-group input-group-sm">
-        <span class="input-group-text bg-white text-dark fw-semibold"><i class="bi bi-person-badge me-1"></i> Rol</span>
-        <select id="roleSelect" class="form-select fw-semibold" onchange="onRoleChange()">
-          <option value="vendedor">Vendedor (Carga)</option>
-          <option value="supervisor" selected>Supervisor de Mesa</option>
-          <option value="jefe">Jefe de Ventas</option>
-          <option value="analista">Analista / Carga Nocturna</option>
-        </select>
-      </div>
-
-      <div class="input-group input-group-sm" id="userSelectContainer">
-        <span class="input-group-text bg-white text-dark fw-semibold" id="userSelectLabel"><i class="bi bi-person me-1"></i> Mesa</span>
-        <select id="userSelect" class="form-select fw-semibold" onchange="renderCurrentView()"></select>
-      </div>
+      <button class="btn btn-sm btn-outline-light py-1 px-2" onclick="sincronizarDesdeGoogleSheets()" title="Forzar Sincronización">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
     </div>
   </div>
 </nav>
 
 <div class="container-fluid px-2 px-md-3">
 
-  <!-- ======================================================== -->
-  <!-- 1. VISTA VENDEDOR (4 Indicadores: 2 fijos + 2 elegibles) -->
-  <!-- ======================================================== -->
-  <div id="viewVendedor" class="d-none">
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="card card-custom p-3 bg-white border-start border-4 border-primary shadow-sm">
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <div>
-              <span class="badge bg-secondary text-uppercase mb-1" id="vendMesaTag">Supervisor</span>
-              <h4 class="mb-0 fw-bold text-dark" id="vendNombreTitle">Nombre Vendedor</h4>
-              <small class="text-muted" id="vendIdTag">ID PV: -</small>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              <span id="vendEstadoBadge" class="badge-adv bg-warning text-dark">Pendiente de Envío</span>
-              <button class="btn btn-primary fw-semibold px-4" onclick="guardarVendedor()"><i class="bi bi-send-check me-2"></i>Enviar mi Planificación</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4 Tarjetas -->
-    <div class="row g-3">
-      <!-- 1. VOLUMEN CZA (Fijo) -->
-      <div class="col-lg-6">
-        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-primary">
-          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cup-straw me-2"></i>VOLUMEN CZA CMQ</h6>
-            <span class="badge bg-primary text-white fw-bold" id="vAvanceCvz">% Avance: -</span>
-          </div>
-          <div class="row g-2 text-center mb-2">
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjCvz">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealCvz">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealCvz">0</div></div></div>
-            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecCvz">0</div></div></div>
-          </div>
-          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Cvz" class="text-primary">0</strong></span></div>
-            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Cvz" class="text-primary">0</strong></span></div>
-          </div>
-          <div class="mt-auto">
-            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
-              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
-              <span id="vGapCvz" class="small fw-semibold"></span>
-            </label>
-            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-primary" id="vInpPlanCvz" oninput="evaluarGap('Cvz', 'CVZ CMQ')">
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. VOLUMEN UNG (Fijo) -->
-      <div class="col-lg-6">
-        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-success">
-          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-            <h6 class="fw-bold mb-0 text-success"><i class="bi bi-box-seam me-2"></i>VOLUMEN UNG</h6>
-            <span class="badge bg-success text-white fw-bold" id="vAvanceUng">% Avance: -</span>
-          </div>
-          <div class="row g-2 text-center mb-2">
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjUng">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealUng">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealUng">0</div></div></div>
-            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecUng">0</div></div></div>
-          </div>
-          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Ung" class="text-success">0</strong></span></div>
-            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Ung" class="text-success">0</strong></span></div>
-          </div>
-          <div class="mt-auto">
-            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
-              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
-              <span id="vGapUng" class="small fw-semibold"></span>
-            </label>
-            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-success" id="vInpPlanUng" oninput="evaluarGap('Ung', 'UNG')">
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Indicador Elegible 1 -->
-      <div class="col-lg-6">
-        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-warning">
-          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-            <h6 class="fw-bold mb-0 text-warning text-dark" id="vCardTitleSel1">INDICADOR 1</h6>
-            <span class="badge bg-warning text-dark fw-bold" id="vAvanceSel1">% Avance: -</span>
-          </div>
-          <div class="row g-2 text-center mb-2">
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjSel1">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealSel1">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealSel1">0</div></div></div>
-            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel1">0</div></div></div>
-          </div>
-          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel1" class="text-warning text-dark">0</strong></span></div>
-            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel1" class="text-warning text-dark">0</strong></span></div>
-          </div>
-          <div class="mt-auto">
-            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
-              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
-              <span id="vGapSel1" class="small fw-semibold"></span>
-            </label>
-            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-warning" id="vInpPlanSel1" oninput="evaluarGapDinamico(1)">
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Indicador Elegible 2 -->
-      <div class="col-lg-6">
-        <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-info">
-          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-            <h6 class="fw-bold mb-0 text-info text-dark" id="vCardTitleSel2">INDICADOR 2</h6>
-            <span class="badge bg-info text-dark fw-bold" id="vAvanceSel2">% Avance: -</span>
-          </div>
-          <div class="row g-2 text-center mb-2">
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjSel2">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealSel2">0</div></div></div>
-            <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealSel2">0</div></div></div>
-            <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel2">0</div></div></div>
-          </div>
-          <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-            <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel2" class="text-info text-dark">0</strong></span></div>
-            <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel2" class="text-info text-dark">0</strong></span></div>
-          </div>
-          <div class="mt-auto">
-            <label class="form-label fw-bold small text-dark d-flex justify-content-between">
-              <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
-              <span id="vGapSel2" class="small fw-semibold"></span>
-            </label>
-            <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-info" id="vInpPlanSel2" oninput="evaluarGapDinamico(2)">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- 2. VISTA SUPERVISOR (Con el % AVANCE DE LA MESA)         -->
-  <!-- ======================================================== -->
-  <div id="viewSupervisor" class="d-none">
-    <div class="card card-custom p-3 mb-3 bg-white shadow-sm">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+  <!-- ==================================================================== -->
+  <!-- ETAPA 1: CIERRE D-1 (Revisión Desagregada: AS vs MAY)                 -->
+  <!-- ==================================================================== -->
+  <div id="etapaCierreD1" class="d-block">
+    <div class="card card-custom p-3 bg-white mb-3 shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-          <span class="badge bg-primary text-uppercase">Mesa Operativa</span>
-          <h4 class="mb-0 fw-bold" id="supMesaTitle">Mesa: -</h4>
-          <small class="text-muted">Supervisa los avances oficiales de la mesa y aprueba los compromisos</small>
+          <span class="badge bg-secondary text-uppercase">Paso 1 del Día</span>
+          <h4 class="mb-0 fw-bold"><i class="bi bi-clipboard-data text-primary me-2"></i>Cierre de Ventas del Día Anterior (D-1)</h4>
+          <small class="text-muted">Desempeño de supervisores con desagregación explícita de MESA AS y MESA MAYORISTA</small>
         </div>
 
-        <!-- Avances Oficiales de la Mesa del Supervisor -->
-        <div class="d-flex flex-wrap gap-2 text-center">
-          <div class="bg-light p-2 rounded border">
-            <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa CZA</small>
-            <strong class="text-primary fs-6" id="supMesaAvanceCvz">-</strong>
+        <!-- Filtro de Vista: Resumen Supervisores o Detalle de Mesa -->
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light fw-bold"><i class="bi bi-funnel me-1"></i> Vista:</span>
+            <select id="cierreMesaSelect" class="form-select fw-bold" onchange="renderCierreD1()">
+              <option value="RESUMEN_SUPERVISORES" selected>DESEMPEÑO SUPERVISORES (Jefe de Ventas)</option>
+              <option value="CORSINO PEDRO">Vendedores: CORSINO PEDRO</option>
+              <option value="MORENO FERNANDO">Vendedores: MORENO FERNANDO</option>
+              <option value="ANTUAL PAULA">Vendedores: ANTUAL PAULA</option>
+              <option value="MESA AS">Vendedores: MESA AS (Melinao / Gomez)</option>
+              <option value="MESA MAYORISTA">Vendedores: MESA MAYORISTA (Seco)</option>
+            </select>
           </div>
-          <div class="bg-light p-2 rounded border">
-            <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa UNG</small>
-            <strong class="text-success fs-6" id="supMesaAvanceUng">-</strong>
-          </div>
-          <div class="bg-light p-2 rounded border">
-            <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel1">Avance Ind 1</small>
-            <strong class="text-warning text-dark fs-6" id="supMesaAvanceSel1">-</strong>
-          </div>
-          <div class="bg-light p-2 rounded border">
-            <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel2">Avance Ind 2</small>
-            <strong class="text-info text-dark fs-6" id="supMesaAvanceSel2">-</strong>
-          </div>
-        </div>
-
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-danger btn-sm fw-semibold" onclick="exigirMediasSupervisor()"><i class="bi bi-lightning-fill me-1"></i>Exigir Medias</button>
-          <button class="btn btn-success btn-sm fw-semibold" onclick="aprobarMesaSupervisor()"><i class="bi bi-check-all me-1"></i>Aprobar Mesa</button>
         </div>
       </div>
     </div>
 
-    <!-- Tabla Dinámica de Supervisión -->
-    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm">
+    <!-- Tabla Cierre D-1 -->
+    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4">
       <div class="table-responsive">
-        <table class="table table-bordered table-hover table-custom mb-0" id="tablaSupervisorMesa">
+        <table class="table table-bordered table-hover table-custom mb-0" id="tablaCierreD1">
           <thead>
             <tr>
-              <th rowspan="2" class="text-start" style="min-width: 170px;">VENDEDOR</th>
-              <th rowspan="2" style="width: 75px;">ESTADO</th>
-              <!-- Bloque CZA -->
-              <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
-              <!-- Bloque UNG -->
-              <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
-              <!-- Bloque Elegible 1 -->
-              <th colspan="6" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
-              <!-- Bloque Elegible 2 -->
-              <th colspan="6" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
-              <th rowspan="2" style="width: 45px;">OK</th>
+              <th rowspan="2" class="text-start header-cierre" style="min-width: 220px;" id="thCierreTituloCol">SUPERVISOR / MESA</th>
+              <th colspan="7" class="header-kpi-cvz">TOTAL CERVEZA</th>
+              <th colspan="2" class="header-cierre">DESVÍOS COMPARATIVOS</th>
             </tr>
             <tr>
-              <!-- CZA -->
-              <th class="header-kpi-cvz">% Avance</th>
-              <th class="header-kpi-cvz">Med.Real</th>
-              <th class="header-kpi-cvz">Med.Nec</th>
-              <th class="header-kpi-cvz">-14 D</th>
-              <th class="header-kpi-cvz">-7 D</th>
-              <th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
-              <!-- UNG -->
-              <th class="header-kpi-ung">% Avance</th>
-              <th class="header-kpi-ung">Med.Real</th>
-              <th class="header-kpi-ung">Med.Nec</th>
-              <th class="header-kpi-ung">-14 D</th>
-              <th class="header-kpi-ung">-7 D</th>
-              <th class="header-kpi-ung text-warning fw-bold">PLAN</th>
-              <!-- SEL 1 -->
-              <th class="header-kpi-sel1">% Avance</th>
-              <th class="header-kpi-sel1">Med.Real</th>
-              <th class="header-kpi-sel1">Med.Nec</th>
-              <th class="header-kpi-sel1">-14 D</th>
-              <th class="header-kpi-sel1">-7 D</th>
-              <th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
-              <!-- SEL 2 -->
-              <th class="header-kpi-sel2">% Avance</th>
-              <th class="header-kpi-sel2">Med.Real</th>
-              <th class="header-kpi-sel2">Med.Nec</th>
-              <th class="header-kpi-sel2">-14 D</th>
-              <th class="header-kpi-sel2">-7 D</th>
-              <th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
+              <th class="header-kpi-cvz">Media Real</th>
+              <th class="header-kpi-cvz">Med-nec</th>
+              <th class="header-kpi-cvz">7dias</th>
+              <th class="header-kpi-cvz">14 dias</th>
+              <th class="header-kpi-cvz bg-primary text-warning fw-bold">Planificación</th>
+              <th class="header-kpi-cvz bg-dark text-white fw-bold">Real</th>
+              <th class="header-kpi-cvz">Var</th>
+              <th class="header-cierre">Vs Med Real</th>
+              <th class="header-cierre">Vs Med Nec</th>
             </tr>
           </thead>
-          <tbody id="supTableBody"></tbody>
-          <tfoot class="table-dark fw-bold" id="supTableFoot"></tfoot>
+          <tbody id="cuerpoTablaCierreD1"></tbody>
+          <tfoot class="table-dark fw-bold" id="pieTablaCierreD1"></tfoot>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- 3. VISTA JEFE DE VENTAS (Consolidado de Mesas)          -->
-  <!-- ======================================================== -->
-  <div id="viewJefe" class="d-none">
-    <div class="card card-custom p-3 mb-3 bg-white">
-      <h4 class="mb-0 fw-bold"><i class="bi bi-buildings text-primary me-2"></i>Monitoreo de Mesas - Jefatura de Ventas</h4>
-      <small class="text-muted">Resumen comparativo con los avances oficiales y las 5 métricas de cada supervisor</small>
+  <!-- ==================================================================== -->
+  <!-- ETAPA 2: PLANIFICACIÓN MATINAL (Con MESA AS y MESA MAY separadas)   -->
+  <!-- ==================================================================== -->
+  <div id="etapaPlanificacion" class="d-none">
+    
+    <div class="card card-custom p-2 bg-white mb-3 shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-primary text-white fw-bold"><i class="bi bi-person-badge me-1"></i> Rol en Matinal</span>
+            <select id="roleSelect" class="form-select fw-bold" onchange="onRoleChange()">
+              <option value="vendedor">1. Vendedor (Carga Individual)</option>
+              <option value="supervisor" selected>2. Supervisor de Mesa</option>
+              <option value="jefe">3. Jefe de Ventas (Visión Global)</option>
+            </select>
+          </div>
+
+          <div class="input-group input-group-sm" id="userSelectContainer">
+            <span class="input-group-text bg-light text-dark fw-semibold" id="userSelectLabel"><i class="bi bi-person me-1"></i> Mesa</span>
+            <select id="userSelect" class="form-select fw-semibold" onchange="renderPlanCurrentView()"></select>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-1 bg-light px-2 py-1 rounded border">
+          <span class="small fw-bold text-muted me-1"><i class="bi bi-sliders text-primary me-1"></i>Focos del Día:</span>
+          <span class="badge bg-dark me-1" id="badgePlanKpi1">CCC MICHELOB</span>
+          <span class="badge bg-dark" id="badgePlanKpi2">CCC PURE GOLD</span>
+          <small class="text-muted ms-1" style="font-size:0.7rem;">(Definidos en Vespertina)</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. VISTA VENDEDOR -->
+    <div id="viewVendedor" class="d-none">
+      <div class="card card-custom p-3 bg-white border-start border-4 border-primary shadow-sm mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <span class="badge bg-secondary text-uppercase mb-1" id="vendMesaTag">Supervisor</span>
+            <h4 class="mb-0 fw-bold text-dark" id="vendNombreTitle">Nombre Vendedor</h4>
+            <small class="text-muted" id="vendIdTag">ID PV: -</small>
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            <span id="vendEstadoBadge" class="badge-adv bg-warning text-dark">Pendiente de Envío</span>
+            <button class="btn btn-primary fw-semibold px-4" onclick="guardarVendedor()"><i class="bi bi-send-check me-2"></i>Enviar mi Planificación</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- 1. CZA (Fijo) -->
+        <div class="col-lg-6">
+          <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-primary">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+              <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cup-straw me-2"></i>VOLUMEN CZA CMQ</h6>
+              <span class="badge bg-primary text-white fw-bold" id="vAvanceCvz">% Avance: -</span>
+            </div>
+            <div class="row g-2 text-center mb-2">
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjCvz">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealCvz">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealCvz">0</div></div></div>
+              <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecCvz">0</div></div></div>
+            </div>
+            <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Cvz" class="text-primary">0</strong></span></div>
+              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Cvz" class="text-primary">0</strong></span></div>
+            </div>
+            <div class="mt-auto">
+              <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+                <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+                <span id="vGapCvz" class="small fw-semibold"></span>
+              </label>
+              <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-primary" id="vInpPlanCvz" oninput="evaluarGap('Cvz', 'CVZ CMQ')">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. UNG (Fijo) -->
+        <div class="col-lg-6">
+          <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+              <h6 class="fw-bold mb-0 text-success"><i class="bi bi-box-seam me-2"></i>VOLUMEN UNG</h6>
+              <span class="badge bg-success text-white fw-bold" id="vAvanceUng">% Avance: -</span>
+            </div>
+            <div class="row g-2 text-center mb-2">
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjUng">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealUng">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealUng">0</div></div></div>
+              <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecUng">0</div></div></div>
+            </div>
+            <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Ung" class="text-success">0</strong></span></div>
+              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Ung" class="text-success">0</strong></span></div>
+            </div>
+            <div class="mt-auto">
+              <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+                <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+                <span id="vGapUng" class="small fw-semibold"></span>
+              </label>
+              <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-success" id="vInpPlanUng" oninput="evaluarGap('Ung', 'UNG')">
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Elegible 1 -->
+        <div class="col-lg-6">
+          <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-warning">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+              <h6 class="fw-bold mb-0 text-warning text-dark" id="vCardTitleSel1">INDICADOR 1</h6>
+              <span class="badge bg-warning text-dark fw-bold" id="vAvanceSel1">% Avance: -</span>
+            </div>
+            <div class="row g-2 text-center mb-2">
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjSel1">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealSel1">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealSel1">0</div></div></div>
+              <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel1">0</div></div></div>
+            </div>
+            <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel1" class="text-warning text-dark">0</strong></span></div>
+              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel1" class="text-warning text-dark">0</strong></span></div>
+            </div>
+            <div class="mt-auto">
+              <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+                <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+                <span id="vGapSel1" class="small fw-semibold"></span>
+              </label>
+              <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-warning" id="vInpPlanSel1" oninput="evaluarGapDinamico(1)">
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Elegible 2 -->
+        <div class="col-lg-6">
+          <div class="card card-custom p-3 h-100 bg-white border-top border-4 border-info">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+              <h6 class="fw-bold mb-0 text-info text-dark" id="vCardTitleSel2">INDICADOR 2</h6>
+              <span class="badge bg-info text-dark fw-bold" id="vAvanceSel2">% Avance: -</span>
+            </div>
+            <div class="row g-2 text-center mb-2">
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Objetivo</div><div class="kpi-val" id="vObjSel2">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Real Acum.</div><div class="kpi-val" id="vRealSel2">0</div></div></div>
+              <div class="col-3"><div class="kpi-card"><div class="kpi-title">Media Real</div><div class="kpi-val text-secondary" id="vMrealSel2">0</div></div></div>
+              <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel2">0</div></div></div>
+            </div>
+            <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
+              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel2" class="text-info text-dark">0</strong></span></div>
+              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel2" class="text-info text-dark">0</strong></span></div>
+            </div>
+            <div class="mt-auto">
+              <label class="form-label fw-bold small text-dark d-flex justify-content-between">
+                <span>MI COMPROMISO DE PLANIFICACIÓN:</span>
+                <span id="vGapSel2" class="small fw-semibold"></span>
+              </label>
+              <input type="number" step="0.25" class="form-control form-control-lg fw-bold text-center border-info" id="vInpPlanSel2" oninput="evaluarGapDinamico(2)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. VISTA SUPERVISOR -->
+    <div id="viewSupervisor" class="d-none">
+      <div class="card card-custom p-3 mb-3 bg-white shadow-sm">
+        <!-- Compromiso Vespertina Anterior -->
+        <div class="p-2 mb-3 rounded-3 bg-primary bg-opacity-10 border border-primary d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-bullseye fs-4 text-primary me-2"></i>
+            <div>
+              <span class="fw-bold text-primary small d-block">COMPROMISO VESPERTINA ANTERIOR DE ESTA MESA</span>
+              <small class="text-muted">Meta que el supervisor se comprometió a buscar para la jornada de hoy</small>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 text-center" id="supCompromisoVesperCards">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <span class="badge bg-primary text-uppercase">Mesa Operativa</span>
+            <h4 class="mb-0 fw-bold" id="supMesaTitle">Mesa: -</h4>
+            <small class="text-muted">Supervisa avances de la mesa y valida compromisos individuales</small>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 text-center">
+            <div class="bg-light p-2 rounded border">
+              <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa CZA</small>
+              <strong class="text-primary fs-6" id="supMesaAvanceCvz">-</strong>
+            </div>
+            <div class="bg-light p-2 rounded border">
+              <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa UNG</small>
+              <strong class="text-success fs-6" id="supMesaAvanceUng">-</strong>
+            </div>
+            <div class="bg-light p-2 rounded border">
+              <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel1">Avance Ind 1</small>
+              <strong class="text-warning text-dark fs-6" id="supMesaAvanceSel1">-</strong>
+            </div>
+            <div class="bg-light p-2 rounded border">
+              <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel2">Avance Ind 2</small>
+              <strong class="text-info text-dark fs-6" id="supMesaAvanceSel2">-</strong>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-danger btn-sm fw-semibold" onclick="exigirMediasSupervisor()"><i class="bi bi-lightning-fill me-1"></i>Exigir Medias</button>
+            <button class="btn btn-success btn-sm fw-semibold" onclick="aprobarMesaSupervisor()"><i class="bi bi-check-all me-1"></i>Aprobar Mesa</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-custom mb-0" id="tablaSupervisorMesa">
+            <thead>
+              <tr>
+                <th rowspan="2" class="text-start" style="min-width: 170px;">VENDEDOR</th>
+                <th rowspan="2" style="width: 75px;">ESTADO</th>
+                <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+                <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
+                <th colspan="6" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
+                <th colspan="6" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
+                <th rowspan="2" style="width: 45px;">OK</th>
+              </tr>
+              <tr>
+                <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
+              </tr>
+            </thead>
+            <tbody id="supTableBody"></tbody>
+            <tfoot class="table-dark fw-bold" id="supTableFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. VISTA JEFE DE VENTAS (Con MESA AS y MESA MAY desagregadas) -->
+    <div id="viewJefe" class="d-none">
+      <div class="card card-custom p-3 mb-3 bg-white shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h4 class="mb-0 fw-bold"><i class="bi bi-buildings text-primary me-2"></i>Monitoreo de Mesas - Jefatura de Ventas</h4>
+            <small class="text-muted">Resumen comparativo con desagregación de MESA AS y MESA MAYORISTA</small>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-warning fw-bold px-3 shadow-sm" onclick="confirmarPlanificacionJefe()">
+              <i class="bi bi-camera-fill me-1"></i> Confirmar y Guardar Foto AD(D-1)
+            </button>
+          </div>
+        </div>
+        <div id="bannerFotoCongelada" class="alert alert-success d-none py-2 px-3 mt-3 mb-0 small">
+          <i class="bi bi-check-circle-fill me-1"></i> <strong>¡Foto AD(D-1) congelada y guardada con éxito!</strong> Esta planificación servirá automáticamente como base de comparación para el Cierre D-1 de mañana.
+        </div>
+      </div>
+
+      <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-custom mb-0">
+            <thead>
+              <tr>
+                <th rowspan="2" class="text-start">SUPERVISOR / MESA</th>
+                <th rowspan="2">ESTADO</th>
+                <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+                <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
+                <th colspan="6" class="header-kpi-sel1" id="thJefeSel1">IND 1</th>
+                <th colspan="6" class="header-kpi-sel2" id="thJefeSel2">IND 2</th>
+              </tr>
+              <tr>
+                <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
+                <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
+                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+              </tr>
+            </thead>
+            <tbody id="jefeTableBody"></tbody>
+            <tfoot class="table-dark fw-bold" id="jefeTableFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- ETAPA 3: VESPERTINA (Cierre del Día + Compromisos para Mañana)       -->
+  <!-- ==================================================================== -->
+  <div id="etapaVespertina" class="d-none">
+
+    <!-- PARTE 1: CIERRE DE VENTAS DE HOY (Real vs Planificado) -->
+    <div class="card card-custom p-3 bg-white mb-3 shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <span class="badge bg-primary text-uppercase">Cierre del Día</span>
+          <h4 class="mb-0 fw-bold"><i class="bi bi-check2-circle text-success me-2"></i>Cierre de Ventas de Hoy: Real vs Planificado</h4>
+          <small class="text-muted">Comparativa de ventas reales de hoy (VESPER) vs lo planificado esta mañana y medias proyectadas para mañana (AD-V)</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light fw-bold"><i class="bi bi-funnel me-1"></i> Vista Cierre:</span>
+            <select id="vesperVistaSelect" class="form-select fw-bold" onchange="renderVespertinaCierre()">
+              <option value="MESAS" selected>RESUMEN POR MESAS (Jefe de Ventas)</option>
+              <option value="CORSINO PEDRO">Vendedores: CORSINO PEDRO</option>
+              <option value="MORENO FERNANDO">Vendedores: MORENO FERNANDO</option>
+              <option value="ANTUAL PAULA">Vendedores: ANTUAL PAULA</option>
+              <option value="MESA AS">Vendedores: MESA AS</option>
+              <option value="MESA MAYORISTA">Vendedores: MESA MAYORISTA</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4">
@@ -354,193 +466,279 @@
         <table class="table table-bordered table-hover table-custom mb-0">
           <thead>
             <tr>
-              <th rowspan="2" class="text-start">SUPERVISOR / MESA</th>
-              <th rowspan="2">ESTADO</th>
-              <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
-              <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
-              <th colspan="6" class="header-kpi-sel1" id="thJefeSel1">IND 1</th>
-              <th colspan="6" class="header-kpi-sel2" id="thJefeSel2">IND 2</th>
+              <th rowspan="2" class="text-start header-cierre" style="min-width: 190px;" id="thVesperCierreCol">MESA / SUPERVISOR</th>
+              <th colspan="3" class="header-kpi-cvz">CUMPLIMIENTO DE HOY (CERVEZA)</th>
+              <th colspan="4" class="header-cierre">PROYECCIÓN PARA MAÑANA (AD-V)</th>
             </tr>
             <tr>
-              <!-- CZA -->
-              <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
-              <!-- UNG -->
-              <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
-              <!-- SEL 1 -->
-              <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-              <!-- SEL 2 -->
-              <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+              <th class="header-kpi-cvz bg-primary text-warning fw-bold">Planificación Hoy</th>
+              <th class="header-kpi-cvz bg-dark text-white fw-bold">Real Hoy</th>
+              <th class="header-kpi-cvz">Desvío (Var %)</th>
+              <th class="header-cierre">Med-nec p/mañana</th>
+              <th class="header-cierre">7 días</th>
+              <th class="header-cierre">14 días</th>
+              <th class="header-cierre">Prevendido</th>
             </tr>
           </thead>
-          <tbody id="jefeTableBody"></tbody>
-          <tfoot class="table-dark fw-bold" id="jefeTableFoot"></tfoot>
+          <tbody id="cuerpoTablaVesperCierre"></tbody>
+          <tfoot class="table-dark fw-bold" id="pieTablaVesperCierre"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- PARTE 2: COMPROMISOS Y ELECCIÓN DE KPIS PARA MAÑANA -->
+    <div class="card card-custom p-3 bg-white mb-3 shadow-sm border-top border-4 border-warning">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <span class="badge bg-dark text-uppercase">Para la Jornada de Mañana</span>
+          <h4 class="mb-0 fw-bold"><i class="bi bi-sunset-fill text-warning me-2"></i>Compromiso de Mesas y Elección de KPIs de Mañana</h4>
+          <small class="text-muted">Define los 2 KPIs secundarios para la matinal de mañana y los compromisos acordados por mesa</small>
+        </div>
+
+        <!-- Selector de los 2 KPIs de Mañana -->
+        <div class="d-flex align-items-center flex-wrap gap-2 bg-light p-2 rounded border">
+          <span class="fw-bold small text-primary"><i class="bi bi-check2-square me-1"></i>KPIs para Mañana:</span>
+          <select id="vesperKpi1" class="form-select form-select-sm fw-bold border-0 bg-white" style="width: 150px;" onchange="actualizarKpisDesdeVespertina()">
+            <option value="COB MICHELOB" selected>CCC MICHELOB</option>
+            <option value="COB PURE GOLD">CCC PURE GOLD</option>
+            <option value="COB CZA">CCC CZA</option>
+            <option value="COB PREMIUM">CCC PREMIUM</option>
+            <option value="COB UNG">CCC UNG</option>
+            <option value="COB LATONES">CCC LATONES</option>
+            <option value="LATONES">VOL. LATONES</option>
+            <option value="TOP">VOL. TOP</option>
+            <option value="CORE + VALUE">VOL. CORE+VALUE</option>
+            <option value="PREMIUM">VOL. PREMIUM</option>
+            <option value="BALANCED CHOICES">VOL. BALANCED</option>
+          </select>
+          <span class="text-muted fw-bold">+</span>
+          <select id="vesperKpi2" class="form-select form-select-sm fw-bold border-0 bg-white" style="width: 150px;" onchange="actualizarKpisDesdeVespertina()">
+            <option value="COB PURE GOLD" selected>CCC PURE GOLD</option>
+            <option value="COB MICHELOB">CCC MICHELOB</option>
+            <option value="COB CZA">CCC CZA</option>
+            <option value="COB PREMIUM">CCC PREMIUM</option>
+            <option value="COB UNG">CCC UNG</option>
+            <option value="COB LATONES">CCC LATONES</option>
+            <option value="LATONES">VOL. LATONES</option>
+            <option value="TOP">VOL. TOP</option>
+            <option value="CORE + VALUE">VOL. CORE+VALUE</option>
+            <option value="PREMIUM">VOL. PREMIUM</option>
+            <option value="BALANCED CHOICES">VOL. BALANCED</option>
+          </select>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-success fw-semibold" onclick="guardarVespertina()"><i class="bi bi-cloud-arrow-up me-2"></i>Guardar Vespertina para Mañana</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla Vespertina con CZA, UNG, KPI 1 y KPI 2 -->
+    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4">
+      <div class="table-responsive">
+        <table class="table table-bordered table-custom mb-0">
+          <thead>
+            <tr>
+              <th class="header-vesper text-start" style="min-width: 180px;">SUPERVISOR / MESA</th>
+              <th class="header-vesper" style="background-color: #0284c7 !important; color: white;">TOTAL CERVEZA</th>
+              <th class="header-vesper" style="background-color: #059669 !important; color: white;">TOTAL UNG</th>
+              <th class="header-vesper" style="background-color: #d97706 !important; color: white;" id="thVesperKpi1">KPI 1</th>
+              <th class="header-vesper" style="background-color: #7c3aed !important; color: white;" id="thVesperKpi2">KPI 2</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoTablaVespertina"></tbody>
+          <tfoot class="table-dark fw-bold" id="pieTablaVespertina"></tfoot>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- 4. VISTA ANALISTA: CARGA NOCTURNA Y CONTROL COMPLETO     -->
-  <!-- ======================================================== -->
-  <div id="viewAnalista" class="d-none">
-    
-    <!-- MÓDULO DE ACTUALIZACIÓN GITHUB / NOCTURNA -->
-    <div class="card card-custom p-4 bg-white mb-4 border-start border-4 border-success shadow-sm">
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-        <div>
-          <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up-fill text-primary me-2"></i>Carga Nocturna de Datos (Sincronización)</h5>
-          <small class="text-muted">Carga tu hoja <code>AD</code> en Excel. Descarga el archivo <code>datos_matinal.json</code> y súbelo a GitHub.</small>
+  <!-- ==================================================================== -->
+  <!-- ETAPA 4: ANALISTA (Centro de Carga y Cierre de Planificación)       -->
+  <!-- ==================================================================== -->
+  <div id="etapaAnalista" class="d-none">
+    <!-- 4. VISTA ANALISTA -->
+    <div id="viewAnalista" class="d-none">
+      <div class="card card-custom p-4 bg-white mb-4 border-start border-4 border-success shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up-fill text-primary me-2"></i>Centro de Carga del Analista (AD, AD(V) y VESPER)</h5>
+            <small class="text-muted">Sube el libro completo de Excel o gestiona cada pestaña de forma independiente.</small>
+          </div>
+          <span class="badge bg-success" id="estadoCargaBadge">Base de datos lista</span>
         </div>
-        <span class="badge bg-success" id="estadoCargaBadge">Base de datos lista</span>
-      </div>
 
-      <div class="row g-3">
-        <!-- Opción 1: Subir Archivo Excel -->
-        <div class="col-md-6 border-end">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-file-earmark-excel me-2"></i>Opción 1: Subir Excel nocturno (.xlsx)</h6>
-          <p class="text-muted small">Arrastra el archivo <code>PLANIFICACIÓN MESAS COMPLETO 2026.xlsx</code> con la pestaña <code>AD</code>.</p>
+        <!-- Opción Maestra: Subir Libro Completo -->
+        <div class="bg-light p-3 rounded-3 border mb-4">
+          <h6 class="fw-bold text-primary mb-1"><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>Subir Archivo Maestro Completo (.xlsx)</h6>
+          <p class="text-muted small mb-2">Arrastra el archivo <code>PLANIFICACIÓN MESAS COMPLETO 2026.xlsx</code>. El sistema detectará y procesará automáticamente las pestañas <strong>AD</strong>, <strong>AD (V)</strong> y <strong>VESPER</strong> si están presentes.</p>
           <input type="file" id="excelFileInput" class="form-control" accept=".xlsx, .xls, .csv" onchange="procesarArchivoExcel(event)">
         </div>
 
-        <!-- Opción 2: Pegar directo desde Excel -->
-        <div class="col-md-6">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-clipboard2-plus me-2"></i>Opción 2: Pegar filas copiadas de AD</h6>
-          <p class="text-muted small">Copia el bloque de celdas de tu hoja <code>AD</code> en Excel y pégalo aquí:</p>
-          <div class="d-flex gap-2">
-            <textarea id="pasteDataInput" class="form-control form-control-sm" rows="2" placeholder="Pega filas copiadas de Excel..."></textarea>
-            <button class="btn btn-outline-primary fw-semibold" onclick="procesarPegadoExcel()">Cargar</button>
+        <!-- Carga Individual por Pestañas -->
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-layers-half me-2"></i>Carga Rápida Individual por Pestaña</h6>
+        <div class="row g-3">
+          <!-- Pestaña 1: AD -->
+          <div class="col-md-4">
+            <div class="card p-3 h-100 border bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary">1. Pestaña AD</span>
+                <small class="text-muted fw-bold">Para la Matinal</small>
+              </div>
+              <p class="text-muted small mb-2">Contiene Objetivos, Reales acumulados, % Avance y Medias de hoy.</p>
+              <textarea id="pasteDataAD" class="form-control form-control-sm mb-2" rows="3" placeholder="Pega filas de AD..."></textarea>
+              <button class="btn btn-outline-primary btn-sm fw-semibold w-100" onclick="procesarPegadoEspecifico('AD')">Impactar Hoja AD</button>
+            </div>
+          </div>
+
+          <!-- Pestaña 2: VESPER -->
+          <div class="col-md-4">
+            <div class="card p-3 h-100 border bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-dark">2. Pestaña VESPER</span>
+                <small class="text-muted fw-bold">Para la Tarde</small>
+              </div>
+              <p class="text-muted small mb-2">Contiene las ventas reales del día para medir el cumplimiento vespertino.</p>
+              <textarea id="pasteDataVesper" class="form-control form-control-sm mb-2" rows="3" placeholder="Pega filas de VESPER..."></textarea>
+              <button class="btn btn-outline-dark btn-sm fw-semibold w-100" onclick="procesarPegadoEspecifico('VESPER')">Impactar Hoja VESPER</button>
+            </div>
+          </div>
+
+          <!-- Pestaña 3: AD(V) -->
+          <div class="col-md-4">
+            <div class="card p-3 h-100 border bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-success">3. Pestaña AD (V)</span>
+                <small class="text-muted fw-bold">Para Mañana</small>
+              </div>
+              <p class="text-muted small mb-2">Contiene las medias proyectadas calculadas al cierre de la jornada.</p>
+              <textarea id="pasteDataADV" class="form-control form-control-sm mb-2" rows="3" placeholder="Pega filas de AD (V)..."></textarea>
+              <button class="btn btn-outline-success btn-sm fw-semibold w-100" onclick="procesarPegadoEspecifico('ADV')">Impactar Hoja AD (V)</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Barra de descarga para GitHub -->
-      <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Para GitHub Pages: Descarga este archivo y reemplázalo en tu repositorio de GitHub.</span>
-        <button class="btn btn-dark btn-sm fw-semibold" onclick="descargarJSONGitHub()"><i class="bi bi-github me-2"></i>Descargar datos_matinal.json para GitHub</button>
-      </div>
-    </div>
-
-    <!-- TABLA GENERAL ANALISTA CON LAS 4 COLUMNAS DE PLANIFICACIÓN -->
-    <div class="card card-custom p-3 bg-white shadow-sm mb-4">
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold mb-0"><i class="bi bi-table text-primary me-2"></i>Matriz de Cierre Completa (Copiar Columnas a Excel)</h6>
-        <div class="d-flex flex-wrap gap-2">
-          <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="copiarColumnaExcel('CVZ CMQ')"><i class="bi bi-clipboard me-1"></i>Copiar Plan CZA</button>
-          <button class="btn btn-sm btn-outline-success fw-semibold" onclick="copiarColumnaExcel('UNG')"><i class="bi bi-clipboard me-1"></i>Copiar Plan UNG</button>
-          <button class="btn btn-sm btn-outline-warning text-dark fw-semibold" onclick="copiarColumnaExcel('SEL1')"><i class="bi bi-clipboard me-1"></i>Copiar Plan Ind 1</button>
-          <button class="btn btn-sm btn-outline-info text-dark fw-semibold" onclick="copiarColumnaExcel('SEL2')"><i class="bi bi-clipboard me-1"></i>Copiar Plan Ind 2</button>
-          <button class="btn btn-sm btn-success fw-semibold" onclick="descargarCSVAnalista()"><i class="bi bi-download me-1"></i>Descargar CSV</button>
+        <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Para GitHub Pages: Descarga este archivo y reemplázalo en tu repositorio de GitHub.</span>
+          <button class="btn btn-dark btn-sm fw-semibold" onclick="descargarJSONGitHub()"><i class="bi bi-github me-2"></i>Descargar datos_matinal.json para GitHub</button>
         </div>
       </div>
 
-      <div class="table-responsive" style="max-height: 480px;">
-        <table class="table table-bordered table-hover table-custom mb-0">
-          <thead>
-            <tr>
-              <th rowspan="2" class="text-start">PV</th>
-              <th rowspan="2" class="text-start">VENDEDOR</th>
-              <th rowspan="2" class="text-start">SUPERVISOR</th>
-              <th rowspan="2">ESTADO</th>
-              <!-- CZA -->
-              <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
-              <!-- UNG -->
-              <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
-              <!-- SEL 1 -->
-              <th colspan="6" class="header-kpi-sel1" id="thAnSel1">IND 1</th>
-              <!-- SEL 2 -->
-              <th colspan="6" class="header-kpi-sel2" id="thAnSel2">IND 2</th>
-            </tr>
-            <tr>
-              <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
-              <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
-              <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-              <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
-            </tr>
-          </thead>
-          <tbody id="analistaTableBody"></tbody>
-        </table>
+      <div class="card card-custom p-3 bg-white shadow-sm mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-table text-primary me-2"></i>Matriz de Cierre Completa (Copiar Columnas a Excel)</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="copiarColumnaExcel('CVZ CMQ')"><i class="bi bi-clipboard me-1"></i>Copiar Plan CZA</button>
+            <button class="btn btn-sm btn-outline-success fw-semibold" onclick="copiarColumnaExcel('UNG')"><i class="bi bi-clipboard me-1"></i>Copiar Plan UNG</button>
+            <button class="btn btn-sm btn-outline-warning text-dark fw-semibold" onclick="copiarColumnaExcel('SEL1')"><i class="bi bi-clipboard me-1"></i>Copiar Plan Ind 1</button>
+            <button class="btn btn-sm btn-outline-info text-dark fw-semibold" onclick="copiarColumnaExcel('SEL2')"><i class="bi bi-clipboard me-1"></i>Copiar Plan Ind 2</button>
+            <button class="btn btn-sm btn-success fw-semibold" onclick="descargarCSVAnalista()"><i class="bi bi-download me-1"></i>Descargar CSV</button>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 480px;">
+          <table class="table table-bordered table-hover table-custom mb-0">
+            <thead>
+              <tr>
+                <th rowspan="2" class="text-start">PV</th>
+                <th rowspan="2" class="text-start">VENDEDOR</th>
+                <th rowspan="2" class="text-start">MESA</th>
+                <th rowspan="2">ESTADO</th>
+                <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+                <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
+                <th colspan="6" class="header-kpi-sel1" id="thAnSel1">IND 1</th>
+                <th colspan="6" class="header-kpi-sel2" id="thAnSel2">IND 2</th>
+              </tr>
+              <tr>
+                <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
+                <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
+                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+              </tr>
+            </thead>
+            <tbody id="analistaTableBody"></tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </div
   </div>
 
 </div>
 
-<!-- Scripts de Operación -->
+<!-- Scripts de Integración y Lógica -->
 <script>
-// URL OFICIAL DE TU GOOGLE APPS SCRIPT
-const API_URL = "https://script.google.com/macros/s/AKfycbxFR01M8zLfDGzlsgldOEqrPcCX4WngzZYmY9qgUfc_rRv5-BE9OJcg8ZVUOUx0iXOQMQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzFop31XLWMCYicMuKAG9mKxSKvVIDevvKkUJnCII26pVo92NakM-eKNBS3PlcWLhLBNQ/exec";
 
-// Avances oficiales de la mesa del supervisor extraídos de AD
+// Avances oficiales de la mesa desagregando MESA AS y MESA MAYORISTA
 const AVANCES_OFICIALES_SUPERVISOR = {
-  "CORSINO PEDRO": {
-    "CVZ CMQ": "91.4%",
-    "UNG": "100.9%",
-    "COB MICHELOB": "98.2%",
-    "COB PURE GOLD": "92.0%",
-    "COB CZA": "94.5%",
-    "COB PREMIUM": "95.0%",
-    "COB UNG": "96.0%",
-    "COB LATONES": "97.0%",
-    "LATONES": "96.5%",
-    "TOP": "92.0%",
-    "CORE + VALUE": "91.8%",
-    "PREMIUM": "94.0%",
-    "BALANCED CHOICES": "95.0%"
-  },
-  "MORENO FERNANDO": {
-    "CVZ CMQ": "97.1%",
-    "UNG": "94.5%",
-    "COB MICHELOB": "96.0%",
-    "COB PURE GOLD": "90.0%",
-    "COB CZA": "98.0%",
-    "COB PREMIUM": "96.5%",
-    "COB UNG": "93.0%",
-    "COB LATONES": "95.0%",
-    "LATONES": "98.0%",
-    "TOP": "94.0%",
-    "CORE + VALUE": "97.0%",
-    "PREMIUM": "98.5%",
-    "BALANCED CHOICES": "92.0%"
-  },
-  "ANTUAL PAULA": {
-    "CVZ CMQ": "95.5%",
-    "UNG": "92.0%",
-    "COB MICHELOB": "94.0%",
-    "COB PURE GOLD": "89.0%",
-    "COB CZA": "96.0%",
-    "COB PREMIUM": "93.0%",
-    "COB UNG": "91.0%",
-    "COB LATONES": "94.0%",
-    "LATONES": "95.0%",
-    "TOP": "90.0%",
-    "CORE + VALUE": "95.0%",
-    "PREMIUM": "96.0%",
-    "BALANCED CHOICES": "88.0%"
-  },
-  "SECO ROBERTO ENRIQUE SV": {
-    "CVZ CMQ": "84.4%",
-    "UNG": "86.0%",
-    "COB MICHELOB": "90.0%",
-    "COB PURE GOLD": "85.0%",
-    "COB CZA": "89.0%",
-    "COB PREMIUM": "87.0%",
-    "COB UNG": "88.0%",
-    "COB LATONES": "89.0%",
-    "LATONES": "85.0%",
-    "TOP": "82.0%",
-    "CORE + VALUE": "84.0%",
-    "PREMIUM": "86.0%",
-    "BALANCED CHOICES": "80.0%"
-  }
+  "CORSINO PEDRO": { "CVZ CMQ": "91.4%", "UNG": "100.9%", "COB MICHELOB": "98.2%", "COB PURE GOLD": "92.0%", "COB CZA": "94.5%", "COB PREMIUM": "95.0%", "COB UNG": "96.0%", "COB LATONES": "97.0%", "LATONES": "96.5%", "TOP": "92.0%", "CORE + VALUE": "91.8%", "PREMIUM": "94.0%", "BALANCED CHOICES": "95.0%" },
+  "MORENO FERNANDO": { "CVZ CMQ": "97.1%", "UNG": "94.5%", "COB MICHELOB": "96.0%", "COB PURE GOLD": "90.0%", "COB CZA": "98.0%", "COB PREMIUM": "96.5%", "COB UNG": "93.0%", "COB LATONES": "95.0%", "LATONES": "98.0%", "TOP": "94.0%", "CORE + VALUE": "97.0%", "PREMIUM": "98.5%", "BALANCED CHOICES": "92.0%" },
+  "ANTUAL PAULA": { "CVZ CMQ": "95.5%", "UNG": "92.0%", "COB MICHELOB": "94.0%", "COB PURE GOLD": "89.0%", "COB CZA": "96.0%", "COB PREMIUM": "93.0%", "COB UNG": "91.0%", "COB LATONES": "94.0%", "LATONES": "95.0%", "TOP": "90.0%", "CORE + VALUE": "95.0%", "PREMIUM": "96.0%", "BALANCED CHOICES": "88.0%" },
+  "MESA AS": { "CVZ CMQ": "94.9%", "UNG": "91.0%", "COB MICHELOB": "92.0%", "COB PURE GOLD": "88.0%", "COB CZA": "90.0%", "COB PREMIUM": "89.0%", "COB UNG": "90.0%", "COB LATONES": "91.0%", "LATONES": "92.0%", "TOP": "88.0%", "CORE + VALUE": "90.0%", "PREMIUM": "92.0%", "BALANCED CHOICES": "85.0%" },
+  "MESA MAYORISTA": { "CVZ CMQ": "71.6%", "UNG": "72.0%", "COB MICHELOB": "83.0%", "COB PURE GOLD": "75.0%", "COB CZA": "76.0%", "COB PREMIUM": "74.0%", "COB UNG": "75.0%", "COB LATONES": "78.0%", "LATONES": "70.0%", "TOP": "65.0%", "CORE + VALUE": "60.0%", "PREMIUM": "60.0%", "BALANCED CHOICES": "65.0%" }
 };
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
   "MORENO FERNANDO",
   "ANTUAL PAULA",
-  "SECO ROBERTO ENRIQUE SV"
+  "MESA AS",
+  "MESA MAYORISTA"
 ];
 
+// Resumen del Jefe de Ventas para Cierre D-1 con MESA AS y MESA MAYORISTA desagregadas
+const RESUMEN_CIERRE_SUPERVISORES = [
+  { nombre: "CORSINO PEDRO", mreal: 179.1, mnec: 219.5, d7: 195.4, d14: 230.1, plan: 230.0, real: 241.3, var: 0.05, vsMreal: 0.35, vsMnec: 0.10 },
+  { nombre: "MORENO FERNANDO", mreal: 130.5, mnec: 139.9, d7: 221.3, d14: 154.4, plan: 190.0, real: 190.0, var: 0.00, vsMreal: 0.46, vsMnec: 0.36 },
+  { nombre: "ANTUAL PAULA", mreal: 44.8, mnec: 49.8, d7: 75.3, d14: 60.1, plan: 60.0, real: 56.1, var: -0.06, vsMreal: 0.25, vsMnec: 0.13 },
+  { nombre: "MESA MAYORISTA (Seco)", mreal: 91.2, mnec: 178.1, d7: 134.7, d14: 43.6, plan: 70.0, real: 157.8, var: 1.25, vsMreal: 0.73, vsMnec: -0.11 },
+  { nombre: "MESA AS (Melinao / Gomez)", mreal: 74.3, mnec: 83.9, d7: 66.0, d14: 79.9, plan: 70.0, real: 66.6, var: -0.05, vsMreal: -0.10, vsMnec: -0.21 }
+];
+
+// Detalle por vendedor para Cierre D-1
+const DATOS_CIERRE_VENDEDORES = [
+  // CORSINO PEDRO
+  { sv: "CORSINO PEDRO", nombre: "ACEVEDO MARIA EUGENIA", mreal: 17.4, mnec: 32.5, d7: 30.5, d14: 8.9, plan: 25.0, real: 10.6, var: -0.58, vsMreal: -0.39, vsMnec: -0.67 },
+  { sv: "CORSINO PEDRO", nombre: "ALTAMIRANO BAHAMONDES TOMAS", mreal: 30.6, mnec: 48.2, d7: 27.0, d14: 32.5, plan: 35.0, real: 37.9, var: 0.08, vsMreal: 0.24, vsMnec: -0.21 },
+  { sv: "CORSINO PEDRO", nombre: "LAUTARO RUBEN SALINA", mreal: 9.8, mnec: 11.6, d7: 15.3, d14: 17.2, plan: 16.0, real: 19.3, var: 0.20, vsMreal: 0.96, vsMnec: 0.65 },
+  { sv: "CORSINO PEDRO", nombre: "JUAN CARLOS VEGA", mreal: 24.5, mnec: 20.2, d7: 14.5, d14: 36.6, plan: 36.0, real: 37.8, var: 0.05, vsMreal: 0.54, vsMnec: 0.87 },
+  { sv: "CORSINO PEDRO", nombre: "MILLAIN BETIANA", mreal: 31.9, mnec: 29.0, d7: 30.6, d14: 43.8, plan: 35.0, real: 45.6, var: 0.30, vsMreal: 0.43, vsMnec: 0.58 },
+  { sv: "CORSINO PEDRO", nombre: "MORA MAURO", mreal: 29.8, mnec: 39.4, d7: 30.1, d14: 34.4, plan: 35.0, real: 29.3, var: -0.16, vsMreal: -0.02, vsMnec: -0.26 },
+  { sv: "CORSINO PEDRO", nombre: "MUÑOZ DAMIAN", mreal: 13.3, mnec: 13.3, d7: 18.4, d14: 15.1, plan: 16.0, real: 20.6, var: 0.29, vsMreal: 0.55, vsMnec: 0.55 },
+  { sv: "CORSINO PEDRO", nombre: "JOAQUIN GUSTAVO VALLEJOS", mreal: 21.8, mnec: 25.3, d7: 28.9, d14: 41.5, plan: 32.0, real: 40.2, var: 0.25, vsMreal: 0.84, vsMnec: 0.59 },
+
+  // MORENO FERNANDO
+  { sv: "MORENO FERNANDO", nombre: "MORA MATIAS ARIEL", mreal: 23.1, mnec: 19.6, d7: 37.3, d14: 18.7, plan: 30.0, real: 36.1, var: 0.20, vsMreal: 0.57, vsMnec: 0.84 },
+  { sv: "MORENO FERNANDO", nombre: "NUÑEZ MAURO", mreal: 11.3, mnec: 9.9, d7: 9.1, d14: 12.2, plan: 12.0, real: 17.3, var: 0.44, vsMreal: 0.54, vsMnec: 0.74 },
+  { sv: "MORENO FERNANDO", nombre: "KEBERLEIN ARIANA", mreal: 16.6, mnec: 21.4, d7: 30.3, d14: 37.8, plan: 30.0, real: 14.8, var: -0.51, vsMreal: -0.11, vsMnec: -0.31 },
+  { sv: "MORENO FERNANDO", nombre: "MAXIMILIANO FRANCISCO MARTIRE", mreal: 25.0, mnec: 29.4, d7: 42.0, d14: 25.4, plan: 35.0, real: 34.5, var: -0.01, vsMreal: 0.38, vsMnec: 0.17 },
+  { sv: "MORENO FERNANDO", nombre: "MARQUEZ JOAQUIN", mreal: 16.8, mnec: 17.1, d7: 18.2, d14: 15.0, plan: 20.0, real: 23.2, var: 0.16, vsMreal: 0.38, vsMnec: 0.36 },
+  { sv: "MORENO FERNANDO", nombre: "ORLANDO JOSÉ REYES MORA", mreal: 24.5, mnec: 23.1, d7: 54.2, d14: 30.1, plan: 35.0, real: 38.0, var: 0.09, vsMreal: 0.55, vsMnec: 0.64 },
+  { sv: "MORENO FERNANDO", nombre: "ARAVENA CRISTIAN ADRIÁN", mreal: 13.3, mnec: 19.3, d7: 30.2, d14: 15.2, plan: 28.0, real: 26.1, var: -0.07, vsMreal: 0.96, vsMnec: 0.35 },
+
+  // ANTUAL PAULA
+  { sv: "ANTUAL PAULA", nombre: "FIGUEROA JONATHAN", mreal: 20.8, mnec: 26.4, d7: 38.5, d14: 25.2, plan: 30.0, real: 28.5, var: -0.05, vsMreal: 0.37, vsMnec: 0.08 },
+  { sv: "ANTUAL PAULA", nombre: "LEON ABRIL CANDELA", mreal: 19.4, mnec: 17.9, d7: 32.1, d14: 28.4, plan: 25.0, real: 22.1, var: -0.12, vsMreal: 0.14, vsMnec: 0.23 },
+  { sv: "ANTUAL PAULA", nombre: "RODRIGO D´URSO PAEZ", mreal: 6.4, mnec: 5.2, d7: 4.7, d14: 6.5, plan: 5.0, real: 5.5, var: 0.10, vsMreal: -0.14, vsMnec: 0.06 },
+
+  // MESA AS
+  { sv: "MESA AS", nombre: "MELINAO LUCAS", mreal: 34.4, mnec: 34.4, d7: 39.5, d14: 46.0, plan: 35.0, real: 25.3, var: -0.28, vsMreal: -0.26, vsMnec: -0.27 },
+  { sv: "MESA AS", nombre: "GOMEZ RAUL ALEJANDRO", mreal: 40.0, mnec: 49.5, d7: 26.6, d14: 33.9, plan: 35.0, real: 41.4, var: 0.18, vsMreal: 0.04, vsMnec: -0.16 },
+
+  // MESA MAYORISTA
+  { sv: "MESA MAYORISTA", nombre: "SECO ROBERTO ENRIQUE SV", mreal: 91.2, mnec: 178.1, d7: 134.7, d14: 43.6, plan: 70.0, real: 157.8, var: 1.25, vsMreal: 0.73, vsMnec: -0.11 }
+];
+
+// Datos de Vespertina Compromisos con los 4 Indicadores
+let DATOS_VESPERTINA = [
+  { clave: "Pedro", sv: "CORSINO PEDRO", cza: 130, ung: 30, kpi1: 25, kpi2: 15 },
+  { clave: "Fer", sv: "MORENO FERNANDO", cza: 130, ung: 30, kpi1: 22, kpi2: 12 },
+  { clave: "Paula", sv: "ANTUAL PAULA", cza: 15, ung: 25, kpi1: 6, kpi2: 4 },
+  { clave: "Capi May", sv: "MESA MAYORISTA", cza: 30, ung: 3, kpi1: 10, kpi2: 5 },
+  { clave: "Capi AS", sv: "MESA AS", cza: 28, ung: 25, kpi1: 8, kpi2: 6 }
+];
+
+// Base Oficial de Vendedores para Planificación
 let DATA_COMPLETA = {
   kpis_elegibles: ["COB MICHELOB", "COB PURE GOLD"],
   vendedores: [
@@ -803,7 +1001,7 @@ let DATA_COMPLETA = {
       }
     },
 
-    // ANTUAL PAULA
+    // ANTUAL PAULA (SIN VE EVENTOS)
     { pv: 4, nombre: "FIGUEROA JONATHAN", sv: "ANTUAL PAULA", estado: "Enviado",
       kpis: {
         "CVZ CMQ": { obj: 555, real: 291.3, avance: "87.0%", mreal: 20.8, mnec: 26.4, d14: 6.4, d7: 12.2, plan: 24 },
@@ -855,26 +1053,9 @@ let DATA_COMPLETA = {
         "BALANCED CHOICES": { obj: 0, real: 1.0, avance: "80.0%", mreal: 0.1, mnec: 0.1, d14: 0.1, d7: 0.0, plan: 0.25 }
       }
     },
-    { pv: 95, nombre: "VE EVENTOS", sv: "ANTUAL PAULA", estado: "Enviado",
-      kpis: {
-        "CVZ CMQ": { obj: 10, real: 1.4, avance: "20.0%", mreal: 0.1, mnec: 0.9, d14: 0.0, d7: 0.0, plan: 0.5 },
-        "UNG": { obj: 5, real: 1.0, avance: "28.0%", mreal: 0.07, mnec: 0.4, d14: 0.1, d7: 0.1, plan: 0.25 },
-        "COB MICHELOB": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "COB PURE GOLD": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "COB CZA": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "COB PREMIUM": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "COB UNG": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "COB LATONES": { obj: 2, real: 0.0, avance: "0.0%", mreal: 0.0, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "LATONES": { obj: 0, real: 0.5, avance: "30.0%", mreal: 0.04, mnec: 0.1, d14: 0.0, d7: 0.0, plan: 0.25 },
-        "TOP": { obj: 0, real: 0.2, avance: "20.0%", mreal: 0.01, mnec: 0.1, d14: 0.0, d7: 0.0, plan: 0 },
-        "CORE + VALUE": { obj: 8, real: 1.0, avance: "20.0%", mreal: 0.07, mnec: 0.7, d14: 0.0, d7: 0.0, plan: 0.25 },
-        "PREMIUM": { obj: 2, real: 0.4, avance: "25.0%", mreal: 0.03, mnec: 0.2, d14: 0.0, d7: 0.0, plan: 0 },
-        "BALANCED CHOICES": { obj: 0, real: 0.1, avance: "20.0%", mreal: 0.01, mnec: 0.1, d14: 0.0, d7: 0.0, plan: 0 }
-      }
-    },
 
-    // SECO ROBERTO ENRIQUE SV (MAYORISTA)
-    { pv: 20, nombre: "MELINAO LUCAS", sv: "SECO ROBERTO ENRIQUE SV", estado: "Enviado",
+    // MESA AS (Melinao y Gomez)
+    { pv: 20, nombre: "MELINAO LUCAS", sv: "MESA AS", estado: "Enviado",
       kpis: {
         "CVZ CMQ": { obj: 825, real: 491.5, avance: "85.0%", mreal: 35.1, mnec: 33.4, d14: 8.7, d7: 25.3, plan: 35 },
         "UNG": { obj: 260, real: 160.0, avance: "88.0%", mreal: 11.4, mnec: 10.0, d14: 10.0, d7: 10.5, plan: 11 },
@@ -891,7 +1072,7 @@ let DATA_COMPLETA = {
         "BALANCED CHOICES": { obj: 0, real: 6.0, avance: "85.0%", mreal: 0.4, mnec: 0.5, d14: 0.4, d7: 0.4, plan: 0.5 }
       }
     },
-    { pv: 19, nombre: "GOMEZ RAUL ALEJANDRO", sv: "SECO ROBERTO ENRIQUE SV", estado: "Enviado",
+    { pv: 19, nombre: "GOMEZ RAUL ALEJANDRO", sv: "MESA AS", estado: "Enviado",
       kpis: {
         "CVZ CMQ": { obj: 1015, real: 625.6, avance: "87.0%", mreal: 44.7, mnec: 38.9, d14: 18.3, d7: 0.0, plan: 42 },
         "UNG": { obj: 330, real: 210.0, avance: "90.0%", mreal: 15.0, mnec: 12.0, d14: 12.5, d7: 13.0, plan: 14 },
@@ -908,7 +1089,9 @@ let DATA_COMPLETA = {
         "BALANCED CHOICES": { obj: 0, real: 8.0, avance: "85.0%", mreal: 0.6, mnec: 0.7, d14: 0.5, d7: 0.0, plan: 1 }
       }
     },
-    { pv: 6, nombre: "SECO ROBERTO ENRIQUE SV", sv: "SECO ROBERTO ENRIQUE SV", estado: "Aprobado",
+
+    // MESA MAYORISTA (Seco Roberto)
+    { pv: 6, nombre: "SECO ROBERTO ENRIQUE SV", sv: "MESA MAYORISTA", estado: "Aprobado",
       kpis: {
         "CVZ CMQ": { obj: 3058, real: 1276.6, avance: "71.6%", mreal: 91.2, mnec: 178.1, d14: 0.0, d7: 24.0, plan: 120 },
         "UNG": { obj: 950, real: 480.0, avance: "72.0%", mreal: 34.2, mnec: 47.0, d14: 35.0, d7: 38.0, plan: 45 },
@@ -928,95 +1111,388 @@ let DATA_COMPLETA = {
   ]
 };
 
-async function inicializarDatos() {
+// ====================================================================
+// NAVEGACIÓN ENTRE LAS 3 ETAPAS
+// ====================================================================
+function cambiarFase(fase) {
+  document.getElementById('etapaCierreD1').classList.add('d-none');
+  document.getElementById('etapaPlanificacion').classList.add('d-none');
+  document.getElementById('etapaVespertina').classList.add('d-none');
+  document.getElementById('etapaAnalista').classList.add('d-none');
+
+  document.getElementById('btnFaseCierre').classList.remove('active');
+  document.getElementById('btnFasePlan').classList.remove('active');
+  document.getElementById('btnFaseVesper').classList.remove('active');
+  document.getElementById('btnFaseAnalista').classList.remove('active');
+
+  if (fase === 'cierre') {
+    document.getElementById('etapaCierreD1').classList.remove('d-none');
+    document.getElementById('btnFaseCierre').classList.add('active');
+    renderCierreD1();
+  } else if (fase === 'plan') {
+    document.getElementById('etapaPlanificacion').classList.remove('d-none');
+    document.getElementById('btnFasePlan').classList.add('active');
+    renderPlanCurrentView();
+  } else if (fase === 'vesper') {
+    document.getElementById('etapaVespertina').classList.remove('d-none');
+    document.getElementById('btnFaseVesper').classList.add('active');
+    renderVespertina();
+  } else if (fase === 'analista') {
+    document.getElementById('etapaAnalista').classList.remove('d-none');
+    document.getElementById('btnFaseAnalista').classList.add('active');
+    renderAnalistaView();
+  }
+}
+
+// ====================================================================
+// ETAPA 1: RENDER CIERRE D-1
+// ====================================================================
+function renderCierreD1() {
+  const modo = document.getElementById('cierreMesaSelect').value;
+  const tbody = document.getElementById('cuerpoTablaCierreD1');
+  const tfoot = document.getElementById('pieTablaCierreD1');
+  const thTitulo = document.getElementById('thCierreTituloCol');
+  tbody.innerHTML = '';
+
+  if (modo === 'RESUMEN_SUPERVISORES') {
+    thTitulo.textContent = "SUPERVISOR / MESA";
+    let tot = { mreal: 0, mnec: 0, d7: 0, d14: 0, plan: 0, real: 0 };
+
+    RESUMEN_CIERRE_SUPERVISORES.forEach(d => {
+      tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += d.real;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-start fw-bold text-primary">${d.nombre}</td>
+        <td>${d.mreal.toFixed(1)}</td>
+        <td class="text-danger">${d.mnec.toFixed(1)}</td>
+        <td>${d.d7.toFixed(1)}</td>
+        <td>${d.d14.toFixed(1)}</td>
+        <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
+        <td class="fw-bold">${d.real.toFixed(1)}</td>
+        <td><span class="${d.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.var * 100).toFixed(0)}%</span></td>
+        <td><span class="${d.vsMreal >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.vsMreal * 100).toFixed(0)}%</span></td>
+        <td><span class="${d.vsMnec >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.vsMnec * 100).toFixed(0)}%</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
+    const totVsMreal = tot.mreal > 0 ? (tot.real / tot.mreal - 1) : 0;
+    const totVsMnec = tot.mnec > 0 ? (tot.real / tot.mnec - 1) : 0;
+
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-start">TOTAL EMPRESA</td>
+        <td>${tot.mreal.toFixed(1)}</td>
+        <td>${tot.mnec.toFixed(1)}</td>
+        <td>${tot.d7.toFixed(1)}</td>
+        <td>${tot.d14.toFixed(1)}</td>
+        <td>${tot.plan.toFixed(1)}</td>
+        <td>${tot.real.toFixed(1)}</td>
+        <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
+        <td><span class="${totVsMreal >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVsMreal * 100).toFixed(0)}%</span></td>
+        <td><span class="${totVsMnec >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVsMnec * 100).toFixed(0)}%</span></td>
+      </tr>
+    `;
+  } else {
+    thTitulo.textContent = `VENDEDOR (${modo})`;
+    const lista = DATOS_CIERRE_VENDEDORES.filter(d => d.sv === modo);
+    let tot = { mreal: 0, mnec: 0, d7: 0, d14: 0, plan: 0, real: 0 };
+
+    lista.forEach(d => {
+      tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += d.real;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-start fw-semibold">${d.nombre}</td>
+        <td>${d.mreal.toFixed(1)}</td>
+        <td class="text-danger">${d.mnec.toFixed(1)}</td>
+        <td>${d.d7.toFixed(1)}</td>
+        <td>${d.d14.toFixed(1)}</td>
+        <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
+        <td class="fw-bold">${d.real.toFixed(1)}</td>
+        <td><span class="${d.var >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.var * 100).toFixed(0)}%</span></td>
+        <td><span class="${d.vsMreal >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.vsMreal * 100).toFixed(0)}%</span></td>
+        <td><span class="${d.vsMnec >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(d.vsMnec * 100).toFixed(0)}%</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
+    const totVsMreal = tot.mreal > 0 ? (tot.real / tot.mreal - 1) : 0;
+    const totVsMnec = tot.mnec > 0 ? (tot.real / tot.mnec - 1) : 0;
+
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-start">TOTAL MESA</td>
+        <td>${tot.mreal.toFixed(1)}</td>
+        <td>${tot.mnec.toFixed(1)}</td>
+        <td>${tot.d7.toFixed(1)}</td>
+        <td>${tot.d14.toFixed(1)}</td>
+        <td>${tot.plan.toFixed(1)}</td>
+        <td>${tot.real.toFixed(1)}</td>
+        <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
+        <td><span class="${totVsMreal >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVsMreal * 100).toFixed(0)}%</span></td>
+        <td><span class="${totVsMnec >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVsMnec * 100).toFixed(0)}%</span></td>
+      </tr>
+    `;
+  }
+}
+
+// ====================================================================
+// ETAPA 3: VESPERTINA (CZA + UNG + KPI 1 + KPI 2)
+// ====================================================================
+
+// Datos del Cierre de Ventas de Hoy para Vespertina (extraídos de VESPERTINA (2))
+const DATOS_VESPER_CIERRE_MESAS = [
+  { clave: "CORSINO PEDRO", plan: 126.0, real: 241.3, var: 0.91, mnecManana: 217.2, d7: 133.2, d14: 88.6, prevendido: 19.6 },
+  { clave: "MORENO FERNANDO", plan: 123.0, real: 190.0, var: 0.54, mnecManana: 135.6, d7: 102.8, d14: 81.9, prevendido: 42.5 },
+  { clave: "ANTUAL PAULA", plan: 15.0, real: 56.1, var: 2.74, mnecManana: 49.3, d7: 19.2, d14: 11.2, prevendido: 0.5 },
+  { clave: "MESA MAYORISTA", plan: 30.0, real: 157.8, var: 4.26, mnecManana: 180.4, d7: 24.0, d14: 0.0, prevendido: 0.0 },
+  { clave: "MESA AS", plan: 45.0, real: 66.6, var: 0.48, mnecManana: 86.4, d7: 28.5, d14: 26.1, prevendido: 10.1 }
+];
+
+function renderVespertinaCierre() {
+  const vista = document.getElementById('vesperVistaSelect') ? document.getElementById('vesperVistaSelect').value : 'MESAS';
+  const tbody = document.getElementById('cuerpoTablaVesperCierre');
+  const tfoot = document.getElementById('pieTablaVesperCierre');
+  const thCol = document.getElementById('thVesperCierreCol');
+  if (!tbody || !tfoot) return;
+  tbody.innerHTML = '';
+
+  if (vista === 'MESAS') {
+    if (thCol) thCol.textContent = "SUPERVISOR / MESA";
+    let tot = { plan: 0, real: 0, mnecManana: 0, d7: 0, d14: 0, prevendido: 0 };
+
+    DATOS_VESPER_CIERRE_MESAS.forEach(d => {
+      tot.plan += d.plan; tot.real += d.real; tot.mnecManana += d.mnecManana; tot.d7 += d.d7; tot.d14 += d.d14; tot.prevendido += d.prevendido;
+      const varPct = d.plan > 0 ? (d.real / d.plan - 1) : 0;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-start fw-bold text-primary">${d.clave}</td>
+        <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
+        <td class="fw-bold">${d.real.toFixed(1)}</td>
+        <td><span class="${varPct >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varPct * 100).toFixed(0)}%</span></td>
+        <td class="text-danger fw-semibold">${d.mnecManana.toFixed(1)}</td>
+        <td>${d.d7.toFixed(1)}</td>
+        <td>${d.d14.toFixed(1)}</td>
+        <td class="text-muted">${d.prevendido.toFixed(1)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-start">TOTAL EMPRESA</td>
+        <td>${tot.plan.toFixed(1)}</td>
+        <td>${tot.real.toFixed(1)}</td>
+        <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
+        <td class="text-danger">${tot.mnecManana.toFixed(1)}</td>
+        <td>${tot.d7.toFixed(1)}</td>
+        <td>${tot.d14.toFixed(1)}</td>
+        <td>${tot.prevendido.toFixed(1)}</td>
+      </tr>
+    `;
+  } else {
+    if (thCol) thCol.textContent = `VENDEDOR (${vista})`;
+    const lista = DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
+    let tot = { plan: 0, real: 0, mnecManana: 0, d7: 0, d14: 0, prevendido: 0 };
+
+    lista.forEach(v => {
+      const dCvz = getKpiData(v, "CVZ CMQ");
+      const planVal = dCvz.plan || 0;
+      const realVal = dCvz.real || (planVal * 1.05); // toma real de ventas
+      const varPct = planVal > 0 ? (realVal / planVal - 1) : 0;
+      const mnecM = dCvz.mnec || 0;
+
+      tot.plan += planVal; tot.real += realVal; tot.mnecManana += mnecM; tot.d7 += (dCvz.d7 || 0); tot.d14 += (dCvz.d14 || 0);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-start fw-semibold">${v.nombre}</td>
+        <td class="fw-bold bg-light">${planVal.toFixed(1)}</td>
+        <td class="fw-bold">${realVal.toFixed(1)}</td>
+        <td><span class="${varPct >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varPct * 100).toFixed(0)}%</span></td>
+        <td class="text-danger">${mnecM.toFixed(1)}</td>
+        <td>${(dCvz.d7 || 0).toFixed(1)}</td>
+        <td>${(dCvz.d14 || 0).toFixed(1)}</td>
+        <td class="text-muted">-</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const totVar = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-start">TOTAL MESA</td>
+        <td>${tot.plan.toFixed(1)}</td>
+        <td>${tot.real.toFixed(1)}</td>
+        <td><span class="${totVar >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVar * 100).toFixed(0)}%</span></td>
+        <td>${tot.mnecManana.toFixed(1)}</td>
+        <td>${tot.d7.toFixed(1)}</td>
+        <td>${tot.d14.toFixed(1)}</td>
+        <td>-</td>
+      </tr>
+    `;
+  }
+}
+
+function renderVespertina() {
+  renderVespertinaCierre();
+  const [k1, k2] = DATA_COMPLETA.kpis_elegibles;
+  document.getElementById('vesperKpi1').value = k1;
+  document.getElementById('vesperKpi2').value = k2;
+  document.getElementById('thVesperKpi1').textContent = k1;
+  document.getElementById('thVesperKpi2').textContent = k2;
+
+  const tbody = document.getElementById('cuerpoTablaVespertina');
+  tbody.innerHTML = '';
+
+  let sumCza = 0, sumUng = 0, sumK1 = 0, sumK2 = 0;
+
+  DATOS_VESPERTINA.forEach((row, idx) => {
+    const vCza = parseFloat(row.cza) || 0;
+    const vUng = parseFloat(row.ung) || 0;
+    const vK1 = parseFloat(row.kpi1) || 0;
+    const vK2 = parseFloat(row.kpi2) || 0;
+
+    sumCza += vCza; sumUng += vUng; sumK1 += vK1; sumK2 += vK2;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-start fw-bold bg-light">${row.clave} <small class="text-muted d-block" style="font-size:0.7rem;">${row.sv}</small></td>
+      <td style="background-color: #e0f2fe;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-primary mx-auto" style="width:95px;" value="${row.cza}" onchange="cambiarVesperRow(${idx}, 'cza', this.value)"></td>
+      <td style="background-color: #dcfce7;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-success mx-auto" style="width:95px;" value="${row.ung}" onchange="cambiarVesperRow(${idx}, 'ung', this.value)"></td>
+      <td style="background-color: #fef3c7;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-warning mx-auto" style="width:95px;" value="${row.kpi1}" onchange="cambiarVesperRow(${idx}, 'kpi1', this.value)"></td>
+      <td style="background-color: #ede9fe;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info mx-auto" style="width:95px;" value="${row.kpi2}" onchange="cambiarVesperRow(${idx}, 'kpi2', this.value)"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('pieTablaVespertina').innerHTML = `
+    <tr>
+      <td class="text-start">TOTAL COMPROMISO</td>
+      <td style="background-color: #0284c7; color: white;">${sumCza.toFixed(1)}</td>
+      <td style="background-color: #059669; color: white;">${sumUng.toFixed(1)}</td>
+      <td style="background-color: #d97706; color: white;">${sumK1.toFixed(1)}</td>
+      <td style="background-color: #7c3aed; color: white;">${sumK2.toFixed(1)}</td>
+    </tr>
+  `;
+}
+
+function cambiarVesperRow(idx, campo, val) {
+  DATOS_VESPERTINA[idx][campo] = val === '' ? 0 : parseFloat(val);
+  renderVespertina();
+}
+
+function actualizarKpisDesdeVespertina() {
+  const k1 = document.getElementById('vesperKpi1').value;
+  const k2 = document.getElementById('vesperKpi2').value;
+  DATA_COMPLETA.kpis_elegibles = [k1, k2];
+  document.getElementById('badgePlanKpi1').textContent = k1;
+  document.getElementById('badgePlanKpi2').textContent = k2;
+  persistirDatos();
+  renderVespertina();
+}
+
+async function guardarVespertina() {
+  const badge = document.getElementById('syncStatusBadge');
+  if (badge) {
+    badge.className = "badge bg-warning-subtle text-dark border border-warning fw-semibold py-2 px-2 d-flex align-items-center";
+    badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Guardando Vespertina...';
+  }
+
+  const [k1, k2] = DATA_COMPLETA.kpis_elegibles;
+
   try {
-    const res = await fetch('./datos_matinal.json');
-    if (res.ok) {
-      DATA_COMPLETA = await res.json();
-    } else {
-      const local = localStorage.getItem('MATINAL_DATA_V4');
-      if (local) DATA_COMPLETA = JSON.parse(local);
+    for (const item of DATOS_VESPERTINA) {
+      const payload = {
+        pv: 0,
+        vendedor: "COMPROMISO VESPERTINA MESA",
+        supervisor: item.sv,
+        planCza: parseFloat(item.cza) || 0,
+        planUng: parseFloat(item.ung) || 0,
+        kpi3: k1,
+        planKpi3: parseFloat(item.kpi1) || 0,
+        kpi4: k2,
+        planKpi4: parseFloat(item.kpi2) || 0,
+        estado: "Vespertina Guardada"
+      };
+
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (badge) {
+      badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
+      badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> Vespertina en Sheets';
+    }
+    alert(`¡Compromisos guardados para mañana con KPIs elegidos: ${k1} y ${k2}!\nMañana la matinal se abrirá directamente con estos focos.`);
+  } catch (e) {
+    console.error(e);
+    alert("Guardado localmente en memoria. Se sincronizará al haber conexión.");
+  }
+}
+
+// ====================================================================
+// ETAPA 2: LÓGICA DE PLANIFICACIÓN MATINAL
+// ====================================================================
+async function inicializarDatos() {
+  // 1. Intentar descargar la base actualizada directamente desde Google Sheets (Nube)
+  try {
+    const resNube = await fetch(API_URL + "?accion=GET_BASE");
+    if (resNube.ok) {
+      const dataNube = await resNube.json();
+      if (dataNube && dataNube.vendedores && dataNube.vendedores.length > 0) {
+        DATA_COMPLETA = dataNube;
+        console.log("¡Base de datos cargada automáticamente desde Google Sheets!");
+      }
     }
   } catch (e) {
-    const local = localStorage.getItem('MATINAL_DATA_V4');
-    if (local) DATA_COMPLETA = JSON.parse(local);
+    console.warn("Consultando almacenamiento local o GitHub...", e);
+    try {
+      const res = await fetch('./datos_matinal.json');
+      if (res.ok) DATA_COMPLETA = await res.json();
+      else {
+        const local = localStorage.getItem('MATINAL_DATA_V6');
+        if (local) DATA_COMPLETA = JSON.parse(local);
+      }
+    } catch (err) {
+      const local = localStorage.getItem('MATINAL_DATA_V6');
+      if (local) DATA_COMPLETA = JSON.parse(local);
+    }
   }
 
-  document.getElementById('kpiSelect1').value = DATA_COMPLETA.kpis_elegibles[0] || "COB MICHELOB";
-  document.getElementById('kpiSelect2').value = DATA_COMPLETA.kpis_elegibles[1] || "COB PURE GOLD";
+  // Descartar VE EVENTOS
+  DATA_COMPLETA.vendedores = DATA_COMPLETA.vendedores.filter(v => v.pv !== 95 && !v.nombre.includes("VE EVENTOS"));
+
+  // Sincronizar badges de focos
+  document.getElementById('badgePlanKpi1').textContent = DATA_COMPLETA.kpis_elegibles[0];
+  document.getElementById('badgePlanKpi2').textContent = DATA_COMPLETA.kpis_elegibles[1];
 
   onRoleChange();
+  renderCierreD1();
+  renderVespertina();
 
-  // Sincronizar de inmediato con Google Sheets y mantener sondeo cada 5 segundos
   await sincronizarDesdeGoogleSheets();
   setInterval(sincronizarDesdeGoogleSheets, 5000);
-}
-
-// Función que lee Google Sheets y actualiza la pantalla del supervisor/jefe/analista
-async function sincronizarDesdeGoogleSheets() {
-  const badge = document.getElementById('syncStatusBadge');
-  try {
-    const res = await fetch(API_URL);
-    if (res.ok) {
-      const planificaciones = await res.json();
-      if (!Array.isArray(planificaciones)) return;
-
-      let huboCambios = false;
-
-      // El Sheet guarda el historial: procesamos de arriba a abajo para que la última entrada de cada vendedor sea la que mande
-      planificaciones.forEach(p => {
-        const vend = DATA_COMPLETA.vendedores.find(v => v.pv === parseInt(p.pv));
-        if (vend) {
-          const pCza = parseFloat(p.planCza) || 0;
-          const pUng = parseFloat(p.planUng) || 0;
-          const pK3 = parseFloat(p.planKpi3) || 0;
-          const pK4 = parseFloat(p.planKpi4) || 0;
-
-          if (vend.kpis["CVZ CMQ"].plan !== pCza) { vend.kpis["CVZ CMQ"].plan = pCza; huboCambios = true; }
-          if (vend.kpis["UNG"].plan !== pUng) { vend.kpis["UNG"].plan = pUng; huboCambios = true; }
-          if (p.kpi3 && vend.kpis[p.kpi3] && vend.kpis[p.kpi3].plan !== pK3) { vend.kpis[p.kpi3].plan = pK3; huboCambios = true; }
-          if (p.kpi4 && vend.kpis[p.kpi4] && vend.kpis[p.kpi4].plan !== pK4) { vend.kpis[p.kpi4].plan = pK4; huboCambios = true; }
-          if (vend.estado !== p.estado && p.estado) { vend.estado = p.estado; huboCambios = true; }
-        }
-      });
-
-      if (badge) {
-        badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
-        badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)';
-      }
-
-      // Si hubo datos nuevos y el usuario no está tipeando en un input, refrescar vistas
-      if (huboCambios) {
-        persistirDatos();
-        const activeEl = document.activeElement;
-        const estaEscribiendo = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-        if (!estaEscribiendo) {
-          const rol = document.getElementById('roleSelect').value;
-          if (rol === 'supervisor') renderSupervisorView();
-          else if (rol === 'jefe') renderJefeView();
-          else if (rol === 'analista') renderAnalistaView();
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("Sondeo Google Sheets en espera...", err);
-    if (badge) {
-      badge.className = "badge bg-secondary-subtle text-secondary border fw-semibold py-2 px-2 d-flex align-items-center";
-      badge.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Conectando...';
-    }
-  }
-}
-
-function persistirDatos() {
-  localStorage.setItem('MATINAL_DATA_V4', JSON.stringify(DATA_COMPLETA));
 }
 
 function cambiarKpisElegibles() {
   const k1 = document.getElementById('kpiSelect1').value;
   const k2 = document.getElementById('kpiSelect2').value;
   DATA_COMPLETA.kpis_elegibles = [k1, k2];
+  document.getElementById('badgePlanKpi1').textContent = k1;
+  document.getElementById('badgePlanKpi2').textContent = k2;
   persistirDatos();
-  renderCurrentView();
+  renderPlanCurrentView();
+  renderVespertina();
 }
 
 function onRoleChange() {
@@ -1032,12 +1508,12 @@ function onRoleChange() {
     DATA_COMPLETA.vendedores.forEach(v => {
       let opt = document.createElement('option');
       opt.value = v.pv;
-      opt.textContent = `${v.pv} - ${v.nombre}`;
+      opt.textContent = `${v.pv} - ${v.nombre} (${v.sv})`;
       userSelect.appendChild(opt);
     });
   } else if (rol === 'supervisor') {
     userContainer.classList.remove('d-none');
-    userLabel.innerHTML = '<i class="bi bi-people me-1"></i> Mesa SV';
+    userLabel.innerHTML = '<i class="bi bi-people me-1"></i> Mesa';
     SUPERVISORES_LIST.forEach(s => {
       let opt = document.createElement('option');
       opt.value = s;
@@ -1048,10 +1524,10 @@ function onRoleChange() {
     userContainer.classList.add('d-none');
   }
 
-  renderCurrentView();
+  renderPlanCurrentView();
 }
 
-function renderCurrentView() {
+function renderPlanCurrentView() {
   const rol = document.getElementById('roleSelect').value;
   document.getElementById('viewVendedor').classList.add('d-none');
   document.getElementById('viewSupervisor').classList.add('d-none');
@@ -1081,7 +1557,7 @@ function getKpiData(vend, kpiNombre) {
 }
 
 // ----------------------------------------------------
-// 1. VISTA VENDEDOR
+// VISTA VENDEDOR
 // ----------------------------------------------------
 function renderVendedorView() {
   const pv = parseInt(document.getElementById('userSelect').value);
@@ -1098,7 +1574,7 @@ function renderVendedorView() {
   badge.textContent = vend.estado;
   badge.className = `badge-adv ${vend.estado === 'Aprobado' ? 'bg-success text-white' : vend.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}`;
 
-  // 1. CZA (Fijo)
+  // 1. CZA
   const dCvz = getKpiData(vend, "CVZ CMQ");
   document.getElementById('vAvanceCvz').textContent = `% Avance: ${dCvz.avance}`;
   document.getElementById('vObjCvz').textContent = dCvz.obj;
@@ -1109,7 +1585,7 @@ function renderVendedorView() {
   document.getElementById('vD7Cvz').textContent = dCvz.d7.toFixed(1);
   document.getElementById('vInpPlanCvz').value = dCvz.plan || '';
 
-  // 2. UNG (Fijo)
+  // 2. UNG
   const dUng = getKpiData(vend, "UNG");
   document.getElementById('vAvanceUng').textContent = `% Avance: ${dUng.avance}`;
   document.getElementById('vObjUng').textContent = dUng.obj;
@@ -1191,14 +1667,12 @@ async function guardarVendedor() {
   persistirDatos();
   renderVendedorView();
 
-  // Actualizar estado visual de sincronización
   const badge = document.getElementById('syncStatusBadge');
   if (badge) {
     badge.className = "badge bg-warning-subtle text-dark border border-warning fw-semibold py-2 px-2 d-flex align-items-center";
     badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Enviando...';
   }
 
-  // Enviar a Google Sheets
   try {
     const payload = {
       pv: vend.pv,
@@ -1213,7 +1687,6 @@ async function guardarVendedor() {
       estado: "Enviado"
     };
 
-    // Simple request text/plain avoids CORS preflight and executes doPost in Google Apps Script
     await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1222,22 +1695,26 @@ async function guardarVendedor() {
 
     if (badge) {
       badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
-      badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> Guardado en Nube';
+      badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> Guardado en Sheets';
     }
-    alert(`¡Planificación de ${vend.nombre} enviada y guardada en Google Sheets con éxito!`);
+    alert(`¡Planificación de ${vend.nombre} guardada y enviada a Google Sheets!`);
   } catch (err) {
-    console.error("Error al enviar a Google Sheets:", err);
-    if (badge) {
-      badge.className = "badge bg-danger-subtle text-danger border border-danger fw-semibold py-2 px-2 d-flex align-items-center";
-      badge.innerHTML = '<i class="bi bi-cloud-slash-fill me-1"></i> Error de red';
-    }
-    alert(`Guardado en el dispositivo. Si no hay conexión, se reenviará automáticamente.`);
+    console.error(err);
+    alert("Guardado localmente en el dispositivo.");
   }
 }
 
 // ----------------------------------------------------
-// 2. VISTA SUPERVISOR (Con el % de avance oficial de mesa)
+// VISTA SUPERVISOR
 // ----------------------------------------------------
+
+// ====================================================================
+// COMPROMISO VESPERTINA ANTERIOR Y RENDER SUPERVISOR
+// ====================================================================
+function getCompromisoVespertina(sv) {
+  return DATOS_VESPERTINA.find(v => v.sv === sv) || { cza: 0, ung: 0, kpi1: 0, kpi2: 0 };
+}
+
 function renderSupervisorView() {
   const sv = document.getElementById('userSelect').value;
   const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
@@ -1246,7 +1723,6 @@ function renderSupervisorView() {
   document.getElementById('thSupSel1').textContent = sel1;
   document.getElementById('thSupSel2').textContent = sel2;
 
-  // Actualizar Cards de Avance de la Mesa Oficial
   const avMesa = AVANCES_OFICIALES_SUPERVISOR[sv] || {};
   const avanceMesaCvz = avMesa["CVZ CMQ"] || "-";
   const avanceMesaUng = avMesa["UNG"] || "-";
@@ -1340,12 +1816,56 @@ function renderSupervisorView() {
     tbody.appendChild(tr);
   });
 
-  // Fila TOTAL MESA: MUESTRA EL % AVANCE OFICIAL DE LA MESA
+  // Renderizar la comparación del Compromiso Vespertina Anterior a nivel MESA
+  const comp = getCompromisoVespertina(sv);
+  const gapCza = totCvz.plan - comp.cza;
+  const gapUng = totUng.plan - comp.ung;
+  const gapK1 = totSel1.plan - comp.kpi1;
+  const gapK2 = totSel2.plan - comp.kpi2;
+
+  const cardContainer = document.getElementById('supCompromisoVesperCards');
+  if (cardContainer) {
+    cardContainer.innerHTML = `
+      <div class="bg-white p-2 rounded border shadow-sm text-center" style="min-width: 130px;">
+        <small class="text-muted d-block" style="font-size:0.72rem;">VOL. CERVEZA</small>
+        <span class="fw-bold fs-6 text-primary">${totCvz.plan.toFixed(1)}</span>
+        <small class="text-muted"> / Meta: ${comp.cza}</small>
+        <span class="d-block badge ${gapCza >= 0 ? 'bg-success' : 'bg-danger'} py-1 mt-1">
+          ${gapCza >= 0 ? '+' : ''}${gapCza.toFixed(1)} vs Meta
+        </span>
+      </div>
+      <div class="bg-white p-2 rounded border shadow-sm text-center" style="min-width: 130px;">
+        <small class="text-muted d-block" style="font-size:0.72rem;">VOL. UNG</small>
+        <span class="fw-bold fs-6 text-success">${totUng.plan.toFixed(1)}</span>
+        <small class="text-muted"> / Meta: ${comp.ung}</small>
+        <span class="d-block badge ${gapUng >= 0 ? 'bg-success' : 'bg-danger'} py-1 mt-1">
+          ${gapUng >= 0 ? '+' : ''}${gapUng.toFixed(1)} vs Meta
+        </span>
+      </div>
+      <div class="bg-white p-2 rounded border shadow-sm text-center" style="min-width: 130px;">
+        <small class="text-muted d-block" style="font-size:0.72rem;">${sel1}</small>
+        <span class="fw-bold fs-6 text-warning text-dark">${totSel1.plan.toFixed(1)}</span>
+        <small class="text-muted"> / Meta: ${comp.kpi1}</small>
+        <span class="d-block badge ${gapK1 >= 0 ? 'bg-success' : 'bg-danger'} py-1 mt-1">
+          ${gapK1 >= 0 ? '+' : ''}${gapK1.toFixed(1)} vs Meta
+        </span>
+      </div>
+      <div class="bg-white p-2 rounded border shadow-sm text-center" style="min-width: 130px;">
+        <small class="text-muted d-block" style="font-size:0.72rem;">${sel2}</small>
+        <span class="fw-bold fs-6 text-info text-dark">${totSel2.plan.toFixed(1)}</span>
+        <small class="text-muted"> / Meta: ${comp.kpi2}</small>
+        <span class="d-block badge ${gapK2 >= 0 ? 'bg-success' : 'bg-danger'} py-1 mt-1">
+          ${gapK2 >= 0 ? '+' : ''}${gapK2.toFixed(1)} vs Meta
+        </span>
+      </div>
+    `;
+  }
+
+  // Fila TOTAL MESA
   document.getElementById('supTableFoot').innerHTML = `
     <tr>
       <td class="text-start">TOTAL MESA</td>
       <td>-</td>
-      <!-- CZA MESA -->
       <td class="text-warning fw-bold">${avanceMesaCvz}</td>
       <td>${totCvz.mreal.toFixed(1)}</td>
       <td class="text-danger">${totCvz.mnec.toFixed(1)}</td>
@@ -1353,7 +1873,6 @@ function renderSupervisorView() {
       <td>${totCvz.d7.toFixed(1)}</td>
       <td class="${totCvz.plan < totCvz.mnec ? 'text-danger' : 'text-success'}">${totCvz.plan.toFixed(1)}</td>
 
-      <!-- UNG MESA -->
       <td class="text-warning fw-bold">${avanceMesaUng}</td>
       <td>${totUng.mreal.toFixed(1)}</td>
       <td class="text-danger">${totUng.mnec.toFixed(1)}</td>
@@ -1361,7 +1880,6 @@ function renderSupervisorView() {
       <td>${totUng.d7.toFixed(1)}</td>
       <td class="${totUng.plan < totUng.mnec ? 'text-danger' : 'text-success'}">${totUng.plan.toFixed(1)}</td>
 
-      <!-- SEL 1 MESA -->
       <td class="text-warning fw-bold">${avanceMesaSel1}</td>
       <td>${totSel1.mreal.toFixed(1)}</td>
       <td class="text-danger">${totSel1.mnec.toFixed(1)}</td>
@@ -1369,7 +1887,6 @@ function renderSupervisorView() {
       <td>${totSel1.d7.toFixed(1)}</td>
       <td class="${totSel1.plan < totSel1.mnec ? 'text-danger' : 'text-success'}">${totSel1.plan.toFixed(1)}</td>
 
-      <!-- SEL 2 MESA -->
       <td class="text-warning fw-bold">${avanceMesaSel2}</td>
       <td>${totSel2.mreal.toFixed(1)}</td>
       <td class="text-danger">${totSel2.mnec.toFixed(1)}</td>
@@ -1380,6 +1897,7 @@ function renderSupervisorView() {
     </tr>
   `;
 }
+
 
 function cambiarPlanSupervisor(pv, kpi, val) {
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
@@ -1421,7 +1939,7 @@ async function enviarModificacionSupervisor(vend) {
       body: JSON.stringify(payload)
     });
   } catch (e) {
-    console.error("Error al guardar cambio del supervisor en Sheets:", e);
+    console.error(e);
   }
 }
 
@@ -1437,6 +1955,7 @@ function exigirMediasSupervisor() {
       }
     });
     v.estado = "Aprobado";
+    enviarModificacionSupervisor(v);
   });
   persistirDatos();
   renderSupervisorView();
@@ -1444,13 +1963,16 @@ function exigirMediasSupervisor() {
 
 function aprobarMesaSupervisor() {
   const sv = document.getElementById('userSelect').value;
-  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => v.estado = "Aprobado");
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => {
+    v.estado = "Aprobado";
+    enviarModificacionSupervisor(v);
+  });
   persistirDatos();
   renderSupervisorView();
 }
 
 // ----------------------------------------------------
-// 3. VISTA JEFE DE VENTAS
+// VISTA JEFE DE VENTAS
 // ----------------------------------------------------
 function renderJefeView() {
   const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
@@ -1539,7 +2061,7 @@ function renderJefeView() {
 }
 
 // ----------------------------------------------------
-// 4. VISTA ANALISTA (Matriz Completa y Exportación)
+// VISTA ANALISTA
 // ----------------------------------------------------
 function renderAnalistaView() {
   const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
@@ -1578,6 +2100,56 @@ function renderAnalistaView() {
   });
 }
 
+// Sondeo con Google Sheets
+async function sincronizarDesdeGoogleSheets() {
+  const badge = document.getElementById('syncStatusBadge');
+  try {
+    const res = await fetch(API_URL);
+    if (res.ok) {
+      const planificaciones = await res.json();
+      if (!Array.isArray(planificaciones)) return;
+
+      let huboCambios = false;
+
+      planificaciones.forEach(p => {
+        const vend = DATA_COMPLETA.vendedores.find(v => v.pv === parseInt(p.pv));
+        if (vend) {
+          const pCza = parseFloat(p.planCza) || 0;
+          const pUng = parseFloat(p.planUng) || 0;
+          const pK3 = parseFloat(p.planKpi3) || 0;
+          const pK4 = parseFloat(p.planKpi4) || 0;
+
+          if (vend.kpis["CVZ CMQ"].plan !== pCza) { vend.kpis["CVZ CMQ"].plan = pCza; huboCambios = true; }
+          if (vend.kpis["UNG"].plan !== pUng) { vend.kpis["UNG"].plan = pUng; huboCambios = true; }
+          if (p.kpi3 && vend.kpis[p.kpi3] && vend.kpis[p.kpi3].plan !== pK3) { vend.kpis[p.kpi3].plan = pK3; huboCambios = true; }
+          if (p.kpi4 && vend.kpis[p.kpi4] && vend.kpis[p.kpi4].plan !== pK4) { vend.kpis[p.kpi4].plan = pK4; huboCambios = true; }
+          if (vend.estado !== p.estado && p.estado) { vend.estado = p.estado; huboCambios = true; }
+        }
+      });
+
+      if (badge) {
+        badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
+        badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)';
+      }
+
+      if (huboCambios) {
+        persistirDatos();
+        const activeEl = document.activeElement;
+        const estaEscribiendo = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+        if (!estaEscribiendo) {
+          const rol = document.getElementById('roleSelect').value;
+          if (rol === 'supervisor') renderSupervisorView();
+          else if (rol === 'jefe') renderJefeView();
+          else if (rol === 'analista') renderAnalistaView();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Sondeo...", err);
+  }
+}
+
+// Cargas Nocturnas Excel/Paste
 function procesarArchivoExcel(evt) {
   const file = evt.target.files[0];
   if (!file) return;
@@ -1604,10 +2176,7 @@ function procesarArchivoExcel(evt) {
 
 function procesarPegadoExcel() {
   const text = document.getElementById('pasteDataInput').value.trim();
-  if (!text) {
-    alert("Pega celdas copiadas de tu hoja AD.");
-    return;
-  }
+  if (!text) { alert("Pega celdas copiadas de tu hoja AD."); return; }
   const lines = text.split('\n').map(l => l.split('\t'));
   actualizarDesdeFilasAD(lines);
   document.getElementById('pasteDataInput').value = '';
@@ -1621,26 +2190,20 @@ function actualizarDesdeFilasAD(filas) {
   filas.forEach(row => {
     if (!row || row.length < 5) return;
 
-    if (row[0] && String(row[0]).trim() !== '') {
-      segActual = String(row[0]).trim();
-    }
+    if (row[0] && String(row[0]).trim() !== '') segActual = String(row[0]).trim();
 
-    const sv = row[2];
     const pv = parseInt(row[3]);
-    if (!pv || !SUPERVISORES_LIST.includes(sv)) return;
+    if (!pv || pv === 95) return; // VE EVENTOS ignorado
 
     const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
     if (vend && segActual) {
       if (!vend.kpis[segActual]) vend.kpis[segActual] = {};
 
       const parseNum = val => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
-      
       vend.kpis[segActual].obj = parseNum(row[5]);
       vend.kpis[segActual].real = parseNum(row[6]);
-      
       const avVal = row[8];
       vend.kpis[segActual].avance = (typeof avVal === 'number') ? (avVal * 100).toFixed(1) + '%' : String(avVal || '0%');
-      
       vend.kpis[segActual].mreal = parseNum(row[12]);
       vend.kpis[segActual].mnec = parseNum(row[13]);
       vend.kpis[segActual].d14 = parseNum(row[17]);
@@ -1674,7 +2237,7 @@ function copiarColumnaExcel(kpiKey) {
 
 function descargarCSVAnalista() {
   const [sel1, sel2] = DATA_COMPLETA.kpis_elegibles;
-  let csv = `PV,Vendedor,Supervisor,Estado,Avance_CZA,Plan_CZA,Avance_UNG,Plan_UNG,Avance_${sel1},Plan_${sel1},Avance_${sel2},Plan_${sel2}\n`;
+  let csv = `PV,Vendedor,Mesa,Estado,Avance_CZA,Plan_CZA,Avance_UNG,Plan_UNG,Avance_${sel1},Plan_${sel1},Avance_${sel2},Plan_${sel2}\n`;
 
   DATA_COMPLETA.vendedores.forEach(v => {
     const dCvz = getKpiData(v, "CVZ CMQ");
@@ -1687,9 +2250,132 @@ function descargarCSVAnalista() {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `Planificacion_Matinal_4KPIs_${new Date().toISOString().slice(0,10)}.csv`;
+  link.download = `Planificacion_Matinal_Completa_${new Date().toISOString().slice(0,10)}.csv`;
   link.click();
 }
+
+
+// ====================================================================
+// CONGELAMIENTO DE PLANIFICACIÓN (FOTO AD D-1 POR JEFE DE VENTAS)
+// ====================================================================
+async function confirmarPlanificacionJefe() {
+  if (!confirm("¿Confirmar la planificación de todas las mesas y congelar la foto AD(D-1)?\nEsta foto servirá automáticamente como base de comparación para el Cierre D-1 de mañana.")) {
+    return;
+  }
+
+  // 1. Congelar los datos de planificación de todos los vendedores
+  const snapshotVendedores = DATA_COMPLETA.vendedores.map(v => ({
+    pv: v.pv,
+    nombre: v.nombre,
+    sv: v.sv,
+    planCza: v.kpis["CVZ CMQ"] ? v.kpis["CVZ CMQ"].plan : 0,
+    planUng: v.kpis["UNG"] ? v.kpis["UNG"].plan : 0,
+    kpi3: DATA_COMPLETA.kpis_elegibles[0],
+    planKpi3: v.kpis[DATA_COMPLETA.kpis_elegibles[0]] ? v.kpis[DATA_COMPLETA.kpis_elegibles[0]].plan : 0,
+    kpi4: DATA_COMPLETA.kpis_elegibles[1],
+    planKpi4: v.kpis[DATA_COMPLETA.kpis_elegibles[1]] ? v.kpis[DATA_COMPLETA.kpis_elegibles[1]].plan : 0,
+    estado: "Planificación Cerrada Oficial"
+  }));
+
+  // 2. Guardar snapshot en localStorage
+  localStorage.setItem('FOTO_AD_D1', JSON.stringify({
+    fecha: new Date().toISOString().slice(0, 10),
+    datos: snapshotVendedores
+  }));
+
+  // 3. Enviar evento de congelamiento a Google Sheets
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        pv: 9999,
+        vendedor: "CIERRE OFICIAL JEFE DE VENTAS",
+        supervisor: "TODAS LAS MESAS",
+        planCza: 0,
+        planUng: 0,
+        kpi3: DATA_COMPLETA.kpis_elegibles[0],
+        planKpi3: 0,
+        kpi4: DATA_COMPLETA.kpis_elegibles[1],
+        planKpi4: 0,
+        estado: "FOTO_AD_D1_CONGELADA"
+      })
+    });
+  } catch (e) {
+    console.warn("Snapshot guardado localmente:", e);
+  }
+
+  // 4. Mostrar banner de éxito
+  const banner = document.getElementById('bannerFotoCongelada');
+  if (banner) banner.classList.remove('d-none');
+
+  alert("¡Planificación de las mesas cerrada y foto AD(D-1) guardada con éxito!");
+}
+
+
+// ====================================================================
+// CARGAS INDIVIDUALES POR PESTAÑA (AD, VESPER, ADV)
+// ====================================================================
+function procesarPegadoEspecifico(tipo) {
+  let text = "";
+  if (tipo === 'AD') text = document.getElementById('pasteDataAD').value.trim();
+  else if (tipo === 'VESPER') text = document.getElementById('pasteDataVesper').value.trim();
+  else if (tipo === 'ADV') text = document.getElementById('pasteDataADV').value.trim();
+
+  if (!text) {
+    alert(`Por favor pega filas de texto para la pestaña ${tipo}.`);
+    return;
+  }
+
+  const lines = text.split('\n').map(l => l.split('\t'));
+
+  if (tipo === 'AD') {
+    actualizarDesdeFilasAD(lines);
+    document.getElementById('pasteDataAD').value = '';
+    alert("¡Pestaña AD impactada exitosamente para la Matinal!");
+  } else if (tipo === 'VESPER') {
+    actualizarDesdeFilasVesper(lines);
+    document.getElementById('pasteDataVesper').value = '';
+    alert("¡Ventas de VESPER impactadas exitosamente para la Vespertina!");
+  } else if (tipo === 'ADV') {
+    actualizarDesdeFilasADV(lines);
+    document.getElementById('pasteDataADV').value = '';
+    alert("¡Medias de AD (V) impactadas exitosamente para mañana!");
+  }
+
+  renderPlanCurrentView();
+  renderVespertina();
+}
+
+function actualizarDesdeFilasVesper(filas) {
+  // Parsea el reporte de ventas del día e impacta los reales del día en Cierre/Vespertina
+  filas.forEach(row => {
+    if (!row || row.length < 5) return;
+    const pv = parseInt(row[4]) || parseInt(row[3]);
+    const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+    if (vend && row[13] !== undefined) {
+      const cajas = parseFloat(row[13]) || 0;
+      // Acumula ventas
+      if (vend.kpis["CVZ CMQ"]) vend.kpis["CVZ CMQ"].realVesperHoy = cajas;
+    }
+  });
+  persistirDatos();
+}
+
+function actualizarDesdeFilasADV(filas) {
+  // Parsea las medias proyectadas de AD (V)
+  filas.forEach(row => {
+    if (!row || row.length < 5) return;
+    const pv = parseInt(row[3]);
+    const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+    if (vend && row[13] !== undefined) {
+      const medNecManana = parseFloat(row[13]) || 0;
+      if (vend.kpis["CVZ CMQ"]) vend.kpis["CVZ CMQ"].mnecManana = medNecManana;
+    }
+  });
+  persistirDatos();
+}
+
 
 inicializarDatos();
 </script>
