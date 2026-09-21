@@ -1162,15 +1162,17 @@ function renderSupervisorView() {
   document.getElementById('thSupSel2').textContent = sel2;
   document.getElementById('badgePlanKpi1').textContent = sel1;
   document.getElementById('badgePlanKpi2').textContent = sel2;
+  document.getElementById('supMesaLabelSel1').textContent = sel1;
+  document.getElementById('supMesaLabelSel2').textContent = sel2;
 
   const filtrados = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
   const tbody = document.getElementById('supTableBody');
   tbody.innerHTML = '';
 
-  let totCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
-  let totUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
-  let totSel1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
-  let totSel2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0 };
+  let totCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
+  let totUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
+  let totSel1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
+  let totSel2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
 
   filtrados.forEach(v => {
     const dCvz = getKpiData(v, "CVZ CMQ");
@@ -1179,9 +1181,16 @@ function renderSupervisorView() {
     const dS2 = getKpiData(v, sel2);
 
     totCvz.mreal += dCvz.mreal; totCvz.mnec += dCvz.mnec; totCvz.d14 += dCvz.d14; totCvz.d7 += dCvz.d7; totCvz.plan += dCvz.plan;
+    totCvz.obj += dCvz.obj || 0; totCvz.real += dCvz.real || 0;
+
     totUng.mreal += dUng.mreal; totUng.mnec += dUng.mnec; totUng.d14 += dUng.d14; totUng.d7 += dUng.d7; totUng.plan += dUng.plan;
+    totUng.obj += dUng.obj || 0; totUng.real += dUng.real || 0;
+
     totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan;
+    totSel1.obj += dS1.obj || 0; totSel1.real += dS1.real || 0;
+
     totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan;
+    totSel2.obj += dS2.obj || 0; totSel2.real += dS2.real || 0;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1209,7 +1218,13 @@ function renderSupervisorView() {
     tbody.appendChild(tr);
   });
 
-  // Compromiso de la mesa vs suma de planes
+  // Cálculo e inyección de los Avances Superiores
+  const calcAv = (obj, real) => obj > 0 ? ((real / obj) * 100).toFixed(1) + "%" : "0.0%";
+  document.getElementById('supMesaAvanceCvz').textContent = calcAv(totCvz.obj, totCvz.real);
+  document.getElementById('supMesaAvanceUng').textContent = calcAv(totUng.obj, totUng.real);
+  document.getElementById('supMesaAvanceSel1').textContent = calcAv(totSel1.obj, totSel1.real);
+  document.getElementById('supMesaAvanceSel2').textContent = calcAv(totSel2.obj, totSel2.real);
+
   const itemVesper = DATOS_VESPERTINA.find(d => d.sv === sv) || { cza: 0, ung: 0, kpi1: 0, kpi2: 0 };
   const gCza = totCvz.plan - itemVesper.cza;
   const gUng = totUng.plan - itemVesper.ung;
@@ -1908,26 +1923,28 @@ async function sincronizarDesdeGoogleSheets() {
         if (vend) {
           const pCza = parseFloat(p.planCza) || 0;
           const pUng = parseFloat(p.planUng) || 0;
-          const pKpi3 = parseFloat(p.planKpi3) || 0; // Lee el KPI 1 de la mesa
-          const pKpi4 = parseFloat(p.planKpi4) || 0; // Lee el KPI 2 de la mesa
+          const pKpi3 = parseFloat(p.planKpi3) || 0;
+          const pKpi4 = parseFloat(p.planKpi4) || 0;
 
-          // Sincronizar CZA y UNG
           if (vend.kpis["CVZ CMQ"].plan !== pCza) { vend.kpis["CVZ CMQ"].plan = pCza; huboCambios = true; }
           if (vend.kpis["UNG"].plan !== pUng) { vend.kpis["UNG"].plan = pUng; huboCambios = true; }
           
-          // Sincronizar Indicador 1 (ej. COB MICHELOB)
           if (p.kpi3) {
             if (!vend.kpis[p.kpi3]) vend.kpis[p.kpi3] = { plan: 0 };
             if (vend.kpis[p.kpi3].plan !== pKpi3) { vend.kpis[p.kpi3].plan = pKpi3; huboCambios = true; }
           }
-          
-          // Sincronizar Indicador 2 (ej. COB PURE GOLD)
           if (p.kpi4) {
             if (!vend.kpis[p.kpi4]) vend.kpis[p.kpi4] = { plan: 0 };
             if (vend.kpis[p.kpi4].plan !== pKpi4) { vend.kpis[p.kpi4].plan = pKpi4; huboCambios = true; }
           }
 
-          if (vend.estado !== p.estado && p.estado) { vend.estado = p.estado; huboCambios = true; }
+          // Filtro antiborrado para aprobaciones de Supervisor
+          if (p.estado && vend.estado !== p.estado) {
+            if (!(vend.estado === "Aprobado" && (p.estado === "Enviado" || p.estado === "Pendiente"))) {
+              vend.estado = p.estado; 
+              huboCambios = true;
+            }
+          }
         }
       });
 
@@ -1936,7 +1953,6 @@ async function sincronizarDesdeGoogleSheets() {
         badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)';
       }
       
-      // Si detectó datos nuevos desde el celular, guarda e impacta en la tabla automáticamente
       if (huboCambios) {
         persistirDatos(false);
         renderPlanCurrentView(); 
