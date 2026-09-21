@@ -514,58 +514,54 @@
         <!-- Carga Directa por Archivos Individuales -->
         <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Opción 2: Cargar Archivos Independientes (.xlsx / .csv)</h6>
         <div class="row g-3">
-          <!-- Archivo 1: AD -->
-          <div class="col-md-4">
-            <div class="card p-3 h-100 border bg-white shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-primary">1. Archivo AD</span>
-                <small class="text-primary fw-bold">Para la Matinal</small>
-              </div>
-              <p class="text-muted small mb-3">Sube el archivo <strong>AD.xlsx</strong> con Objetivos, Reales acumulados, % Avance y Medias.</p>
-              <input type="file" id="fileInputAD" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'AD')">
-            </div>
-          </div>
-
-          <!-- Archivo 2: VESPER -->
-          <div class="col-md-4">
-            <div class="card p-3 h-100 border bg-white shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-dark">2. Archivo VESPER</span>
-                <small class="text-dark fw-bold">Para la Tarde</small>
-              </div>
-              <p class="text-muted small mb-3">Sube el archivo <strong>VESPER.xlsx</strong> con la preventa y facturación real del día.</p>
-              <input type="file" id="fileInputVesper" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'VESPER')">
-            </div>
-          </div>
-
-          <!-- Archivo 3: AD(V) -->
-          <div class="col-md-4">
-            <div class="card p-3 h-100 border bg-white shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-success">3. Archivo AD (V)</span>
-                <small class="text-success fw-bold">Para Mañana</small>
-              </div>
-              <p class="text-muted small mb-3">Sube el archivo <strong>AD (V).xlsx</strong> con las medias proyectadas para la tarde.</p>
-              <input type="file" id="fileInputADV" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'ADV')">
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Los datos se graban automáticamente en tu Google Sheets en la hoja <code>CONFIG_BASE</code>.</span>
-          <button class="btn btn-dark btn-sm fw-semibold" onclick="descargarJSONGitHub()"><i class="bi bi-download me-2"></i>Descargar Respaldo datos_matinal.json</button>
-        </div>
+  <!-- Archivo 0: AD(D-1) -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100 border bg-white shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-secondary">0. AD (D-1)</span>
+        <small class="text-secondary fw-bold">Ayer</small>
       </div>
+      <p class="text-muted small mb-3">Sube <strong>AD(D-1).xlsx</strong> para la comparativa.</p>
+      <input type="file" id="fileInputADD1" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'ADD1')">
+    </div>
+  </div>
 
-      <div class="card card-custom p-3 bg-white shadow-sm mb-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold mb-0"><i class="bi bi-table text-primary me-2"></i>Matriz de Cierre Completa (Copiar Columnas a Excel)</h6>
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="copiarColumnaExcel('CVZ CMQ')"><i class="bi bi-clipboard me-1"></i>Copiar Plan CZA</button>
-            <button class="btn btn-sm btn-outline-success fw-semibold" onclick="copiarColumnaExcel('UNG')"><i class="bi bi-clipboard me-1"></i>Copiar Plan UNG</button>
-            <button class="btn btn-sm btn-success fw-semibold" onclick="descargarCSVAnalista()"><i class="bi bi-download me-1"></i>Descargar CSV</button>
-          </div>
-        </div>
+  <!-- Archivo 1: AD -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100 border bg-white shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-primary">1. AD</span>
+        <small class="text-primary fw-bold">Matinal</small>
+      </div>
+      <p class="text-muted small mb-3">Sube <strong>AD.xlsx</strong> con Obj., Reales y Medias.</p>
+      <input type="file" id="fileInputAD" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'AD')">
+    </div>
+  </div>
+
+  <!-- Archivo 2: VESPER -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100 border bg-white shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-dark">2. VESPER</span>
+        <small class="text-dark fw-bold">Tarde</small>
+      </div>
+      <p class="text-muted small mb-3">Sube <strong>VESPER.xlsx</strong> con real del día.</p>
+      <input type="file" id="fileInputVesper" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'VESPER')">
+    </div>
+  </div>
+
+  <!-- Archivo 3: AD(V) -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100 border bg-white shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-success">3. AD (V)</span>
+        <small class="text-success fw-bold">Mañana</small>
+      </div>
+      <p class="text-muted small mb-3">Sube <strong>AD (V).xlsx</strong> con medias.</p>
+      <input type="file" id="fileInputADV" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'ADV')">
+    </div>
+  </div>
+</div>
 
         <div class="table-responsive" style="max-height: 480px;">
           <table class="table table-bordered table-hover table-custom mb-0">
@@ -598,7 +594,7 @@
 
 <!-- Scripts de Integración y Lógica -->
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzFop31XLWMCYicMuKAG9mKxSKvVIDevvKkUJnCII26pVo92NakM-eKNBS3PlcWLhLBNQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxI8BvuOOVSz_VncJoHQb_F4lz7u2twfZU06zmMGhDfbsG-zpa3uF_7lLDGfpq5r_vpig/exec";
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
@@ -671,6 +667,7 @@ function cambiarFase(fase) {
     renderVespertina();
   } else if (fase === 'analista') {
     document.getElementById('etapaAnalista').classList.remove('d-none');
+    document.getElementById('viewAnalista').classList.remove('d-none'); // Forzar reaparición
     document.getElementById('btnFaseAnalista').classList.add('active');
     renderAnalistaView();
   }
@@ -993,7 +990,6 @@ function renderPlanCurrentView() {
   document.getElementById('viewVendedor').classList.add('d-none');
   document.getElementById('viewSupervisor').classList.add('d-none');
   document.getElementById('viewJefe').classList.add('d-none');
-  document.getElementById('viewAnalista').classList.add('d-none');
 
   if (rol === 'vendedor') {
     document.getElementById('viewVendedor').classList.remove('d-none');
@@ -1004,9 +1000,6 @@ function renderPlanCurrentView() {
   } else if (rol === 'jefe') {
     document.getElementById('viewJefe').classList.remove('d-none');
     renderJefeView();
-  } else if (rol === 'analista') {
-    document.getElementById('viewAnalista').classList.remove('d-none');
-    renderAnalistaView();
   }
 }
 
@@ -1686,35 +1679,48 @@ function procesarArchivoIndividual(evt, tipo) {
   const file = evt.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  const badge = document.getElementById('estadoCargaBadge');
+  badge.textContent = "Procesando... por favor espera";
+  badge.className = "badge bg-warning text-dark";
 
-      if (tipo === 'AD') {
-        actualizarDesdeFilasAD(json);
-        document.getElementById('estadoCargaBadge').textContent = `Cargado: ${file.name} (AD)`;
-        alert("¡Archivo AD cargado y sincronizado con éxito!");
-      } else if (tipo === 'VESPER') {
-        actualizarDesdeFilasVesperMaster(json);
-        document.getElementById('estadoCargaBadge').textContent = `Cargado: ${file.name} (VESPER)`;
-        alert("¡Archivo VESPER cargado y ventas reales del día actualizadas!");
-      } else if (tipo === 'ADV') {
-        actualizarDesdeFilasADV(json);
-        document.getElementById('estadoCargaBadge').textContent = `Cargado: ${file.name} (AD-V)`;
-        alert("¡Archivo AD (V) cargado y proyecciones actualizadas!");
+  setTimeout(() => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (tipo === 'AD') {
+          actualizarDesdeFilasAD(json);
+          badge.textContent = `Cargado: ${file.name} (AD)`;
+          badge.className = "badge bg-success";
+        } else if (tipo === 'VESPER') {
+          actualizarDesdeFilasVesperMaster(json);
+          badge.textContent = `Cargado: ${file.name} (VESPER)`;
+          badge.className = "badge bg-success";
+        } else if (tipo === 'ADV') {
+          actualizarDesdeFilasADV(json);
+          badge.textContent = `Cargado: ${file.name} (AD-V)`;
+          badge.className = "badge bg-success";
+        } else if (tipo === 'ADD1') {
+          // Deberás clonar tu función actualizarDesdeFilasAD y llamarla actualizarDesdeFilasADD1 para procesar este archivo específico.
+          // actualizarDesdeFilasADD1(json);
+          badge.textContent = `Cargado: ${file.name} (AD D-1)`;
+          badge.className = "badge bg-success";
+        }
+
+        renderAnalistaView();
+        renderVespertinaCierre();
+      } catch (err) {
+        alert("Error al procesar archivo: " + err.message);
+        badge.textContent = "Error de lectura";
+        badge.className = "badge bg-danger";
       }
-
-      renderAnalistaView();
-      renderVespertinaCierre();
-    } catch (err) {
-      alert("Error al procesar archivo: " + err.message);
-    }
-  };
-  reader.readAsArrayBuffer(file);
+    };
+    reader.readAsArrayBuffer(file);
+  }, 100);
 }
 
 // Carga del Libro Maestro Completo
