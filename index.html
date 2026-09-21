@@ -1016,6 +1016,19 @@ function getKpiData(vend, kpiNombre) {
   return { obj: 0, real: 0, avance: "0.0%", mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
 }
 
+// KPIs de cobertura (COB ...) => Real Hoy = clientes nuevos que compraron hoy (col. H del AD(V)).
+// KPIs de volumen => Real Hoy sale de VESPER.
+function esKpiCobertura(kpiNombre) {
+  return String(kpiNombre || '').trim().toUpperCase().startsWith('COB');
+}
+
+function getRealHoy(d, kpiNombre) {
+  if (esKpiCobertura(kpiNombre)) {
+    return (typeof d.hoy_adv === 'number') ? d.hoy_adv : 0; // 0 si AD(V) todavía no está cargado
+  }
+  return d.realVesper || 0;
+}
+
 function renderVendedorView() {
   const pv = parseInt(document.getElementById('userSelect').value);
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
@@ -1398,10 +1411,10 @@ function renderVespertinaCierre() {
           const d1 = getKpiData(v, k1);
           const d2 = getKpiData(v, k2);
 
-          mCzaP += dCza.plan; mCzaR += (dCza.realVesper || 0);
-          mUngP += dUng.plan; mUngR += (dUng.realVesper || 0);
-          m1P += d1.plan; m1R += (d1.realVesper || 0);
-          m2P += d2.plan; m2R += (d2.realVesper || 0);
+          mCzaP += dCza.plan; mCzaR += getRealHoy(dCza, "CVZ CMQ");
+          mUngP += dUng.plan; mUngR += getRealHoy(dUng, "UNG");
+          m1P += d1.plan; m1R += getRealHoy(d1, k1);
+          m2P += d2.plan; m2R += getRealHoy(d2, k2);
         });
 
         tot.czaP += mCzaP; tot.czaR += mCzaR;
@@ -1434,10 +1447,10 @@ function renderVespertinaCierre() {
         const d1 = getKpiData(v, k1);
         const d2 = getKpiData(v, k2);
 
-        const czaR = dCza.realVesper || 0;
-        const ungR = dUng.realVesper || 0;
-        const s1R = d1.realVesper || 0;
-        const s2R = d2.realVesper || 0;
+        const czaR = getRealHoy(dCza, "CVZ CMQ");
+        const ungR = getRealHoy(dUng, "UNG");
+        const s1R = getRealHoy(d1, k1);
+        const s2R = getRealHoy(d2, k2);
 
         tot.czaP += dCza.plan; tot.czaR += czaR;
         tot.ungP += dUng.plan; tot.ungR += ungR;
@@ -1496,7 +1509,7 @@ function renderVespertinaCierre() {
         </tr>
         <tr>
           <th class="header-kpi-cvz bg-primary text-warning fw-bold">Planificación Hoy</th>
-          <th class="header-kpi-cvz bg-dark text-white fw-bold">Real Hoy (VESPER)</th>
+          <th class="header-kpi-cvz bg-dark text-white fw-bold">Real Hoy (${esKpiCobertura(kpiKey) ? 'AD-V' : 'VESPER'})</th>
           <th class="header-kpi-cvz">Desvío (Var %)</th>
           <th class="header-cierre">Med-nec p/mañana</th>
           <th class="header-cierre">7 días</th>
@@ -1518,7 +1531,7 @@ function renderVespertinaCierre() {
       vends.forEach(v => {
         const d = getKpiData(v, kpiKey);
         sP += d.plan;
-        sR += (d.realVesper || 0);
+        sR += getRealHoy(d, kpiKey);
         sMn += (d.mnec_adv || d.mnec);
         s7 += (d.d7_adv || d.d7);
         s14 += (d.d14_adv || d.d14);
@@ -1546,7 +1559,7 @@ function renderVespertinaCierre() {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
     vends.forEach(v => {
       const d = getKpiData(v, kpiKey);
-      const realHoy = d.realVesper || 0;
+      const realHoy = getRealHoy(d, kpiKey);
       const mnecM = d.mnec_adv || d.mnec;
       const d7M = d.d7_adv || d.d7;
       const d14M = d.d14_adv || d.d14;
@@ -1827,14 +1840,17 @@ function actualizarDesdeFilasADV(filas) {
   let segActual = null;
   filas.forEach(row => {
     if (!row || row.length < 5) return;
-    if (row[0] && String(row[0]).trim() !== '') segActual = String(row[0]).trim();
+    const segFila = (row[0] && String(row[0]).trim() !== '') ? String(row[0]).trim() : '';
+    if (segFila) segActual = segFila;
     const pv = parseInt(row[3]);
     if (!pv || pv === 95) return;
+    if (!segFila) return; // Ignora filas sin segmento propio (ej. bloque "GTD 750" al final del AD(V)), que se colaban dentro de COB MICHELOB
 
     const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
     if (vend && segActual) {
       if (!vend.kpis[segActual]) vend.kpis[segActual] = {};
       const parseNum = val => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
+      if (segActual.toUpperCase().startsWith('COB')) vend.kpis[segActual].hoy_adv = parseNum(row[7]); // Col H: clientes nuevos hoy
       vend.kpis[segActual].mreal_adv = parseNum(row[12]);
       vend.kpis[segActual].mnec_adv = parseNum(row[13]);
       vend.kpis[segActual].d14_adv = parseNum(row[17]);
@@ -1847,33 +1863,40 @@ function actualizarDesdeFilasADV(filas) {
 
 function actualizarDesdeFilasVesperMaster(filas) {
   let ventasPorPv = {};
+  const norm = x => String(x == null ? '' : x).replace(/\s+/g, '').toUpperCase();
 
   for (let i = 1; i < filas.length; i++) {
     const row = filas[i];
     if (!row || row.length < 42) continue;
 
     const pv = parseInt(row[14]) || parseInt(row[13]) || parseInt(row[4]) || 0;
-    const un = parseInt(row[34]) || 0;
-    const cant = parseFloat(row[41]) || 0;
-    const art = String(row[16] || '').toUpperCase();
+    const un = parseInt(row[34]) || 0;          // AI: Unidad de negocio (1 = CZA, 3 = UNG)
+    const cant = parseFloat(row[41]) || 0;      // AP: Cantidades totales
+    const calibre = parseInt(row[22]) || 0;     // W: Calibre (566 = LATONES)
+    const segCza = norm(row[48]);               // AW: SEG_CZA (PREMIUM / CORE + VALUE)
+    const segTop = norm(row[49]);               // AX: SEG_TOP (TOP)
+    const segBc = norm(row[50]);                // AY: SEG_BC (BALANCED CHOICES)
 
     if (!pv) continue;
     if (!ventasPorPv[pv]) {
-      ventasPorPv[pv] = { cza: 0, ung: 0, michelob: 0, pure_gold: 0 };
+      ventasPorPv[pv] = { "CVZ CMQ": 0, "UNG": 0, "LATONES": 0, "TOP": 0, "CORE + VALUE": 0, "PREMIUM": 0, "BALANCED CHOICES": 0 };
     }
+    const acc = ventasPorPv[pv];
 
-    if (un === 1) ventasPorPv[pv].cza += cant;
-    if (un === 3) ventasPorPv[pv].ung += cant;
-    if (art.includes("MICHELOB")) ventasPorPv[pv].michelob += cant;
-    if (art.includes("PURE GOLD") || art.includes("GOLD")) ventasPorPv[pv].pure_gold += cant;
+    if (un === 1) acc["CVZ CMQ"] += cant;
+    if (un === 3) acc["UNG"] += cant;
+    if (calibre === 566) acc["LATONES"] += cant;
+    if (segTop === 'TOP') acc["TOP"] += cant;
+    if (segCza === 'CORE+VALUE') acc["CORE + VALUE"] += cant;
+    if (segCza === 'PREMIUM') acc["PREMIUM"] += cant;
+    if (segBc === 'BALANCEDCHOICES') acc["BALANCED CHOICES"] += cant;
   }
 
   DATA_COMPLETA.vendedores.forEach(v => {
-    const dV = ventasPorPv[v.pv] || { cza: 0, ung: 0, michelob: 0, pure_gold: 0 };
-    if (v.kpis["CVZ CMQ"]) v.kpis["CVZ CMQ"].realVesper = parseFloat(dV.cza.toFixed(2));
-    if (v.kpis["UNG"]) v.kpis["UNG"].realVesper = parseFloat(dV.ung.toFixed(2));
-    if (v.kpis["COB MICHELOB"]) v.kpis["COB MICHELOB"].realVesper = parseFloat(dV.michelob.toFixed(2));
-    if (v.kpis["COB PURE GOLD"]) v.kpis["COB PURE GOLD"].realVesper = parseFloat(dV.pure_gold.toFixed(2));
+    const acc = ventasPorPv[v.pv] || {};
+    ["CVZ CMQ", "UNG", "LATONES", "TOP", "CORE + VALUE", "PREMIUM", "BALANCED CHOICES"].forEach(k => {
+      if (v.kpis[k]) v.kpis[k].realVesper = parseFloat((acc[k] || 0).toFixed(2));
+    });
   });
 
   persistirDatos(true);
