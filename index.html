@@ -598,7 +598,7 @@
 
 <!-- Scripts de Integración y Lógica -->
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxqnBUG6LlzYOdEPO2PsNLm5-TL0sdFI6YuhEA-hFwuRQAPCUiS5OJZPGBmJ3pqbPqMtw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzFop31XLWMCYicMuKAG9mKxSKvVIDevvKkUJnCII26pVo92NakM-eKNBS3PlcWLhLBNQ/exec";
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
@@ -1119,17 +1119,45 @@ async function guardarVendedor() {
   if (!vend) return;
 
   const [sel1, sel2] = getKpisForMesa(vend.sv);
-  vend.kpis["CVZ CMQ"].plan = parseFloat(document.getElementById('vInpPlanCvz').value) || 0;
-  vend.kpis["UNG"].plan = parseFloat(document.getElementById('vInpPlanUng').value) || 0;
+  const planCza = parseFloat(document.getElementById('vInpPlanCvz').value) || 0;
+  const planUng = parseFloat(document.getElementById('vInpPlanUng').value) || 0;
+  const planS1 = parseFloat(document.getElementById('vInpPlanSel1').value) || 0;
+  const planS2 = parseFloat(document.getElementById('vInpPlanSel2').value) || 0;
+
+  vend.kpis["CVZ CMQ"].plan = planCza;
+  vend.kpis["UNG"].plan = planUng;
   if (!vend.kpis[sel1]) vend.kpis[sel1] = { plan: 0 };
   if (!vend.kpis[sel2]) vend.kpis[sel2] = { plan: 0 };
-  vend.kpis[sel1].plan = parseFloat(document.getElementById('vInpPlanSel1').value) || 0;
-  vend.kpis[sel2].plan = parseFloat(document.getElementById('vInpPlanSel2').value) || 0;
+  vend.kpis[sel1].plan = planS1;
+  vend.kpis[sel2].plan = planS2;
   vend.estado = "Enviado";
 
-  persistirDatos(true);
+  // 1. Envío de fila diaria a Hoja 1
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        pv: vend.pv,
+        vendedor: vend.nombre,
+        supervisor: vend.sv,
+        planCza: planCza,
+        planUng: planUng,
+        kpi3: sel1,
+        planKpi3: planS1,
+        kpi4: sel2,
+        planKpi4: planS2,
+        estado: "Enviado"
+      })
+    });
+  } catch (err) {
+    console.warn("Error registrando fila individual:", err);
+  }
+
+  // 2. Persistencia del estado completo en CONFIG_BASE y LocalStorage
+  await persistirDatos(true);
   renderVendedorView();
-  alert(`¡Planificación de ${vend.nombre} guardada y sincronizada!`);
+  alert(`¡Planificación de ${vend.nombre} guardada y enviada a Sheets!`);
 }
 
 function renderSupervisorView() {
