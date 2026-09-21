@@ -764,10 +764,10 @@ function renderCierreD1() {
           const d1 = getKpiData(v, k1);
           const d2 = getKpiData(v, k2);
 
-          sCzaP += dCza.plan; sCzaR += (dCza.realVesper || dCza.real);
-          sUngP += dUng.plan; sUngR += (dUng.realVesper || dUng.real);
-          s1P += d1.plan; s1R += (d1.realVesper || d1.real);
-          s2P += d2.plan; s2R += (d2.realVesper || d2.real);
+          sCzaP += dCza.plan; sCzaR += getRealHoy(dCza, "CVZ CMQ");
+          sUngP += dUng.plan; sUngR += getRealHoy(dUng, "UNG");
+          s1P += d1.plan; s1R += getRealHoy(d1, k1);
+          s2P += d2.plan; s2R += getRealHoy(d2, k2);
         });
 
         tot.czaPlan += sCzaP; tot.czaReal += sCzaR;
@@ -800,10 +800,10 @@ function renderCierreD1() {
         const d1 = getKpiData(v, k1);
         const d2 = getKpiData(v, k2);
 
-        const czaR = dCza.realVesper || dCza.real;
-        const ungR = dUng.realVesper || dUng.real;
-        const s1R = d1.realVesper || d1.real;
-        const s2R = d2.realVesper || d2.real;
+        const czaR = getRealHoy(dCza, "CVZ CMQ");
+        const ungR = getRealHoy(dUng, "UNG");
+        const s1R = getRealHoy(d1, k1);
+        const s2R = getRealHoy(d2, k2);
 
         tot.czaPlan += dCza.plan; tot.czaReal += czaR;
         tot.ungPlan += dUng.plan; tot.ungReal += ungR;
@@ -889,7 +889,7 @@ function renderCierreD1() {
       vends.forEach(v => {
         const d = getKpiData(v, kpiKey);
         sMr += d.mreal; sMn += d.mnec; s7 += d.d7; s14 += d.d14;
-        sP += d.plan; sR += (d.realVesper || d.real);
+        sP += d.plan; sR += getRealHoy(d, kpiKey);
       });
 
       tot.mreal += sMr; tot.mnec += sMn; tot.d7 += s7; tot.d14 += s14; tot.plan += sP; tot.real += sR;
@@ -913,7 +913,7 @@ function renderCierreD1() {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === modo);
     vends.forEach(v => {
       const d = getKpiData(v, kpiKey);
-      const realV = d.realVesper || d.real;
+      const realV = getRealHoy(d, kpiKey);
 
       tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += realV;
 
@@ -1815,6 +1815,7 @@ function actualizarDesdeFilasAD(filas) {
     if (row[0] && String(row[0]).trim() !== '') segActual = String(row[0]).trim();
     const pv = parseInt(row[3]);
     if (!pv || pv === 95) return;
+    if (/\bMESA\s*$/i.test(String(row[4] || ''))) return; // Fila subtotal de mesa (ej. "SECO ROBERTO ENRIQUE MESA"): comparte PV con el vendedor "SV" y lo pisaba
 
     const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
     if (vend && segActual) {
@@ -1844,6 +1845,7 @@ function actualizarDesdeFilasADV(filas) {
     if (segFila) segActual = segFila;
     const pv = parseInt(row[3]);
     if (!pv || pv === 95) return;
+    if (/\bMESA\s*$/i.test(String(row[4] || ''))) return; // Fila subtotal de mesa (ej. "SECO ROBERTO ENRIQUE MESA"): comparte PV con el vendedor "SV" y lo pisaba
     if (!segFila) return; // Ignora filas sin segmento propio (ej. bloque "GTD 750" al final del AD(V)), que se colaban dentro de COB MICHELOB
 
     const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
