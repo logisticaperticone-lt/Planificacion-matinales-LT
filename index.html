@@ -683,6 +683,10 @@ function cambiarFase(fase) {
 // PERSISTENCIA EN GOOGLE SHEETS
 // ====================================================================
 async function persistirDatos(sincronizarConNube = false) {
+  if (sincronizarConNube) {
+    await mergearFotosDesdeNube();
+    actualizarRealEnFotoHoy();
+  }
   try {
     localStorage.setItem('MATINAL_DATA_V6', JSON.stringify(DATA_COMPLETA));
     localStorage.setItem('DATOS_VESPERTINA_V6', JSON.stringify(DATOS_VESPERTINA));
@@ -755,14 +759,14 @@ function renderCierreD1() {
     if (modo === 'RESUMEN_SUPERVISORES') {
       SUPERVISORES_LIST.forEach(sv => {
         const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
-        const [k1, k2] = getKpisForMesa(sv);
+        const [k1, k2] = getKpisD1(sv);
 
         let sCzaP = 0, sCzaR = 0, sUngP = 0, sUngR = 0, s1P = 0, s1R = 0, s2P = 0, s2R = 0;
         vends.forEach(v => {
-          const dCza = getKpiData(v, "CVZ CMQ");
-          const dUng = getKpiData(v, "UNG");
-          const d1 = getKpiData(v, k1);
-          const d2 = getKpiData(v, k2);
+          const dCza = getKpiD1(v, "CVZ CMQ");
+          const dUng = getKpiD1(v, "UNG");
+          const d1 = getKpiD1(v, k1);
+          const d2 = getKpiD1(v, k2);
 
           sCzaP += dCza.plan; sCzaR += getRealHoy(dCza, "CVZ CMQ");
           sUngP += dUng.plan; sUngR += getRealHoy(dUng, "UNG");
@@ -792,13 +796,13 @@ function renderCierreD1() {
       });
     } else {
       const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === modo);
-      const [k1, k2] = getKpisForMesa(modo);
+      const [k1, k2] = getKpisD1(modo);
 
       vends.forEach(v => {
-        const dCza = getKpiData(v, "CVZ CMQ");
-        const dUng = getKpiData(v, "UNG");
-        const d1 = getKpiData(v, k1);
-        const d2 = getKpiData(v, k2);
+        const dCza = getKpiD1(v, "CVZ CMQ");
+        const dUng = getKpiD1(v, "UNG");
+        const d1 = getKpiD1(v, k1);
+        const d2 = getKpiD1(v, k2);
 
         const czaR = getRealHoy(dCza, "CVZ CMQ");
         const ungR = getRealHoy(dUng, "UNG");
@@ -846,7 +850,7 @@ function renderCierreD1() {
       </table>
     `;
 
-    wrapper.innerHTML = thead + tbody + tfoot;
+    wrapper.innerHTML = bannerFotoD1() + thead + tbody + tfoot;
     return;
   }
 
@@ -887,7 +891,7 @@ function renderCierreD1() {
       let sMr = 0, sMn = 0, s7 = 0, s14 = 0, sP = 0, sR = 0;
 
       vends.forEach(v => {
-        const d = getKpiData(v, kpiKey);
+        const d = getKpiD1(v, kpiKey);
         sMr += d.mreal; sMn += d.mnec; s7 += d.d7; s14 += d.d14;
         sP += d.plan; sR += getRealHoy(d, kpiKey);
       });
@@ -912,7 +916,7 @@ function renderCierreD1() {
   } else {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === modo);
     vends.forEach(v => {
-      const d = getKpiData(v, kpiKey);
+      const d = getKpiD1(v, kpiKey);
       const realV = getRealHoy(d, kpiKey);
 
       tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += realV;
@@ -953,7 +957,7 @@ function renderCierreD1() {
     </table>
   `;
 
-  wrapper.innerHTML = thead + tbody + tfoot;
+  wrapper.innerHTML = bannerFotoD1() + thead + tbody + tfoot;
 }
 
 // ====================================================================
@@ -1023,10 +1027,96 @@ function esKpiCobertura(kpiNombre) {
 }
 
 function getRealHoy(d, kpiNombre) {
+  if (typeof d.realFoto === 'number') return d.realFoto; // Real congelado en la foto del día (Cierre D-1)
   if (esKpiCobertura(kpiNombre)) {
     return (typeof d.hoy_adv === 'number') ? d.hoy_adv : 0; // 0 si AD(V) todavía no está cargado
   }
   return d.realVesper || 0;
+}
+
+
+// ====================================================================
+// FOTO DEL DÍA (plan congelado por el JDV + resultado de ese día)
+// DATA_COMPLETA.fotos_d1[YYYY-MM-DD] = { fecha, datos: [ { pv, sv, kpisMesa, plan:{KPI:n}, real:{KPI:n} } ] }
+// ====================================================================
+function fechaLocalISO(d) {
+  d = d || new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+// Foto más reciente ANTERIOR a hoy (la que corresponde al Cierre D-1)
+function getFotoD1() {
+  const f = DATA_COMPLETA.fotos_d1 || {};
+  const hoy = fechaLocalISO();
+  const fechas = Object.keys(f).filter(x => x < hoy).sort();
+  return fechas.length ? f[fechas[fechas.length - 1]] : null;
+}
+
+function getKpisD1(sv) {
+  const foto = getFotoD1();
+  if (foto) {
+    const e = (foto.datos || []).find(x => x.sv === sv && Array.isArray(x.kpisMesa));
+    if (e) return e.kpisMesa;
+  }
+  return getKpisForMesa(sv);
+}
+
+// Igual que getKpiData, pero con el plan (y el real) congelados en la foto si existe
+function getKpiD1(vend, kpiNombre) {
+  const base = getKpiData(vend, kpiNombre);
+  const foto = getFotoD1();
+  if (!foto) return base;
+  const e = (foto.datos || []).find(x => x.pv === vend.pv);
+  if (!e || !e.plan || typeof e.plan[kpiNombre] !== 'number') return base;
+  return Object.assign({}, base, {
+    plan: e.plan[kpiNombre],
+    realFoto: (e.real && typeof e.real[kpiNombre] === 'number') ? e.real[kpiNombre] : undefined
+  });
+}
+
+function bannerFotoD1() {
+  const foto = getFotoD1();
+  if (!foto) {
+    return '<div class="px-3 py-2 small bg-warning-subtle text-dark border-bottom"><i class="bi bi-exclamation-triangle-fill me-1"></i>No hay foto de un día anterior: se muestra el plan actual y el último real cargado.</div>';
+  }
+  const [y, m, d] = foto.fecha.split('-');
+  return '<div class="px-3 py-2 small bg-success-subtle text-success border-bottom"><i class="bi bi-camera-fill me-1"></i>Plan congelado del ' + d + '/' + m + ' (foto del JDV) vs. real de ese día (VESPER / AD-V).</div>';
+}
+
+// Adjunta el resultado del día (VESPER / AD-V) a la foto de hoy, si ya existe
+function actualizarRealEnFotoHoy() {
+  const hoy = fechaLocalISO();
+  const foto = (DATA_COMPLETA.fotos_d1 || {})[hoy];
+  if (!foto) return;
+  const c = DATA_COMPLETA.cargas || {};
+  (foto.datos || []).forEach(e => {
+    const v = DATA_COMPLETA.vendedores.find(x => x.pv === e.pv);
+    if (!v) return;
+    Object.keys(e.plan || {}).forEach(k => {
+      const cob = esKpiCobertura(k);
+      if ((cob && c.ADV === hoy) || (!cob && c.VESPER === hoy)) {
+        if (!e.real) e.real = {};
+        e.real[k] = getRealHoy(getKpiData(v, k), k);
+      }
+    });
+  });
+}
+
+// Trae de la nube las fotos que este navegador no tenga (evita pisarlas con una copia vieja)
+async function mergearFotosDesdeNube() {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(API_URL + "?accion=GET_BASE", { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return;
+    const nube = await res.json();
+    const fn = nube && nube.data_completa && nube.data_completa.fotos_d1;
+    if (!fn) return;
+    if (!DATA_COMPLETA.fotos_d1) DATA_COMPLETA.fotos_d1 = {};
+    Object.keys(fn).forEach(f => { if (!DATA_COMPLETA.fotos_d1[f]) DATA_COMPLETA.fotos_d1[f] = fn[f]; });
+  } catch (e) { /* sin red: se sigue con lo local */ }
 }
 
 function renderVendedorView() {
@@ -1860,6 +1950,7 @@ function actualizarDesdeFilasADV(filas) {
       vend.kpis[segActual].prevendido_adv = parseNum(row[19]);
     }
   });
+  DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { ADV: fechaLocalISO() });
   persistirDatos(true);
 }
 
@@ -1901,6 +1992,7 @@ function actualizarDesdeFilasVesperMaster(filas) {
     });
   });
 
+  DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { VESPER: fechaLocalISO() });
   persistirDatos(true);
 }
 
@@ -1937,15 +2029,30 @@ function descargarJSONGitHub() {
 async function confirmarPlanificacionJefe() {
   if (!confirm("¿Confirmar y congelar la foto AD(D-1) de hoy para auditar mañana?")) return;
 
-  const snapshot = DATA_COMPLETA.vendedores.map(v => ({
-    pv: v.pv, nombre: v.nombre, sv: v.sv,
-    planCza: v.kpis["CVZ CMQ"] ? v.kpis["CVZ CMQ"].plan : 0,
-    planUng: v.kpis["UNG"] ? v.kpis["UNG"].plan : 0,
-    kpisMesa: getKpisForMesa(v.sv)
-  }));
+  const hoy = fechaLocalISO();
+  const c = DATA_COMPLETA.cargas || {};
 
-  localStorage.setItem('FOTO_AD_D1', JSON.stringify({ fecha: new Date().toISOString().slice(0, 10), datos: snapshot }));
+  const datos = DATA_COMPLETA.vendedores.map(v => {
+    const kpisMesa = getKpisForMesa(v.sv);
+    const claves = [...new Set(["CVZ CMQ", "UNG", kpisMesa[0], kpisMesa[1]])];
+    const plan = {}, real = {};
+    claves.forEach(k => {
+      const d = getKpiData(v, k);
+      plan[k] = d.plan || 0;
+      // El real se guarda solo si VESPER / AD(V) ya se cargaron hoy; si no, se adjunta cuando se carguen
+      const cob = esKpiCobertura(k);
+      if ((cob && c.ADV === hoy) || (!cob && c.VESPER === hoy)) real[k] = getRealHoy(d, k);
+    });
+    return { pv: v.pv, nombre: v.nombre, sv: v.sv, kpisMesa, plan, real };
+  });
+
+  if (!DATA_COMPLETA.fotos_d1) DATA_COMPLETA.fotos_d1 = {};
+  DATA_COMPLETA.fotos_d1[hoy] = { fecha: hoy, guardada: new Date().toISOString(), datos };
+  // Se conservan las últimas 14 fotos
+  Object.keys(DATA_COMPLETA.fotos_d1).sort().slice(0, -14).forEach(k => delete DATA_COMPLETA.fotos_d1[k]);
+
   document.getElementById('bannerFotoCongelada').classList.remove('d-none');
+  await persistirDatos(true);
   alert("¡Foto AD(D-1) congelada con éxito!");
 }
 
