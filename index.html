@@ -315,11 +315,17 @@
           <div class="d-flex flex-wrap gap-2 text-center">
             <div class="bg-light p-2 rounded border">
               <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa CZA</small>
-              <strong class="text-primary fs-6" id="supMesaAvanceCvz">-</strong>
+              <div class="d-flex align-items-center justify-content-center gap-1">
+                <strong class="text-primary fs-6" id="supMesaAvanceCvz">-</strong>
+                <span class="badge bg-primary text-white px-1" style="font-size:0.65rem;" id="supMesaTendenciaCvz" title="Tendencia Proyectada">Tend: -</span>
+              </div>
             </div>
             <div class="bg-light p-2 rounded border">
               <small class="text-muted d-block" style="font-size:0.72rem;">Avance Mesa UNG</small>
-              <strong class="text-success fs-6" id="supMesaAvanceUng">-</strong>
+              <div class="d-flex align-items-center justify-content-center gap-1">
+                <strong class="text-success fs-6" id="supMesaAvanceUng">-</strong>
+                <span class="badge bg-success text-white px-1" style="font-size:0.65rem;" id="supMesaTendenciaUng" title="Tendencia Proyectada">Tend: -</span>
+              </div>
             </div>
             <div class="bg-light p-2 rounded border">
               <small class="text-muted d-block" style="font-size:0.72rem;" id="supMesaLabelSel1">Avance Ind 1</small>
@@ -1197,19 +1203,15 @@ function renderSupervisorView() {
       <td class="text-start fw-semibold">${v.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${v.pv}</small></td>
       <td><span class="badge-adv ${v.estado === 'Aprobado' ? 'bg-success text-white' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
 
-      <!-- CZA -->
       <td class="fw-semibold text-primary">${dCvz.avance}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td>
       <td class="${dCvz.plan < dCvz.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dCvz.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'CVZ CMQ', this.value)"></td>
 
-      <!-- UNG -->
       <td class="fw-semibold text-success">${dUng.avance}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td>
       <td class="${dUng.plan < dUng.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dUng.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'UNG', this.value)"></td>
 
-      <!-- SEL 1 -->
       <td class="fw-semibold text-warning text-dark">${dS1.avance}</td><td>${dS1.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td><td>${dS1.d14.toFixed(1)}</td><td>${dS1.d7.toFixed(1)}</td>
       <td class="${dS1.plan < dS1.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)"></td>
 
-      <!-- SEL 2 -->
       <td class="fw-semibold text-info text-dark">${dS2.avance}</td><td>${dS2.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td><td>${dS2.d14.toFixed(1)}</td><td>${dS2.d7.toFixed(1)}</td>
       <td class="${dS2.plan < dS2.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)"></td>
 
@@ -1218,12 +1220,31 @@ function renderSupervisorView() {
     tbody.appendChild(tr);
   });
 
-  // Cálculo e inyección de los Avances Superiores
   const calcAv = (obj, real) => obj > 0 ? ((real / obj) * 100).toFixed(1) + "%" : "0.0%";
+  
+  // Calcular factor de tiempo en el mes usando al primer vendedor válido
+  let factorTiempo = 1;
+  for (let v of filtrados) {
+    let d = getKpiData(v, "CVZ CMQ");
+    let avParse = parseFloat(d.avance);
+    if (d.obj > 0 && d.real > 0 && avParse > 0) {
+      factorTiempo = (d.real / d.obj) / (avParse / 100);
+      break;
+    }
+  }
+
+  const calcTendencia = (obj, real) => obj > 0 ? (((real / obj) / factorTiempo) * 100).toFixed(1) + "%" : "0.0%";
+
   document.getElementById('supMesaAvanceCvz').textContent = calcAv(totCvz.obj, totCvz.real);
   document.getElementById('supMesaAvanceUng').textContent = calcAv(totUng.obj, totUng.real);
   document.getElementById('supMesaAvanceSel1').textContent = calcAv(totSel1.obj, totSel1.real);
   document.getElementById('supMesaAvanceSel2').textContent = calcAv(totSel2.obj, totSel2.real);
+
+  const elTendCvz = document.getElementById('supMesaTendenciaCvz');
+  if(elTendCvz) elTendCvz.textContent = "Tend: " + calcTendencia(totCvz.obj, totCvz.real);
+  
+  const elTendUng = document.getElementById('supMesaTendenciaUng');
+  if(elTendUng) elTendUng.textContent = "Tend: " + calcTendencia(totUng.obj, totUng.real);
 
   const itemVesper = DATOS_VESPERTINA.find(d => d.sv === sv) || { cza: 0, ung: 0, kpi1: 0, kpi2: 0 };
   const gCza = totCvz.plan - itemVesper.cza;
