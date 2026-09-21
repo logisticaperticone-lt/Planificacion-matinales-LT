@@ -1889,7 +1889,12 @@ async function confirmarPlanificacionJefe() {
 }
 
 // Sondeo con Google Sheets
+let isSyncing = false;
+
 async function sincronizarDesdeGoogleSheets() {
+  if (isSyncing) return;
+  isSyncing = true;
+  
   const badge = document.getElementById('syncStatusBadge');
   try {
     const res = await fetch(API_URL);
@@ -1903,8 +1908,25 @@ async function sincronizarDesdeGoogleSheets() {
         if (vend) {
           const pCza = parseFloat(p.planCza) || 0;
           const pUng = parseFloat(p.planUng) || 0;
+          const pKpi3 = parseFloat(p.planKpi3) || 0; // Lee el KPI 1 de la mesa
+          const pKpi4 = parseFloat(p.planKpi4) || 0; // Lee el KPI 2 de la mesa
+
+          // Sincronizar CZA y UNG
           if (vend.kpis["CVZ CMQ"].plan !== pCza) { vend.kpis["CVZ CMQ"].plan = pCza; huboCambios = true; }
           if (vend.kpis["UNG"].plan !== pUng) { vend.kpis["UNG"].plan = pUng; huboCambios = true; }
+          
+          // Sincronizar Indicador 1 (ej. COB MICHELOB)
+          if (p.kpi3) {
+            if (!vend.kpis[p.kpi3]) vend.kpis[p.kpi3] = { plan: 0 };
+            if (vend.kpis[p.kpi3].plan !== pKpi3) { vend.kpis[p.kpi3].plan = pKpi3; huboCambios = true; }
+          }
+          
+          // Sincronizar Indicador 2 (ej. COB PURE GOLD)
+          if (p.kpi4) {
+            if (!vend.kpis[p.kpi4]) vend.kpis[p.kpi4] = { plan: 0 };
+            if (vend.kpis[p.kpi4].plan !== pKpi4) { vend.kpis[p.kpi4].plan = pKpi4; huboCambios = true; }
+          }
+
           if (vend.estado !== p.estado && p.estado) { vend.estado = p.estado; huboCambios = true; }
         }
       });
@@ -1913,10 +1935,17 @@ async function sincronizarDesdeGoogleSheets() {
         badge.className = "badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center";
         badge.innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)';
       }
-      if (huboCambios) persistirDatos(false);
+      
+      // Si detectó datos nuevos desde el celular, guarda e impacta en la tabla automáticamente
+      if (huboCambios) {
+        persistirDatos(false);
+        renderPlanCurrentView(); 
+      }
     }
   } catch (err) {
     console.warn("Sondeo...", err);
+  } finally {
+    isSyncing = false;
   }
 }
 
