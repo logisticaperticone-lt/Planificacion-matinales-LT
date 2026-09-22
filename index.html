@@ -1549,6 +1549,7 @@ function cambiarPlanSupervisor(pv, kpi, val) {
   if (!vend) return;
   if (!vend.kpis[kpi]) vend.kpis[kpi] = { plan: 0 };
   vend.kpis[kpi].plan = parseFloat(val) || 0;
+  vend._planEditadoLocal = Date.now(); // El sondeo no debe pisar esto con un envío del vendedor más viejo
   persistirDatos(true);
   renderSupervisorView();
 }
@@ -1557,6 +1558,7 @@ function aprobarVendedorMesa(pv) {
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
   if (vend) {
     vend.estado = "Aprobado";
+    vend._planEditadoLocal = Date.now();
     persistirDatos(true);
     renderSupervisorView();
   }
@@ -1588,6 +1590,7 @@ function borrarPlanVendedor(pv) {
   const [k1, k2] = getKpisForMesa(vend.sv);
   ["CVZ CMQ", "UNG", k1, k2].forEach(k => { if (vend.kpis[k]) vend.kpis[k].plan = 0; });
   vend.estado = "Pendiente";
+  vend._planEditadoLocal = Date.now();
   persistirDatos(true);
   renderSupervisorView();
 }
@@ -1600,6 +1603,7 @@ function borrarPlanMesa() {
   DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => {
     ["CVZ CMQ", "UNG", k1, k2].forEach(k => { if (v.kpis[k]) v.kpis[k].plan = 0; });
     v.estado = "Pendiente";
+    v._planEditadoLocal = Date.now();
   });
   persistirDatos(true);
   renderSupervisorView();
@@ -1616,6 +1620,7 @@ function exigirMediasSupervisor() {
       if (d && d.plan < d.mnec) d.plan = Math.ceil(d.mnec * 4) / 4;
     });
     v.estado = "Aprobado";
+    v._planEditadoLocal = Date.now();
   });
   persistirDatos(true);
   renderSupervisorView();
@@ -1623,7 +1628,7 @@ function exigirMediasSupervisor() {
 
 function aprobarMesaSupervisor() {
   const sv = document.getElementById('userSelect').value;
-  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => { v.estado = "Aprobado"; });
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => { v.estado = "Aprobado"; v._planEditadoLocal = Date.now(); });
   persistirDatos(true);
   renderSupervisorView();
 }
@@ -2186,6 +2191,7 @@ function actualizarDesdeFilasAD(filas) {
       vend.kpis[segActual].prevendido = parseNum(row[19]);
       vend.kpis[segActual].plan = 0; // Default 0
       vend.estado = "Pendiente";
+      vend._planEditadoLocal = 0; // Día nuevo: se vuelve a reflejar en vivo lo que el vendedor cargue en su formulario
     }
   });
   DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { AD: fechaLocalISO() });
@@ -2338,9 +2344,14 @@ async function sincronizarDesdeGoogleSheets() {
 
       data.forEach(p => {
         const vend = DATA_COMPLETA.vendedores.find(v => v.pv === parseInt(p.pv));
-        // Si la mesa ya está Aprobada, no se pisa el PLAN con lo que traiga la nube (evita que
-        // una edición del supervisor "vuelva atrás" sola 5s después). Se reabre con Reabrir Mesa/Vendedor.
-        if (vend && vend.estado !== "Aprobado") {
+        // Solo se aplica el envío del formulario del vendedor si es MÁS NUEVO que la última edición
+        // manual del supervisor en esta mesa (PLAN tocado, Aprobar, Reabrir, Borrar, Exigir Medias).
+        // Sin esto, el sondeo cada 5s pisaba cualquier edición del supervisor con un envío viejo del
+        // vendedor (incluso en 0), por eso "todo volvía a cero" al borrar y replanificar.
+        const tsRemoto = Number(p.ts) || 0;
+        const tsLocal = (vend && vend._planEditadoLocal) || 0;
+        const puedeAplicar = vend && vend.estado !== "Aprobado" && (tsLocal === 0 || tsRemoto >= tsLocal);
+        if (puedeAplicar) {
           const pCza = parseFloat(p.planCza) || 0;
           const pUng = parseFloat(p.planUng) || 0;
           const pKpi3 = parseFloat(p.planKpi3) || 0;
