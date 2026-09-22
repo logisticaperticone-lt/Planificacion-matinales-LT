@@ -70,6 +70,9 @@
       <button class="nav-phase-btn" id="btnFaseAnalista" onclick="cambiarFase('analista')">
         <i class="bi bi-gear-wide-connected me-1"></i> 4. ANALISTA
       </button>
+      <button class="nav-phase-btn" id="btnFaseHistorico" onclick="cambiarFase('historico')">
+        <i class="bi bi-clock-history me-1"></i> 5. HISTÓRICO
+      </button>
     </div>
 
     <!-- Estado y Controles Rápidos -->
@@ -337,9 +340,11 @@
             </div>
           </div>
 
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-outline-danger btn-sm fw-semibold" onclick="exigirMediasSupervisor()"><i class="bi bi-lightning-fill me-1"></i>Exigir Medias</button>
             <button class="btn btn-success btn-sm fw-semibold" onclick="aprobarMesaSupervisor()"><i class="bi bi-check-all me-1"></i>Aprobar Mesa</button>
+            <button class="btn btn-outline-warning btn-sm fw-semibold" onclick="reabrirMesaSupervisor()"><i class="bi bi-arrow-counterclockwise me-1"></i>Reabrir Mesa</button>
+            <button class="btn btn-outline-secondary btn-sm fw-semibold" onclick="borrarPlanMesa()"><i class="bi bi-trash3 me-1"></i>Borrar Planif. Mesa</button>
           </div>
         </div>
       </div>
@@ -351,17 +356,17 @@
               <tr>
                 <th rowspan="2" class="text-start" style="min-width: 170px;">VENDEDOR</th>
                 <th rowspan="2" style="width: 75px;">ESTADO</th>
-                <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
-                <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
-                <th colspan="6" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
-                <th colspan="6" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
-                <th rowspan="2" style="width: 45px;">OK</th>
+                <th colspan="7" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
+                <th colspan="7" class="header-kpi-ung">VOLUMEN UNG</th>
+                <th colspan="7" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
+                <th colspan="7" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
+                <th rowspan="2" style="width: 130px;">ACCIONES</th>
               </tr>
               <tr>
-                <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1">Prevend.</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2">Prevend.</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
               </tr>
             </thead>
             <tbody id="supTableBody"></tbody>
@@ -397,16 +402,16 @@
               <tr>
                 <th rowspan="2" class="text-start">SUPERVISOR / MESA</th>
                 <th rowspan="2">ESTADO</th>
-                <th colspan="3" class="header-kpi-cvz">1. VOL. CZA CMQ</th>
-                <th colspan="3" class="header-kpi-ung">2. VOL. UNG</th>
-                <th colspan="3" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
-                <th colspan="3" class="header-kpi-sel2">4. KPI SECUNDARIO 2</th>
+                <th colspan="7" class="header-kpi-cvz">1. VOL. CZA CMQ</th>
+                <th colspan="7" class="header-kpi-ung">2. VOL. UNG</th>
+                <th colspan="8" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
+                <th colspan="8" class="header-kpi-sel2">4. KPI SECUNDARIO 2</th>
               </tr>
               <tr>
-                <th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
-                <th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
-                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+                <th class="header-kpi-cvz">% Tend.</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz text-warning">PLAN</th>
+                <th class="header-kpi-ung">% Tend.</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung text-warning">PLAN</th>
+                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">% Tend.</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1">Prevend.</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">% Tend.</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2">Prevend.</th><th class="header-kpi-sel2 text-warning">PLAN</th>
               </tr>
             </thead>
             <tbody id="jefeTableBody"></tbody>
@@ -596,6 +601,56 @@
     </div>
   </div>
 
+  <!-- ==================================================================== -->
+  <!-- ETAPA 5: HISTÓRICO (Cumplimiento de Planificación por Vendedor)      -->
+  <!-- ==================================================================== -->
+  <div id="etapaHistorico" class="d-none">
+    <div class="card card-custom p-3 mb-3 bg-white shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <div>
+          <h4 class="mb-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Histórico de Cierre D-1</h4>
+          <small class="text-muted">Plan vs. Real de cada foto congelada — para ver quién suele planificar por encima o por debajo de lo real.</small>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+          <label class="form-label small fw-semibold mb-1">Período</label>
+          <select id="histPeriodoSelect" class="form-select form-select-sm" onchange="renderHistorico()">
+            <option value="14">Últimos 14 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="60">Últimos 60 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold mb-1">Mesa</label>
+          <select id="histMesaSelect" class="form-select form-select-sm" onchange="renderHistorico()">
+            <option value="TODOS">Todas las mesas</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-custom mb-0">
+          <thead>
+            <tr>
+              <th class="text-start">VENDEDOR</th>
+              <th>MESA</th>
+              <th>DÍAS EVALUADOS</th>
+              <th>CUMPLIM. PROMEDIO</th>
+              <th>CUMPLIM. GLOBAL (Σ Real / Σ Plan)</th>
+              <th>DIAGNÓSTICO</th>
+            </tr>
+          </thead>
+          <tbody id="historicoTableBody"></tbody>
+        </table>
+      </div>
+      <div class="p-2 small text-muted border-top" id="historicoVacioMsg"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Scripts de Integración y Lógica -->
@@ -653,11 +708,13 @@ function cambiarFase(fase) {
   document.getElementById('etapaPlanificacion').classList.add('d-none');
   document.getElementById('etapaVespertina').classList.add('d-none');
   document.getElementById('etapaAnalista').classList.add('d-none');
+  document.getElementById('etapaHistorico').classList.add('d-none');
 
   document.getElementById('btnFaseCierre').classList.remove('active');
   document.getElementById('btnFasePlan').classList.remove('active');
   document.getElementById('btnFaseVesper').classList.remove('active');
   document.getElementById('btnFaseAnalista').classList.remove('active');
+  document.getElementById('btnFaseHistorico').classList.remove('active');
 
   if (fase === 'cierre') {
     document.getElementById('etapaCierreD1').classList.remove('d-none');
@@ -676,6 +733,10 @@ function cambiarFase(fase) {
     document.getElementById('viewAnalista').classList.remove('d-none'); // Forzar reaparición
     document.getElementById('btnFaseAnalista').classList.add('active');
     renderAnalistaView();
+  } else if (fase === 'historico') {
+    document.getElementById('etapaHistorico').classList.remove('d-none');
+    document.getElementById('btnFaseHistorico').classList.add('active');
+    renderHistorico();
   }
 }
 
@@ -686,6 +747,7 @@ async function persistirDatos(sincronizarConNube = false) {
   if (sincronizarConNube) {
     await mergearFotosDesdeNube();
     actualizarRealEnFotoHoy();
+    registrarHistorialDia(fechaLocalISO());
   }
   try {
     localStorage.setItem('MATINAL_DATA_V6', JSON.stringify(DATA_COMPLETA));
@@ -1103,6 +1165,110 @@ function actualizarRealEnFotoHoy() {
   });
 }
 
+// ====================================================================
+// HISTÓRICO DE CIERRE D-1 (para detectar quién planifica mal)
+// DATA_COMPLETA.historial_d1 = [ { fecha, pv, nombre, sv, kpi, plan, real, cumplimiento } ... ]
+// Una fila por vendedor+KPI+día, se registra recién cuando ese KPI ya tiene Real (VESPER/AD-V cargados).
+// ====================================================================
+function registrarHistorialDia(fecha) {
+  const foto = (DATA_COMPLETA.fotos_d1 || {})[fecha];
+  if (!foto) return;
+  if (!DATA_COMPLETA.historial_d1) DATA_COMPLETA.historial_d1 = [];
+  const hist = DATA_COMPLETA.historial_d1;
+
+  (foto.datos || []).forEach(e => {
+    Object.keys(e.plan || {}).forEach(k => {
+      const plan = e.plan[k] || 0;
+      if (plan <= 0) return; // sin plan no hay nada que evaluar
+      if (!e.real || typeof e.real[k] !== 'number') return; // real de ese KPI todavía no cargado
+      const real = e.real[k];
+      const cumplimiento = (real / plan) * 100;
+      let row = hist.find(r => r.fecha === fecha && r.pv === e.pv && r.kpi === k);
+      if (!row) { row = { fecha, pv: e.pv, kpi: k }; hist.push(row); }
+      row.nombre = e.nombre; row.sv = e.sv; row.plan = plan; row.real = real; row.cumplimiento = cumplimiento;
+    });
+  });
+
+  // Retención: últimos 90 días, para no inflar la base que se sincroniza con Sheets
+  const limite = fechaLocalISO(new Date(Date.now() - 90 * 86400000));
+  DATA_COMPLETA.historial_d1 = hist.filter(r => r.fecha >= limite);
+}
+
+// Agrupa el histórico por vendedor dentro del período/mesa elegidos
+function calcularRankingHistorico(dias, svFiltro) {
+  const desde = fechaLocalISO(new Date(Date.now() - dias * 86400000));
+  const filas = (DATA_COMPLETA.historial_d1 || []).filter(r =>
+    r.fecha >= desde && (svFiltro === 'TODOS' || r.sv === svFiltro)
+  );
+
+  const porVendedor = {};
+  filas.forEach(r => {
+    if (!porVendedor[r.pv]) {
+      porVendedor[r.pv] = { pv: r.pv, nombre: r.nombre, sv: r.sv, sumCump: 0, n: 0, fechas: new Set(), sumPlan: 0, sumReal: 0 };
+    }
+    const c = porVendedor[r.pv];
+    c.sumCump += Math.min(r.cumplimiento, 300); // se acota para que un outlier no distorsione el promedio
+    c.n++;
+    c.fechas.add(r.fecha);
+    c.sumPlan += r.plan;
+    c.sumReal += r.real;
+  });
+
+  return Object.values(porVendedor).map(c => ({
+    pv: c.pv, nombre: c.nombre, sv: c.sv,
+    dias: c.fechas.size,
+    cumplimientoProm: c.n ? (c.sumCump / c.n) : 0,
+    cumplimientoGlobal: c.sumPlan > 0 ? (c.sumReal / c.sumPlan * 100) : 0
+  })).sort((a, b) => a.cumplimientoProm - b.cumplimientoProm);
+}
+
+function renderHistorico() {
+  const mesaSelect = document.getElementById('histMesaSelect');
+  if (mesaSelect && mesaSelect.options.length <= 1) {
+    SUPERVISORES_LIST.forEach(sv => {
+      const opt = document.createElement('option');
+      opt.value = sv; opt.textContent = sv;
+      mesaSelect.appendChild(opt);
+    });
+  }
+
+  const dias = parseInt(document.getElementById('histPeriodoSelect').value) || 30;
+  const svFiltro = document.getElementById('histMesaSelect').value || 'TODOS';
+  const ranking = calcularRankingHistorico(dias, svFiltro);
+
+  const tbody = document.getElementById('historicoTableBody');
+  const msg = document.getElementById('historicoVacioMsg');
+  tbody.innerHTML = '';
+
+  if (ranking.length === 0) {
+    msg.textContent = 'Todavía no hay suficientes días de Cierre D-1 con foto + real cargados en este período. Se va acumulando automáticamente cada vez que se guarda una foto AD(D-1) y después se cargan VESPER / AD(V) ese mismo día.';
+    return;
+  }
+  msg.textContent = '';
+
+  ranking.forEach(c => {
+    let diag, badgeClass;
+    if (c.cumplimientoProm >= 85 && c.cumplimientoProm <= 115) {
+      diag = 'Planifica ajustado'; badgeClass = 'bg-success';
+    } else if (c.cumplimientoProm < 85) {
+      diag = 'Sobre-planifica (real bien por debajo del plan)'; badgeClass = 'bg-danger';
+    } else {
+      diag = 'Sub-planifica (real muy por encima del plan)'; badgeClass = 'bg-warning text-dark';
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-start fw-semibold">${c.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${c.pv}</small></td>
+      <td class="text-start text-muted">${c.sv}</td>
+      <td>${c.dias}</td>
+      <td class="fw-bold">${c.cumplimientoProm.toFixed(1)}%</td>
+      <td>${c.cumplimientoGlobal.toFixed(1)}%</td>
+      <td><span class="badge ${badgeClass}">${diag}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 // Trae de la nube las fotos que este navegador no tenga (evita pisarlas con una copia vieja)
 async function mergearFotosDesdeNube() {
   try {
@@ -1278,10 +1444,10 @@ function renderSupervisorView() {
   const tbody = document.getElementById('supTableBody');
   tbody.innerHTML = '';
 
-  let totCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
-  let totUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
-  let totSel1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
-  let totSel2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0 };
+  let totCvz = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0, prevendido: 0 };
+  let totUng = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0, prevendido: 0 };
+  let totSel1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0, prevendido: 0 };
+  let totSel2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0, prevendido: 0 };
 
   filtrados.forEach(v => {
     const dCvz = getKpiData(v, "CVZ CMQ");
@@ -1289,16 +1455,16 @@ function renderSupervisorView() {
     const dS1 = getKpiData(v, sel1);
     const dS2 = getKpiData(v, sel2);
 
-    totCvz.mreal += dCvz.mreal; totCvz.mnec += dCvz.mnec; totCvz.d14 += dCvz.d14; totCvz.d7 += dCvz.d7; totCvz.plan += dCvz.plan;
+    totCvz.mreal += dCvz.mreal; totCvz.mnec += dCvz.mnec; totCvz.d14 += dCvz.d14; totCvz.d7 += dCvz.d7; totCvz.plan += dCvz.plan; totCvz.prevendido += dCvz.prevendido;
     totCvz.obj += dCvz.obj || 0; totCvz.real += dCvz.real || 0;
 
-    totUng.mreal += dUng.mreal; totUng.mnec += dUng.mnec; totUng.d14 += dUng.d14; totUng.d7 += dUng.d7; totUng.plan += dUng.plan;
+    totUng.mreal += dUng.mreal; totUng.mnec += dUng.mnec; totUng.d14 += dUng.d14; totUng.d7 += dUng.d7; totUng.plan += dUng.plan; totUng.prevendido += dUng.prevendido;
     totUng.obj += dUng.obj || 0; totUng.real += dUng.real || 0;
 
-    totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan;
+    totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan; totSel1.prevendido += dS1.prevendido;
     totSel1.obj += dS1.obj || 0; totSel1.real += dS1.real || 0;
 
-    totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan;
+    totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan; totSel2.prevendido += dS2.prevendido;
     totSel2.obj += dS2.obj || 0; totSel2.real += dS2.real || 0;
 
     const tr = document.createElement('tr');
@@ -1306,19 +1472,23 @@ function renderSupervisorView() {
       <td class="text-start fw-semibold">${v.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${v.pv}</small></td>
       <td><span class="badge-adv ${v.estado === 'Aprobado' ? 'bg-success text-white' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
 
-      <td class="fw-semibold text-primary">${dCvz.avance}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td>
+      <td class="fw-semibold text-primary">${dCvz.avance}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="text-muted">${dCvz.prevendido.toFixed(1)}</td>
       <td class="${dCvz.plan < dCvz.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dCvz.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'CVZ CMQ', this.value)"></td>
 
-      <td class="fw-semibold text-success">${dUng.avance}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td>
+      <td class="fw-semibold text-success">${dUng.avance}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="text-muted">${dUng.prevendido.toFixed(1)}</td>
       <td class="${dUng.plan < dUng.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dUng.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'UNG', this.value)"></td>
 
-      <td class="fw-semibold text-warning text-dark">${dS1.avance}</td><td>${dS1.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td><td>${dS1.d14.toFixed(1)}</td><td>${dS1.d7.toFixed(1)}</td>
+      <td class="fw-semibold text-warning text-dark">${dS1.avance}</td><td>${dS1.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td><td>${dS1.d14.toFixed(1)}</td><td>${dS1.d7.toFixed(1)}</td><td class="text-muted">${dS1.prevendido.toFixed(1)}</td>
       <td class="${dS1.plan < dS1.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)"></td>
 
-      <td class="fw-semibold text-info text-dark">${dS2.avance}</td><td>${dS2.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td><td>${dS2.d14.toFixed(1)}</td><td>${dS2.d7.toFixed(1)}</td>
+      <td class="fw-semibold text-info text-dark">${dS2.avance}</td><td>${dS2.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td><td>${dS2.d14.toFixed(1)}</td><td>${dS2.d7.toFixed(1)}</td><td class="text-muted">${dS2.prevendido.toFixed(1)}</td>
       <td class="${dS2.plan < dS2.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)"></td>
 
-      <td><button class="btn btn-sm btn-outline-success py-0 px-2" onclick="aprobarVendedorMesa(${v.pv})"><i class="bi bi-check-lg"></i></button></td>
+      <td class="text-nowrap">
+        <button class="btn btn-sm btn-outline-success py-0 px-1 me-1" title="Aprobar" onclick="aprobarVendedorMesa(${v.pv})"><i class="bi bi-check-lg"></i></button>
+        <button class="btn btn-sm btn-outline-warning py-0 px-1 me-1" title="Reabrir planificación" onclick="reabrirVendedor(${v.pv})"><i class="bi bi-arrow-counterclockwise"></i></button>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-1" title="Borrar planificación" onclick="borrarPlanVendedor(${v.pv})"><i class="bi bi-trash3"></i></button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -1365,10 +1535,10 @@ function renderSupervisorView() {
   document.getElementById('supTableFoot').innerHTML = `
     <tr>
       <td class="text-start">TOTAL MESA</td><td>-</td>
-      <td>-</td><td>${totCvz.mreal.toFixed(1)}</td><td class="text-danger">${totCvz.mnec.toFixed(1)}</td><td>${totCvz.d14.toFixed(1)}</td><td>${totCvz.d7.toFixed(1)}</td><td class="fw-bold">${totCvz.plan.toFixed(1)}</td>
-      <td>-</td><td>${totUng.mreal.toFixed(1)}</td><td class="text-danger">${totUng.mnec.toFixed(1)}</td><td>${totUng.d14.toFixed(1)}</td><td>${totUng.d7.toFixed(1)}</td><td class="fw-bold">${totUng.plan.toFixed(1)}</td>
-      <td>-</td><td>${totSel1.mreal.toFixed(1)}</td><td class="text-danger">${totSel1.mnec.toFixed(1)}</td><td>${totSel1.d14.toFixed(1)}</td><td>${totSel1.d7.toFixed(1)}</td><td class="fw-bold">${totSel1.plan.toFixed(1)}</td>
-      <td>-</td><td>${totSel2.mreal.toFixed(1)}</td><td class="text-danger">${totSel2.mnec.toFixed(1)}</td><td>${totSel2.d14.toFixed(1)}</td><td>${totSel2.d7.toFixed(1)}</td><td class="fw-bold">${totSel2.plan.toFixed(1)}</td>
+      <td>-</td><td>${totCvz.mreal.toFixed(1)}</td><td class="text-danger">${totCvz.mnec.toFixed(1)}</td><td>${totCvz.d14.toFixed(1)}</td><td>${totCvz.d7.toFixed(1)}</td><td>${totCvz.prevendido.toFixed(1)}</td><td class="fw-bold">${totCvz.plan.toFixed(1)}</td>
+      <td>-</td><td>${totUng.mreal.toFixed(1)}</td><td class="text-danger">${totUng.mnec.toFixed(1)}</td><td>${totUng.d14.toFixed(1)}</td><td>${totUng.d7.toFixed(1)}</td><td>${totUng.prevendido.toFixed(1)}</td><td class="fw-bold">${totUng.plan.toFixed(1)}</td>
+      <td>-</td><td>${totSel1.mreal.toFixed(1)}</td><td class="text-danger">${totSel1.mnec.toFixed(1)}</td><td>${totSel1.d14.toFixed(1)}</td><td>${totSel1.d7.toFixed(1)}</td><td>${totSel1.prevendido.toFixed(1)}</td><td class="fw-bold">${totSel1.plan.toFixed(1)}</td>
+      <td>-</td><td>${totSel2.mreal.toFixed(1)}</td><td class="text-danger">${totSel2.mnec.toFixed(1)}</td><td>${totSel2.d14.toFixed(1)}</td><td>${totSel2.d7.toFixed(1)}</td><td>${totSel2.prevendido.toFixed(1)}</td><td class="fw-bold">${totSel2.plan.toFixed(1)}</td>
       <td>-</td>
     </tr>
   `;
@@ -1390,6 +1560,49 @@ function aprobarVendedorMesa(pv) {
     persistirDatos(true);
     renderSupervisorView();
   }
+}
+
+// Reabre la planificación de un vendedor (por si se aprobó por error) sin tocar los valores de PLAN
+function reabrirVendedor(pv) {
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+  vend.estado = "Pendiente";
+  persistirDatos(true);
+  renderSupervisorView();
+}
+
+// Reabre la planificación de toda la mesa del supervisor logueado
+function reabrirMesaSupervisor() {
+  const sv = document.getElementById('userSelect').value;
+  if (!confirm(`¿Reabrir la planificación de toda la mesa "${sv}" para poder modificarla?`)) return;
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => { v.estado = "Pendiente"; });
+  persistirDatos(true);
+  renderSupervisorView();
+}
+
+// Pone en 0 el PLAN (CZA, UNG y los 2 KPI foco) de un vendedor y lo deja listo para replanificar
+function borrarPlanVendedor(pv) {
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+  if (!confirm(`¿Borrar la planificación de ${vend.nombre}? El PLAN de CZA, UNG y sus KPI foco quedará en 0.`)) return;
+  const [k1, k2] = getKpisForMesa(vend.sv);
+  ["CVZ CMQ", "UNG", k1, k2].forEach(k => { if (vend.kpis[k]) vend.kpis[k].plan = 0; });
+  vend.estado = "Pendiente";
+  persistirDatos(true);
+  renderSupervisorView();
+}
+
+// Pone en 0 el PLAN de toda la mesa del supervisor logueado
+function borrarPlanMesa() {
+  const sv = document.getElementById('userSelect').value;
+  if (!confirm(`¿Borrar la planificación de TODA la mesa "${sv}"? El PLAN de CZA, UNG y los KPI foco quedará en 0.`)) return;
+  const [k1, k2] = getKpisForMesa(sv);
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => {
+    ["CVZ CMQ", "UNG", k1, k2].forEach(k => { if (v.kpis[k]) v.kpis[k].plan = 0; });
+    v.estado = "Pendiente";
+  });
+  persistirDatos(true);
+  renderSupervisorView();
 }
 
 function exigirMediasSupervisor() {
@@ -1419,14 +1632,40 @@ function renderJefeView() {
   const tbody = document.getElementById('jefeTableBody');
   tbody.innerHTML = '';
 
+  const calcAv = (obj, real) => obj > 0 ? ((real / obj) * 100).toFixed(1) + "%" : "0.0%";
+
+  // Factor de tiempo transcurrido del mes: se calcula con el primer vendedor válido de cada mesa
+  // (mismo criterio que usa la pantalla del Supervisor para "Tend:")
+  function factorTiempoDeMesa(vends) {
+    let factorTiempo = 1;
+    for (let v of vends) {
+      let d = getKpiData(v, "CVZ CMQ");
+      let avParse = parseFloat(d.avance);
+      if (d.obj > 0 && d.real > 0 && avParse > 0) {
+        factorTiempo = (d.real / d.obj) / (avParse / 100);
+        break;
+      }
+    }
+    return factorTiempo;
+  }
+  const calcTend = (obj, real, factorTiempo) => obj > 0 ? (((real / obj) / factorTiempo) * 100).toFixed(1) + "%" : "0.0%";
+
+  let totEmp = {
+    cza: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 },
+    ung: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 },
+    s1: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 },
+    s2: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 }
+  };
+  let totVends = 0, totAprobados = 0;
+
   SUPERVISORES_LIST.forEach(sv => {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
     const [k1, k2] = getKpisForMesa(sv);
 
-    let sCzaP = 0, sCzaMn = 0, sCza7 = 0;
-    let sUngP = 0, sUngMn = 0, sUng7 = 0;
-    let s1P = 0, s1Mn = 0;
-    let s2P = 0, s2Mn = 0;
+    let sCza = { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
+    let sUng = { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
+    let s1 = { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
+    let s2 = { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
     let aprobados = 0;
 
     vends.forEach(v => {
@@ -1435,24 +1674,49 @@ function renderJefeView() {
       const d1 = getKpiData(v, k1);
       const d2 = getKpiData(v, k2);
 
-      sCzaP += dCza.plan; sCzaMn += dCza.mnec; sCza7 += dCza.d7;
-      sUngP += dUng.plan; sUngMn += dUng.mnec; sUng7 += dUng.d7;
-      s1P += d1.plan; s1Mn += d1.mnec;
-      s2P += d2.plan; s2Mn += d2.mnec;
+      ["obj", "real", "mreal", "mnec", "d14", "d7", "prevendido", "plan"].forEach(campo => {
+        sCza[campo] += dCza[campo] || 0;
+        sUng[campo] += dUng[campo] || 0;
+        s1[campo] += d1[campo] || 0;
+        s2[campo] += d2[campo] || 0;
+      });
       if (v.estado === 'Aprobado') aprobados++;
     });
+
+    const factorTiempo = factorTiempoDeMesa(vends);
+
+    ["obj", "real", "mreal", "mnec", "d14", "d7", "prevendido", "plan"].forEach(campo => {
+      totEmp.cza[campo] += sCza[campo]; totEmp.ung[campo] += sUng[campo];
+      totEmp.s1[campo] += s1[campo]; totEmp.s2[campo] += s2[campo];
+    });
+    totVends += vends.length; totAprobados += aprobados;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-start fw-bold text-primary">${sv}</td>
       <td><span class="badge ${aprobados === vends.length ? 'bg-success' : 'bg-warning text-dark'}">${aprobados}/${vends.length} Aprob</span></td>
-      <td class="text-danger">${sCzaMn.toFixed(1)}</td><td>${sCza7.toFixed(1)}</td><td class="fw-bold text-primary">${sCzaP.toFixed(1)}</td>
-      <td class="text-danger">${sUngMn.toFixed(1)}</td><td>${sUng7.toFixed(1)}</td><td class="fw-bold text-success">${sUngP.toFixed(1)}</td>
-      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="text-danger">${s1Mn.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${s1P.toFixed(1)}</td>
-      <td class="fw-semibold text-info text-dark">${k2}</td><td class="text-danger">${s2Mn.toFixed(1)}</td><td class="fw-bold text-info text-dark">${s2P.toFixed(1)}</td>
+      <td class="fw-semibold text-primary">${calcTend(sCza.obj, sCza.real, factorTiempo)}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td class="fw-bold text-primary">${sCza.plan.toFixed(1)}</td>
+      <td class="fw-semibold text-success">${calcTend(sUng.obj, sUng.real, factorTiempo)}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td class="fw-bold text-success">${sUng.plan.toFixed(1)}</td>
+      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold text-warning text-dark">${calcTend(s1.obj, s1.real, factorTiempo)}</td><td>${s1.mreal.toFixed(1)}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td>${s1.d14.toFixed(1)}</td><td>${s1.d7.toFixed(1)}</td><td class="text-muted">${s1.prevendido.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${s1.plan.toFixed(1)}</td>
+      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold text-info text-dark">${calcTend(s2.obj, s2.real, factorTiempo)}</td><td>${s2.mreal.toFixed(1)}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td>${s2.d14.toFixed(1)}</td><td>${s2.d7.toFixed(1)}</td><td class="text-muted">${s2.prevendido.toFixed(1)}</td><td class="fw-bold text-info text-dark">${s2.plan.toFixed(1)}</td>
     `;
     tbody.appendChild(tr);
   });
+
+  const factorTiempoEmpresa = factorTiempoDeMesa(DATA_COMPLETA.vendedores);
+
+  const tfoot = document.getElementById('jefeTableFoot');
+  if (tfoot) {
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-start">TOTAL EMPRESA</td><td>${totAprobados}/${totVends} Aprob</td>
+        <td>${calcTend(totEmp.cza.obj, totEmp.cza.real, factorTiempoEmpresa)}</td><td>${totEmp.cza.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.cza.mnec.toFixed(1)}</td><td>${totEmp.cza.d14.toFixed(1)}</td><td>${totEmp.cza.d7.toFixed(1)}</td><td>${totEmp.cza.prevendido.toFixed(1)}</td><td>${totEmp.cza.plan.toFixed(1)}</td>
+        <td>${calcTend(totEmp.ung.obj, totEmp.ung.real, factorTiempoEmpresa)}</td><td>${totEmp.ung.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.ung.mnec.toFixed(1)}</td><td>${totEmp.ung.d14.toFixed(1)}</td><td>${totEmp.ung.d7.toFixed(1)}</td><td>${totEmp.ung.prevendido.toFixed(1)}</td><td>${totEmp.ung.plan.toFixed(1)}</td>
+        <td>-</td><td>${calcTend(totEmp.s1.obj, totEmp.s1.real, factorTiempoEmpresa)}</td><td>${totEmp.s1.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>${totEmp.s1.d14.toFixed(1)}</td><td>${totEmp.s1.d7.toFixed(1)}</td><td>${totEmp.s1.prevendido.toFixed(1)}</td><td>${totEmp.s1.plan.toFixed(1)}</td>
+        <td>-</td><td>${calcTend(totEmp.s2.obj, totEmp.s2.real, factorTiempoEmpresa)}</td><td>${totEmp.s2.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>${totEmp.s2.d14.toFixed(1)}</td><td>${totEmp.s2.d7.toFixed(1)}</td><td>${totEmp.s2.prevendido.toFixed(1)}</td><td>${totEmp.s2.plan.toFixed(1)}</td>
+      </tr>
+    `;
+  }
 }
 
 // ====================================================================
@@ -1924,6 +2188,7 @@ function actualizarDesdeFilasAD(filas) {
       vend.estado = "Pendiente";
     }
   });
+  DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { AD: fechaLocalISO() });
   persistirDatos(true);
 }
 
@@ -2073,7 +2338,9 @@ async function sincronizarDesdeGoogleSheets() {
 
       data.forEach(p => {
         const vend = DATA_COMPLETA.vendedores.find(v => v.pv === parseInt(p.pv));
-        if (vend) {
+        // Si la mesa ya está Aprobada, no se pisa el PLAN con lo que traiga la nube (evita que
+        // una edición del supervisor "vuelva atrás" sola 5s después). Se reabre con Reabrir Mesa/Vendedor.
+        if (vend && vend.estado !== "Aprobado") {
           const pCza = parseFloat(p.planCza) || 0;
           const pUng = parseFloat(p.planUng) || 0;
           const pKpi3 = parseFloat(p.planKpi3) || 0;
@@ -2098,6 +2365,9 @@ async function sincronizarDesdeGoogleSheets() {
               huboCambios = true;
             }
           }
+        } else if (vend && p.estado && vend.estado !== p.estado) {
+          // Mesa Aprobada localmente: solo se deja pasar una aprobación desde otra PC, no una reversión de estado.
+          if (p.estado === "Aprobado") { vend.estado = p.estado; huboCambios = true; }
         }
       });
 
