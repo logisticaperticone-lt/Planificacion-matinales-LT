@@ -793,6 +793,8 @@ function renderCierreD1() {
   const wrapper = document.getElementById('tablaCierreD1Wrapper');
   if (!wrapper) return;
 
+  let huboSinDato = false; // Si algún KPI de la foto se quedó sin Real (VESPER/AD-V no se cargaron ese día)
+
   // MODO 1: TODOS LOS NEGOCIOS EN CIERRE D-1 (CZA + UNG + KPI 1 + KPI 2)
   if (negocio === 'TODOS') {
     let thead = `
@@ -824,16 +826,20 @@ function renderCierreD1() {
         const [k1, k2] = getKpisD1(sv);
 
         let sCzaP = 0, sCzaR = 0, sUngP = 0, sUngR = 0, s1P = 0, s1R = 0, s2P = 0, s2R = 0;
+        let sinDatoMesa = false;
         vends.forEach(v => {
           const dCza = getKpiD1(v, "CVZ CMQ");
           const dUng = getKpiD1(v, "UNG");
           const d1 = getKpiD1(v, k1);
           const d2 = getKpiD1(v, k2);
 
-          sCzaP += dCza.plan; sCzaR += getRealHoy(dCza, "CVZ CMQ");
-          sUngP += dUng.plan; sUngR += getRealHoy(dUng, "UNG");
-          s1P += d1.plan; s1R += getRealHoy(d1, k1);
-          s2P += d2.plan; s2R += getRealHoy(d2, k2);
+          const rCza = getRealD1(dCza, "CVZ CMQ"), rUng = getRealD1(dUng, "UNG"), r1 = getRealD1(d1, k1), r2 = getRealD1(d2, k2);
+          if (rCza === null || rUng === null || r1 === null || r2 === null) { sinDatoMesa = true; huboSinDato = true; }
+
+          sCzaP += dCza.plan; sCzaR += (rCza || 0);
+          sUngP += dUng.plan; sUngR += (rUng || 0);
+          s1P += d1.plan; s1R += (r1 || 0);
+          s2P += d2.plan; s2R += (r2 || 0);
         });
 
         tot.czaPlan += sCzaP; tot.czaReal += sCzaR;
@@ -841,18 +847,13 @@ function renderCierreD1() {
         tot.s1Plan += s1P; tot.s1Real += s1R;
         tot.s2Plan += s2P; tot.s2Real += s2R;
 
-        const vCza = sCzaP > 0 ? (sCzaR / sCzaP - 1) : 0;
-        const vUng = sUngP > 0 ? (sUngR / sUngP - 1) : 0;
-        const v1 = s1P > 0 ? (s1R / s1P - 1) : 0;
-        const v2 = s2P > 0 ? (s2R / s2P - 1) : 0;
-
         tbody += `
           <tr>
-            <td class="text-start fw-bold text-primary">${sv}</td>
-            <td class="fw-bold bg-light">${sCzaP.toFixed(1)}</td><td class="fw-bold">${sCzaR.toFixed(1)}</td><td><span class="${vCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vCza * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${sUngP.toFixed(1)}</td><td class="fw-bold">${sUngR.toFixed(1)}</td><td><span class="${vUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vUng * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${s1P.toFixed(1)}</td><td class="fw-bold">${s1R.toFixed(1)}</td><td><span class="${v1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v1 * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${s2P.toFixed(1)}</td><td class="fw-bold">${s2R.toFixed(1)}</td><td><span class="${v2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v2 * 100).toFixed(0)}%</span></td>
+            <td class="text-start fw-bold text-primary">${sv}${sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día para algún KPI"></i>' : ''}</td>
+            <td class="fw-bold bg-light">${sCzaP.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : sCzaR)}</td><td>${celdaVarD1(sinDatoMesa ? null : sCzaR, sCzaP)}</td>
+            <td class="fw-bold bg-light">${sUngP.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : sUngR)}</td><td>${celdaVarD1(sinDatoMesa ? null : sUngR, sUngP)}</td>
+            <td class="fw-bold bg-light">${s1P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : s1R)}</td><td>${celdaVarD1(sinDatoMesa ? null : s1R, s1P)}</td>
+            <td class="fw-bold bg-light">${s2P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : s2R)}</td><td>${celdaVarD1(sinDatoMesa ? null : s2R, s2P)}</td>
           </tr>
         `;
       });
@@ -866,28 +867,24 @@ function renderCierreD1() {
         const d1 = getKpiD1(v, k1);
         const d2 = getKpiD1(v, k2);
 
-        const czaR = getRealHoy(dCza, "CVZ CMQ");
-        const ungR = getRealHoy(dUng, "UNG");
-        const s1R = getRealHoy(d1, k1);
-        const s2R = getRealHoy(d2, k2);
+        const czaR = getRealD1(dCza, "CVZ CMQ");
+        const ungR = getRealD1(dUng, "UNG");
+        const s1R = getRealD1(d1, k1);
+        const s2R = getRealD1(d2, k2);
+        if (czaR === null || ungR === null || s1R === null || s2R === null) huboSinDato = true;
 
-        tot.czaPlan += dCza.plan; tot.czaReal += czaR;
-        tot.ungPlan += dUng.plan; tot.ungReal += ungR;
-        tot.s1Plan += d1.plan; tot.s1Real += s1R;
-        tot.s2Plan += d2.plan; tot.s2Real += s2R;
-
-        const vCza = dCza.plan > 0 ? (czaR / dCza.plan - 1) : 0;
-        const vUng = dUng.plan > 0 ? (ungR / dUng.plan - 1) : 0;
-        const v1 = d1.plan > 0 ? (s1R / d1.plan - 1) : 0;
-        const v2 = d2.plan > 0 ? (s2R / d2.plan - 1) : 0;
+        tot.czaPlan += dCza.plan; tot.czaReal += (czaR || 0);
+        tot.ungPlan += dUng.plan; tot.ungReal += (ungR || 0);
+        tot.s1Plan += d1.plan; tot.s1Real += (s1R || 0);
+        tot.s2Plan += d2.plan; tot.s2Real += (s2R || 0);
 
         tbody += `
           <tr>
             <td class="text-start fw-semibold">${v.nombre}</td>
-            <td class="fw-bold bg-light">${dCza.plan.toFixed(1)}</td><td class="fw-bold">${czaR.toFixed(1)}</td><td><span class="${vCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vCza * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${dUng.plan.toFixed(1)}</td><td class="fw-bold">${ungR.toFixed(1)}</td><td><span class="${vUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vUng * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${d1.plan.toFixed(1)}</td><td class="fw-bold">${s1R.toFixed(1)}</td><td><span class="${v1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v1 * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${d2.plan.toFixed(1)}</td><td class="fw-bold">${s2R.toFixed(1)}</td><td><span class="${v2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v2 * 100).toFixed(0)}%</span></td>
+            <td class="fw-bold bg-light">${dCza.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(czaR)}</td><td>${celdaVarD1(czaR, dCza.plan)}</td>
+            <td class="fw-bold bg-light">${dUng.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(ungR)}</td><td>${celdaVarD1(ungR, dUng.plan)}</td>
+            <td class="fw-bold bg-light">${d1.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(s1R)}</td><td>${celdaVarD1(s1R, d1.plan)}</td>
+            <td class="fw-bold bg-light">${d2.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(s2R)}</td><td>${celdaVarD1(s2R, d2.plan)}</td>
           </tr>
         `;
       });
@@ -912,7 +909,7 @@ function renderCierreD1() {
       </table>
     `;
 
-    wrapper.innerHTML = bannerFotoD1() + thead + tbody + tfoot;
+    wrapper.innerHTML = bannerFotoD1() + bannerSinDatoD1(huboSinDato) + thead + tbody + tfoot;
     return;
   }
 
@@ -950,28 +947,30 @@ function renderCierreD1() {
   if (modo === 'RESUMEN_SUPERVISORES') {
     SUPERVISORES_LIST.forEach(sv => {
       const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
-      let sMr = 0, sMn = 0, s7 = 0, s14 = 0, sP = 0, sR = 0;
+      let sMr = 0, sMn = 0, s7 = 0, s14 = 0, sP = 0, sR = 0, sinDatoMesa = false;
 
       vends.forEach(v => {
         const d = getKpiD1(v, kpiKey);
+        const r = getRealD1(d, kpiKey);
+        if (r === null) { sinDatoMesa = true; huboSinDato = true; }
         sMr += d.mreal; sMn += d.mnec; s7 += d.d7; s14 += d.d14;
-        sP += d.plan; sR += getRealHoy(d, kpiKey);
+        sP += d.plan; sR += (r || 0);
       });
 
       tot.mreal += sMr; tot.mnec += sMn; tot.d7 += s7; tot.d14 += s14; tot.plan += sP; tot.real += sR;
 
-      const varP = sP > 0 ? (sR / sP - 1) : 0;
-      const vsMr = sMr > 0 ? (sR / sMr - 1) : 0;
-      const vsMn = sMn > 0 ? (sR / sMn - 1) : 0;
+      const sRmostrar = sinDatoMesa ? null : sR;
+      const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) : 0;
+      const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) : 0;
 
       tbody += `
         <tr>
-          <td class="text-start fw-bold text-primary">${sv}</td>
+          <td class="text-start fw-bold text-primary">${sv}${sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día"></i>' : ''}</td>
           <td>${sMr.toFixed(1)}</td><td class="text-danger">${sMn.toFixed(1)}</td><td>${s7.toFixed(1)}</td><td>${s14.toFixed(1)}</td>
-          <td class="fw-bold bg-light">${sP.toFixed(1)}</td><td class="fw-bold">${sR.toFixed(1)}</td>
-          <td><span class="${varP >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varP * 100).toFixed(0)}%</span></td>
-          <td><span class="${vsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMr * 100).toFixed(0)}%</span></td>
-          <td><span class="${vsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMn * 100).toFixed(0)}%</span></td>
+          <td class="fw-bold bg-light">${sP.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sRmostrar)}</td>
+          <td>${celdaVarD1(sRmostrar, sP)}</td>
+          <td>${sinDatoMesa ? '<span class="text-muted">N/D</span>' : `<span class="${vsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMr * 100).toFixed(0)}%</span>`}</td>
+          <td>${sinDatoMesa ? '<span class="text-muted">N/D</span>' : `<span class="${vsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMn * 100).toFixed(0)}%</span>`}</td>
         </tr>
       `;
     });
@@ -979,22 +978,22 @@ function renderCierreD1() {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === modo);
     vends.forEach(v => {
       const d = getKpiD1(v, kpiKey);
-      const realV = getRealHoy(d, kpiKey);
+      const realV = getRealD1(d, kpiKey);
+      if (realV === null) huboSinDato = true;
 
-      tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += realV;
+      tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += (realV || 0);
 
-      const varP = d.plan > 0 ? (realV / d.plan - 1) : 0;
-      const vsMr = d.mreal > 0 ? (realV / d.mreal - 1) : 0;
-      const vsMn = d.mnec > 0 ? (realV / d.mnec - 1) : 0;
+      const vsMr = (realV !== null && d.mreal > 0) ? (realV / d.mreal - 1) : 0;
+      const vsMn = (realV !== null && d.mnec > 0) ? (realV / d.mnec - 1) : 0;
 
       tbody += `
         <tr>
           <td class="text-start fw-semibold">${v.nombre}</td>
           <td>${d.mreal.toFixed(1)}</td><td class="text-danger">${d.mnec.toFixed(1)}</td><td>${d.d7.toFixed(1)}</td><td>${d.d14.toFixed(1)}</td>
-          <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td><td class="fw-bold">${realV.toFixed(1)}</td>
-          <td><span class="${varP >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varP * 100).toFixed(0)}%</span></td>
-          <td><span class="${vsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMr * 100).toFixed(0)}%</span></td>
-          <td><span class="${vsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMn * 100).toFixed(0)}%</span></td>
+          <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(realV)}</td>
+          <td>${celdaVarD1(realV, d.plan)}</td>
+          <td>${realV === null ? '<span class="text-muted">N/D</span>' : `<span class="${vsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMr * 100).toFixed(0)}%</span>`}</td>
+          <td>${realV === null ? '<span class="text-muted">N/D</span>' : `<span class="${vsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMn * 100).toFixed(0)}%</span>`}</td>
         </tr>
       `;
     });
@@ -1019,7 +1018,7 @@ function renderCierreD1() {
     </table>
   `;
 
-  wrapper.innerHTML = bannerFotoD1() + thead + tbody + tfoot;
+  wrapper.innerHTML = bannerFotoD1() + bannerSinDatoD1(huboSinDato) + thead + tbody + tfoot;
 }
 
 // ====================================================================
@@ -1131,10 +1130,39 @@ function getKpiD1(vend, kpiNombre) {
   if (!foto) return base;
   const e = (foto.datos || []).find(x => x.pv === vend.pv);
   if (!e || !e.plan || typeof e.plan[kpiNombre] !== 'number') return base;
+  const tieneReal = e.real && typeof e.real[kpiNombre] === 'number';
+  // Medias/tendencia congeladas ese día (fotos guardadas antes de este cambio no las tienen: en ese
+  // caso se cae al AD actual, como antes, en vez de romper la pantalla).
+  const m = (e.medias && e.medias[kpiNombre]) || null;
   return Object.assign({}, base, {
     plan: e.plan[kpiNombre],
-    realFoto: (e.real && typeof e.real[kpiNombre] === 'number') ? e.real[kpiNombre] : undefined
+    realFoto: tieneReal ? e.real[kpiNombre] : undefined,
+    // Ese día no se llegó a cargar VESPER/AD(V): no hay un Real confiable de ESE día para mostrar
+    // (mostrar el real "de hoy" mezclaría el plan de ayer con la venta de hoy)
+    _fotoSinReal: !tieneReal,
+    mreal: m ? m.mreal : base.mreal,
+    mnec: m ? m.mnec : base.mnec,
+    d14: m ? m.d14 : base.d14,
+    d7: m ? m.d7 : base.d7,
+    prevendido: m ? m.prevendido : base.prevendido
   });
+}
+
+// Real para el Cierre D-1: null si la foto de ese día se quedó sin Real (nunca se cargó VESPER/AD-V a tiempo)
+function getRealD1(d, kpiNombre) {
+  if (d._fotoSinReal) return null;
+  return getRealHoy(d, kpiNombre);
+}
+
+// Celda de "Real" para el Cierre D-1: número o N/D
+function celdaRealD1(real) {
+  return real === null ? '<span class="text-muted">N/D</span>' : real.toFixed(1);
+}
+// Celda de "Var %" para el Cierre D-1: badge o N/D
+function celdaVarD1(real, plan) {
+  if (real === null) return '<span class="text-muted">N/D</span>';
+  const v = plan > 0 ? (real / plan - 1) : 0;
+  return `<span class="${v >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v * 100).toFixed(0)}%</span>`;
 }
 
 function bannerFotoD1() {
@@ -1144,6 +1172,11 @@ function bannerFotoD1() {
   }
   const [y, m, d] = foto.fecha.split('-');
   return '<div class="px-3 py-2 small bg-success-subtle text-success border-bottom"><i class="bi bi-camera-fill me-1"></i>Plan congelado del ' + d + '/' + m + ' (foto del JDV) vs. real de ese día (VESPER / AD-V).</div>';
+}
+
+function bannerSinDatoD1(huboSinDato) {
+  if (!huboSinDato) return '';
+  return '<div class="px-3 py-2 small bg-danger-subtle text-danger border-bottom"><i class="bi bi-exclamation-triangle-fill me-1"></i>Ese día no se cargó VESPER y/o AD(V) a tiempo para uno o más KPIs: se muestra "N/D" en vez de mezclar el plan de ese día con la venta de otro día.</div>';
 }
 
 // Adjunta el resultado del día (VESPER / AD-V) a la foto de hoy, si ya existe
@@ -1569,6 +1602,7 @@ function reabrirVendedor(pv) {
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
   if (!vend) return;
   vend.estado = "Pendiente";
+  vend._planEditadoLocal = Date.now(); // Sin esto, el sondeo lo revertía a "Enviado" en el siguiente poll
   persistirDatos(true);
   renderSupervisorView();
 }
@@ -1577,7 +1611,10 @@ function reabrirVendedor(pv) {
 function reabrirMesaSupervisor() {
   const sv = document.getElementById('userSelect').value;
   if (!confirm(`¿Reabrir la planificación de toda la mesa "${sv}" para poder modificarla?`)) return;
-  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => { v.estado = "Pendiente"; });
+  DATA_COMPLETA.vendedores.filter(v => v.sv === sv).forEach(v => {
+    v.estado = "Pendiente";
+    v._planEditadoLocal = Date.now(); // Sin esto, el sondeo los revertía a "Enviado" en el siguiente poll
+  });
   persistirDatos(true);
   renderSupervisorView();
 }
@@ -2306,15 +2343,18 @@ async function confirmarPlanificacionJefe() {
   const datos = DATA_COMPLETA.vendedores.map(v => {
     const kpisMesa = getKpisForMesa(v.sv);
     const claves = [...new Set(["CVZ CMQ", "UNG", kpisMesa[0], kpisMesa[1]])];
-    const plan = {}, real = {};
+    const plan = {}, real = {}, medias = {};
     claves.forEach(k => {
       const d = getKpiData(v, k);
       plan[k] = d.plan || 0;
+      // Se congelan también las medias/tendencia de HOY, para que el Cierre D-1 de mañana no las
+      // mezcle con el AD del día siguiente (que ya tiene otras medias, otra Med.Nec, etc.)
+      medias[k] = { mreal: d.mreal || 0, mnec: d.mnec || 0, d14: d.d14 || 0, d7: d.d7 || 0, prevendido: d.prevendido || 0 };
       // El real se guarda solo si VESPER / AD(V) ya se cargaron hoy; si no, se adjunta cuando se carguen
       const cob = esKpiCobertura(k);
       if ((cob && c.ADV === hoy) || (!cob && c.VESPER === hoy)) real[k] = getRealHoy(d, k);
     });
-    return { pv: v.pv, nombre: v.nombre, sv: v.sv, kpisMesa, plan, real };
+    return { pv: v.pv, nombre: v.nombre, sv: v.sv, kpisMesa, plan, real, medias };
   });
 
   if (!DATA_COMPLETA.fotos_d1) DATA_COMPLETA.fotos_d1 = {};
