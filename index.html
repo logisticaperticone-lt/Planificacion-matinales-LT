@@ -885,62 +885,146 @@ function renderCierreD1() {
 
   // Arma UNA sección (CZA o UNG): mesa | Plan | Real | Var% | Vs Med Real | Vs Med Nec | RANK | Top 3 vendedores
   function seccionMesaConTop3(titulo, kpiKeyFn) {
-    const mesasFiltradas = modo === 'RESUMEN_SUPERVISORES' ? SUPERVISORES_LIST : [modo];
-    const filas = mesasFiltradas.map(sv => {
-      const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
-      const kpiKey = kpiKeyFn(sv);
-      let sMr = 0, sMn = 0, sP = 0, sR = 0, sinDatoMesa = false;
-      const porVendedor = [];
+    // ---------- MODO RESUMEN: una fila por MESA + Top 3 de TODA LA EMPRESA arriba ----------
+    if (modo === 'RESUMEN_SUPERVISORES') {
+      const filas = SUPERVISORES_LIST.map(sv => {
+        const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+        const kpiKey = kpiKeyFn(sv);
+        let sMr = 0, sMn = 0, sP = 0, sR = 0, sinDatoMesa = false;
 
-      vends.forEach(v => {
-        const d = getKpiD1(v, kpiKey);
-        const r = getRealD1(d, kpiKey);
-        if (r === null) { sinDatoMesa = true; huboSinDato = true; }
-        sMr += d.mreal; sMn += d.mnec; sP += d.plan; sR += (r || 0);
-        if (r !== null && d.plan > 0) {
-          porVendedor.push({ nombre: v.nombre, varPct: (r / d.plan - 1) * 100 });
-        }
+        vends.forEach(v => {
+          const d = getKpiD1(v, kpiKey);
+          const r = getRealD1(d, kpiKey);
+          if (r === null) { sinDatoMesa = true; huboSinDato = true; }
+          sMr += d.mreal; sMn += d.mnec; sP += d.plan; sR += (r || 0);
+        });
+
+        const sRmostrar = sinDatoMesa ? null : sR;
+        const varPct = (!sinDatoMesa && sP > 0) ? (sR / sP - 1) * 100 : null;
+        const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) * 100 : null;
+        const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) * 100 : null;
+
+        return { sv, sP, sR: sRmostrar, varPct, vsMr, vsMn, sinDatoMesa };
       });
 
-      porVendedor.sort((a, b) => b.varPct - a.varPct);
-      const top3 = porVendedor.slice(0, 3);
+      // Ranking de MESAS por Var%
+      const conDato = filas.filter(f => f.varPct !== null);
+      const orden = [...conDato].sort((a, b) => b.varPct - a.varPct);
+      const podio = { [orden[0]?.sv]: 1, [orden[1]?.sv]: 2, [orden[2]?.sv]: 3 };
+      const peores = orden.slice(-2).map(f => f.sv);
 
-      const sRmostrar = sinDatoMesa ? null : sR;
-      const varPct = (!sinDatoMesa && sP > 0) ? (sR / sP - 1) * 100 : null;
-      const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) * 100 : null;
-      const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) * 100 : null;
+      // TOP 3 VENDEDORES de TODA LA EMPRESA (no por mesa) para destacarlos — a pedido del JDV
+      const todosVendedores = [];
+      DATA_COMPLETA.vendedores.forEach(v => {
+        const kpiKey = kpiKeyFn(v.sv);
+        const d = getKpiD1(v, kpiKey);
+        const r = getRealD1(d, kpiKey);
+        if (r !== null && d.plan > 0) todosVendedores.push({ nombre: v.nombre, sv: v.sv, varPct: (r / d.plan - 1) * 100 });
+      });
+      todosVendedores.sort((a, b) => b.varPct - a.varPct);
+      const top3Empresa = todosVendedores.slice(0, 3);
+      const bannerTop3 = top3Empresa.length ? `
+        <div class="px-3 py-2 small bg-warning-subtle border-bottom">
+          <i class="bi bi-trophy-fill text-warning me-1"></i><strong>Top 3 vendedores de la empresa:</strong>
+          ${top3Empresa.map((t, i) => `${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} ${t.nombre} (${t.sv}) ${t.varPct >= 0 ? '+' : ''}${t.varPct.toFixed(0)}%`).join(' &nbsp;|&nbsp; ')}
+        </div>` : '';
 
-      return { sv, sP, sR: sRmostrar, varPct, vsMr, vsMn, sinDatoMesa, top3 };
+      let totP = 0, totR = 0;
+      filas.forEach(f => { totP += f.sP; totR += (f.sR || 0); });
+
+      const filasHtml = filas.map(f => {
+        let celdaRank = '<span class="text-muted">-</span>';
+        if (filas.length > 1) {
+          if (podio[f.sv]) celdaRank = `<span class="badge-podio podio-${podio[f.sv]}">${podio[f.sv] === 1 ? '🥇' : podio[f.sv] === 2 ? '🥈' : '🥉'}</span>`;
+          else if (peores.includes(f.sv) && filas.length > 3) celdaRank = '<span class="badge-alerta" title="Entre las mesas más bajas"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+        }
+        return `
+          <tr>
+            <td class="text-start fw-bold text-primary">${f.sv}${f.sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día"></i>' : ''}</td>
+            <td class="fw-bold bg-light">${f.sP.toFixed(1)}</td>
+            <td class="fw-bold">${celdaRealD1(f.sR)}</td>
+            <td>${f.varPct === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.varPct)}</td>
+            <td>${f.vsMr === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.vsMr)}</td>
+            <td>${f.vsMn === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.vsMn)}</td>
+            <td>${celdaRank}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const totVar = totP > 0 ? ((totR / totP - 1) * 100) : 0;
+
+      return `
+        <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
+          <div class="px-3 py-2 fw-bold header-cierre">${titulo}</div>
+          ${bannerTop3}
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover table-custom mb-0">
+              <thead>
+                <tr>
+                  <th class="text-start header-cierre">MESA</th>
+                  <th class="header-cierre">Plan</th>
+                  <th class="header-cierre">Real</th>
+                  <th class="header-cierre">Var %</th>
+                  <th class="header-cierre">Vs Med Real</th>
+                  <th class="header-cierre">Vs Med Nec</th>
+                  <th class="header-cierre">RANK</th>
+                </tr>
+              </thead>
+              <tbody>${filasHtml}</tbody>
+              <tfoot class="table-dark fw-bold">
+                <tr>
+                  <td class="text-start">TOTAL EMPRESA</td>
+                  <td>${totP.toFixed(1)}</td>
+                  <td>${totR.toFixed(1)}</td>
+                  <td>${spanVarPtos(totVar)}</td>
+                  <td>-</td><td>-</td><td>-</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // ---------- MODO MESA ESPECÍFICA: una fila por VENDEDOR + medallas dentro de esa mesa ----------
+    const sv = modo;
+    const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+    const kpiKey = kpiKeyFn(sv);
+
+    const filas = vends.map(v => {
+      const d = getKpiD1(v, kpiKey);
+      const r = getRealD1(d, kpiKey);
+      const sinDato = r === null;
+      if (sinDato) huboSinDato = true;
+      const varPct = (!sinDato && d.plan > 0) ? (r / d.plan - 1) * 100 : null;
+      const vsMr = (!sinDato && d.mreal > 0) ? (r / d.mreal - 1) * 100 : null;
+      const vsMn = (!sinDato && d.mnec > 0) ? (r / d.mnec - 1) * 100 : null;
+      return { nombre: v.nombre, plan: d.plan, real: sinDato ? null : r, varPct, vsMr, vsMn, sinDato };
     });
 
-    // Ranking de mesas por Var% (solo tiene sentido si hay más de una mesa en pantalla)
     const conDato = filas.filter(f => f.varPct !== null);
     const orden = [...conDato].sort((a, b) => b.varPct - a.varPct);
-    const podio = { [orden[0]?.sv]: 1, [orden[1]?.sv]: 2, [orden[2]?.sv]: 3 };
-    const peores = orden.slice(-2).map(f => f.sv);
+    const podio = { [orden[0]?.nombre]: 1, [orden[1]?.nombre]: 2, [orden[2]?.nombre]: 3 };
+    const peores = orden.slice(-2).map(f => f.nombre);
 
-    let totP = 0, totR = 0, totMr = 0, totMn = 0;
-    filas.forEach(f => { totP += f.sP; totR += (f.sR || 0); totMr += 0; });
+    let totP = 0, totR = 0;
+    filas.forEach(f => { totP += f.plan; totR += (f.real || 0); });
 
     const filasHtml = filas.map(f => {
       let celdaRank = '<span class="text-muted">-</span>';
       if (filas.length > 1) {
-        if (podio[f.sv]) celdaRank = `<span class="badge-podio podio-${podio[f.sv]}">${podio[f.sv] === 1 ? '🥇' : podio[f.sv] === 2 ? '🥈' : '🥉'}</span>`;
-        else if (peores.includes(f.sv) && filas.length > 3) celdaRank = '<span class="badge-alerta" title="Entre las mesas más bajas"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+        if (podio[f.nombre]) celdaRank = `<span class="badge-podio podio-${podio[f.nombre]}">${podio[f.nombre] === 1 ? '🥇' : podio[f.nombre] === 2 ? '🥈' : '🥉'}</span>`;
+        else if (peores.includes(f.nombre) && filas.length > 3) celdaRank = '<span class="badge-alerta" title="Entre los más bajos de la mesa"><i class="bi bi-exclamation-triangle-fill"></i></span>';
       }
-      const top3Html = f.top3.length
-        ? f.top3.map((t, i) => `${i + 1}. ${t.nombre.split(' ')[0]} ${t.varPct >= 0 ? '+' : ''}${t.varPct.toFixed(0)}%`).join('<br>')
-        : '<span class="text-muted">-</span>';
       return `
         <tr>
-          <td class="text-start fw-bold text-primary">${f.sv}${f.sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día"></i>' : ''}</td>
-          <td class="fw-bold bg-light">${f.sP.toFixed(1)}</td>
-          <td class="fw-bold">${celdaRealD1(f.sR)}</td>
+          <td class="text-start fw-semibold">${f.nombre}${f.sinDato ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día"></i>' : ''}</td>
+          <td class="fw-bold bg-light">${f.plan.toFixed(1)}</td>
+          <td class="fw-bold">${celdaRealD1(f.real)}</td>
           <td>${f.varPct === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.varPct)}</td>
           <td>${f.vsMr === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.vsMr)}</td>
           <td>${f.vsMn === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.vsMn)}</td>
           <td>${celdaRank}</td>
-          <td class="text-start small">${top3Html}</td>
         </tr>
       `;
     }).join('');
@@ -954,24 +1038,23 @@ function renderCierreD1() {
           <table class="table table-bordered table-hover table-custom mb-0">
             <thead>
               <tr>
-                <th class="text-start header-cierre">MESA</th>
+                <th class="text-start header-cierre">VENDEDOR</th>
                 <th class="header-cierre">Plan</th>
                 <th class="header-cierre">Real</th>
                 <th class="header-cierre">Var %</th>
                 <th class="header-cierre">Vs Med Real</th>
                 <th class="header-cierre">Vs Med Nec</th>
                 <th class="header-cierre">RANK</th>
-                <th class="text-start header-cierre">TOP 3 VENDEDORES (Var %)</th>
               </tr>
             </thead>
             <tbody>${filasHtml}</tbody>
             <tfoot class="table-dark fw-bold">
               <tr>
-                <td class="text-start">${modo === 'RESUMEN_SUPERVISORES' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+                <td class="text-start">TOTAL MESA</td>
                 <td>${totP.toFixed(1)}</td>
                 <td>${totR.toFixed(1)}</td>
                 <td>${spanVarPtos(totVar)}</td>
-                <td>-</td><td>-</td><td>-</td><td>-</td>
+                <td>-</td><td>-</td><td>-</td>
               </tr>
             </tfoot>
           </table>
@@ -980,6 +1063,7 @@ function renderCierreD1() {
     `;
   }
 
+  // Sección simple KPI 1 y KPI 2 (solo Plan / Real / Var%, sin medias ni top3 — a pedido)
   // Sección simple KPI 1 y KPI 2 (solo Plan / Real / Var%, sin medias ni top3 — a pedido)
   function seccionKpi1y2() {
     const mesasFiltradas = modo === 'RESUMEN_SUPERVISORES' ? SUPERVISORES_LIST : [modo];
@@ -2039,7 +2123,7 @@ function renderVespertinaCierre() {
         const v1 = m1P > 0 ? (m1R / m1P - 1) : 0;
         const v2 = m2P > 0 ? (m2R / m2P - 1) : 0;
 
-        filasMesas.push({ sv, k1, k2, mCzaP, mCzaR, mUngP, mUngR, m1P, m1R, m2P, m2R, vCza, vUng, v1, v2, avgVar: (vCza + vUng + v1 + v2) / 4 * 100 });
+        filasMesas.push({ sv, k1, k2, mCzaP, mCzaR, mUngP, mUngR, m1P, m1R, m2P, m2R, vCza, vUng, v1, v2, avgVar: (vCza + vUng) / 2 * 100 });
       });
 
       const ordenR = [...filasMesas].sort((a, b) => b.avgVar - a.avgVar);
@@ -2089,7 +2173,7 @@ function renderVespertinaCierre() {
         const v1 = d1.plan > 0 ? (s1R / d1.plan - 1) : 0;
         const v2 = d2.plan > 0 ? (s2R / d2.plan - 1) : 0;
 
-        filasVend.push({ v, dCza, dUng, d1, d2, czaR, ungR, s1R, s2R, vCza, vUng, v1, v2, avgVar: (vCza + vUng + v1 + v2) / 4 * 100 });
+        filasVend.push({ v, dCza, dUng, d1, d2, czaR, ungR, s1R, s2R, vCza, vUng, v1, v2, avgVar: (vCza + vUng) / 2 * 100 });
       });
 
       const ordenRv = [...filasVend].sort((a, b) => b.avgVar - a.avgVar);
