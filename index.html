@@ -42,6 +42,18 @@
     .ref-box { font-size: 0.75rem; background: #e2e8f0; padding: 3px 6px; border-radius: 5px; display: inline-block; font-weight: 600; color: #334155; }
     .badge-cierre-pos { background-color: #dcfce7 !important; color: #15803d !important; font-weight: bold; border: 1px solid #86efac; border-radius: 6px; padding: 2px 7px; display: inline-block; font-size: 0.76rem; }
     .badge-cierre-neg { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: bold; border: 1px solid #fca5a5; border-radius: 6px; padding: 2px 7px; display: inline-block; font-size: 0.76rem; }
+    /* Semáforo de colores: %Avance/%Tendencia y %Var */
+    .badge-semaforo { font-weight: bold; border-radius: 6px; padding: 2px 7px; display: inline-block; font-size: 0.76rem; border: 1px solid transparent; }
+    .sem-rojo { background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+    .sem-amarillo { background-color: #fef9c3; color: #a16207; border-color: #fde047; }
+    .sem-verde { background-color: #dcfce7; color: #15803d; border-color: #86efac; }
+    .sem-azul { background-color: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    /* Podio Top 3 / alerta */
+    .badge-podio { font-weight: bold; border-radius: 6px; padding: 2px 8px; display: inline-block; font-size: 0.76rem; }
+    .podio-1 { background-color: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+    .podio-2 { background-color: #e5e7eb; color: #374151; border: 1px solid #9ca3af; }
+    .podio-3 { background-color: #fed7aa; color: #9a3412; border: 1px solid #fb923c; }
+    .badge-alerta { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 6px; padding: 2px 8px; display: inline-block; font-size: 0.76rem; font-weight: bold; }
   </style>
 </head>
 <body class="pb-5">
@@ -360,15 +372,15 @@
                 <th rowspan="2" style="width: 75px;">ESTADO</th>
                 <th colspan="7" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
                 <th colspan="7" class="header-kpi-ung">VOLUMEN UNG</th>
-                <th colspan="7" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
-                <th colspan="7" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
+                <th colspan="3" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
+                <th colspan="3" class="header-kpi-sel2" id="thSupSel2">IND 2</th>
                 <th rowspan="2" style="width: 130px;">ACCIONES</th>
               </tr>
               <tr>
                 <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
                 <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1">Prevend.</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2">Prevend.</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
               </tr>
             </thead>
             <tbody id="supTableBody"></tbody>
@@ -406,18 +418,38 @@
                 <th rowspan="2">ESTADO</th>
                 <th colspan="7" class="header-kpi-cvz">1. VOL. CZA CMQ</th>
                 <th colspan="7" class="header-kpi-ung">2. VOL. UNG</th>
-                <th colspan="8" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
-                <th colspan="8" class="header-kpi-sel2">4. KPI SECUNDARIO 2</th>
+                <th colspan="4" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
+                <th colspan="4" class="header-kpi-sel2">4. KPI SECUNDARIO 2</th>
               </tr>
               <tr>
                 <th class="header-kpi-cvz">% Tend.</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz text-warning">PLAN</th>
                 <th class="header-kpi-ung">% Tend.</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung text-warning">PLAN</th>
-                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">% Tend.</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1">Prevend.</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">% Tend.</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2">Prevend.</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">% Tend.</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">% Tend.</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2 text-warning">PLAN</th>
               </tr>
             </thead>
             <tbody id="jefeTableBody"></tbody>
             <tfoot class="table-dark fw-bold" id="jefeTableFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-custom p-3 mt-3 bg-white shadow-sm">
+        <h6 class="fw-bold mb-2"><i class="bi bi-flag-fill text-primary me-1"></i>Compromiso propuesto en la Vespertina anterior</h6>
+        <div id="compromisoVesperJefeMsg" class="small text-muted"></div>
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm table-custom mb-0" id="tablaCompromisoVesperJefe" style="display:none;">
+            <thead>
+              <tr>
+                <th class="text-start">SUPERVISOR / MESA</th>
+                <th>CZA comprometido</th>
+                <th>UNG comprometido</th>
+                <th>KPI 1 comprometido</th>
+                <th>KPI 2 comprometido</th>
+              </tr>
+            </thead>
+            <tbody id="compromisoVesperJefeBody"></tbody>
+            <tfoot class="table-dark fw-bold" id="compromisoVesperJefeFoot"></tfoot>
           </table>
         </div>
       </div>
@@ -851,121 +883,175 @@ function renderCierreD1() {
 
   let huboSinDato = false; // Si algún KPI de la foto se quedó sin Real (VESPER/AD-V no se cargaron ese día)
 
-  // MODO 1: TODOS LOS NEGOCIOS EN CIERRE D-1 (CZA + UNG + KPI 1 + KPI 2)
-  if (negocio === 'TODOS') {
-    let thead = `
-      <table class="table table-bordered table-hover table-custom mb-0">
-        <thead>
-          <tr>
-            <th rowspan="2" class="text-start header-cierre" style="min-width: 180px;">${modo === 'RESUMEN_SUPERVISORES' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + modo + ')'}</th>
-            <th colspan="3" class="header-kpi-cvz">1. TOTAL CERVEZA</th>
-            <th colspan="3" class="header-kpi-ung">2. TOTAL UNG</th>
-            <th colspan="3" class="header-kpi-sel1">3. KPI FOCO 1</th>
-            <th colspan="3" class="header-kpi-sel2">4. KPI FOCO 2</th>
-          </tr>
-          <tr>
-            <th class="header-kpi-cvz">Plan</th><th class="header-kpi-cvz">Real</th><th class="header-kpi-cvz">Var %</th>
-            <th class="header-kpi-ung">Plan</th><th class="header-kpi-ung">Real</th><th class="header-kpi-ung">Var %</th>
-            <th class="header-kpi-sel1">Plan</th><th class="header-kpi-sel1">Real</th><th class="header-kpi-sel1">Var %</th>
-            <th class="header-kpi-sel2">Plan</th><th class="header-kpi-sel2">Real</th><th class="header-kpi-sel2">Var %</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    let tbody = '';
-    let tot = { czaPlan: 0, czaReal: 0, ungPlan: 0, ungReal: 0, s1Plan: 0, s1Real: 0, s2Plan: 0, s2Real: 0 };
-
-    if (modo === 'RESUMEN_SUPERVISORES') {
-      SUPERVISORES_LIST.forEach(sv => {
-        const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
-        const [k1, k2] = getKpisD1(sv);
-
-        let sCzaP = 0, sCzaR = 0, sUngP = 0, sUngR = 0, s1P = 0, s1R = 0, s2P = 0, s2R = 0;
-        let sinDatoMesa = false;
-        vends.forEach(v => {
-          const dCza = getKpiD1(v, "CVZ CMQ");
-          const dUng = getKpiD1(v, "UNG");
-          const d1 = getKpiD1(v, k1);
-          const d2 = getKpiD1(v, k2);
-
-          const rCza = getRealD1(dCza, "CVZ CMQ"), rUng = getRealD1(dUng, "UNG"), r1 = getRealD1(d1, k1), r2 = getRealD1(d2, k2);
-          if (rCza === null || rUng === null || r1 === null || r2 === null) { sinDatoMesa = true; huboSinDato = true; }
-
-          sCzaP += dCza.plan; sCzaR += (rCza || 0);
-          sUngP += dUng.plan; sUngR += (rUng || 0);
-          s1P += d1.plan; s1R += (r1 || 0);
-          s2P += d2.plan; s2R += (r2 || 0);
-        });
-
-        tot.czaPlan += sCzaP; tot.czaReal += sCzaR;
-        tot.ungPlan += sUngP; tot.ungReal += sUngR;
-        tot.s1Plan += s1P; tot.s1Real += s1R;
-        tot.s2Plan += s2P; tot.s2Real += s2R;
-
-        tbody += `
-          <tr>
-            <td class="text-start fw-bold text-primary">${sv}${sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día para algún KPI"></i>' : ''}</td>
-            <td class="fw-bold bg-light">${sCzaP.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : sCzaR)}</td><td>${celdaVarD1(sinDatoMesa ? null : sCzaR, sCzaP)}</td>
-            <td class="fw-bold bg-light">${sUngP.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : sUngR)}</td><td>${celdaVarD1(sinDatoMesa ? null : sUngR, sUngP)}</td>
-            <td class="fw-bold bg-light">${s1P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : s1R)}</td><td>${celdaVarD1(sinDatoMesa ? null : s1R, s1P)}</td>
-            <td class="fw-bold bg-light">${s2P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sinDatoMesa ? null : s2R)}</td><td>${celdaVarD1(sinDatoMesa ? null : s2R, s2P)}</td>
-          </tr>
-        `;
-      });
-    } else {
-      const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === modo);
-      const [k1, k2] = getKpisD1(modo);
+  // Arma UNA sección (CZA o UNG): mesa | Plan | Real | Var% | Vs Med Real | Vs Med Nec | RANK | Top 3 vendedores
+  function seccionMesaConTop3(titulo, kpiKeyFn) {
+    const mesasFiltradas = modo === 'RESUMEN_SUPERVISORES' ? SUPERVISORES_LIST : [modo];
+    const filas = mesasFiltradas.map(sv => {
+      const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+      const kpiKey = kpiKeyFn(sv);
+      let sMr = 0, sMn = 0, sP = 0, sR = 0, sinDatoMesa = false;
+      const porVendedor = [];
 
       vends.forEach(v => {
-        const dCza = getKpiD1(v, "CVZ CMQ");
-        const dUng = getKpiD1(v, "UNG");
-        const d1 = getKpiD1(v, k1);
-        const d2 = getKpiD1(v, k2);
-
-        const czaR = getRealD1(dCza, "CVZ CMQ");
-        const ungR = getRealD1(dUng, "UNG");
-        const s1R = getRealD1(d1, k1);
-        const s2R = getRealD1(d2, k2);
-        if (czaR === null || ungR === null || s1R === null || s2R === null) huboSinDato = true;
-
-        tot.czaPlan += dCza.plan; tot.czaReal += (czaR || 0);
-        tot.ungPlan += dUng.plan; tot.ungReal += (ungR || 0);
-        tot.s1Plan += d1.plan; tot.s1Real += (s1R || 0);
-        tot.s2Plan += d2.plan; tot.s2Real += (s2R || 0);
-
-        tbody += `
-          <tr>
-            <td class="text-start fw-semibold">${v.nombre}</td>
-            <td class="fw-bold bg-light">${dCza.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(czaR)}</td><td>${celdaVarD1(czaR, dCza.plan)}</td>
-            <td class="fw-bold bg-light">${dUng.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(ungR)}</td><td>${celdaVarD1(ungR, dUng.plan)}</td>
-            <td class="fw-bold bg-light">${d1.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(s1R)}</td><td>${celdaVarD1(s1R, d1.plan)}</td>
-            <td class="fw-bold bg-light">${d2.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(s2R)}</td><td>${celdaVarD1(s2R, d2.plan)}</td>
-          </tr>
-        `;
+        const d = getKpiD1(v, kpiKey);
+        const r = getRealD1(d, kpiKey);
+        if (r === null) { sinDatoMesa = true; huboSinDato = true; }
+        sMr += d.mreal; sMn += d.mnec; sP += d.plan; sR += (r || 0);
+        if (r !== null && d.plan > 0) {
+          porVendedor.push({ nombre: v.nombre, varPct: (r / d.plan - 1) * 100 });
+        }
       });
-    }
 
-    const tVarCza = tot.czaPlan > 0 ? (tot.czaReal / tot.czaPlan - 1) : 0;
-    const tVarUng = tot.ungPlan > 0 ? (tot.ungReal / tot.ungPlan - 1) : 0;
-    const tVarS1 = tot.s1Plan > 0 ? (tot.s1Real / tot.s1Plan - 1) : 0;
-    const tVarS2 = tot.s2Plan > 0 ? (tot.s2Real / tot.s2Plan - 1) : 0;
+      porVendedor.sort((a, b) => b.varPct - a.varPct);
+      const top3 = porVendedor.slice(0, 3);
 
-    let tfoot = `
-        </tbody>
-        <tfoot class="table-dark fw-bold">
-          <tr>
-            <td class="text-start">${modo === 'RESUMEN_SUPERVISORES' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
-            <td>${tot.czaPlan.toFixed(1)}</td><td>${tot.czaReal.toFixed(1)}</td><td><span class="${tVarCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tVarCza * 100).toFixed(0)}%</span></td>
-            <td>${tot.ungPlan.toFixed(1)}</td><td>${tot.ungReal.toFixed(1)}</td><td><span class="${tVarUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tVarUng * 100).toFixed(0)}%</span></td>
-            <td>${tot.s1Plan.toFixed(1)}</td><td>${tot.s1Real.toFixed(1)}</td><td><span class="${tVarS1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tVarS1 * 100).toFixed(0)}%</span></td>
-            <td>${tot.s2Plan.toFixed(1)}</td><td>${tot.s2Real.toFixed(1)}</td><td><span class="${tVarS2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tVarS2 * 100).toFixed(0)}%</span></td>
-          </tr>
-        </tfoot>
-      </table>
+      const sRmostrar = sinDatoMesa ? null : sR;
+      const varPct = (!sinDatoMesa && sP > 0) ? (sR / sP - 1) * 100 : null;
+      const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) * 100 : null;
+      const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) * 100 : null;
+
+      return { sv, sP, sR: sRmostrar, varPct, vsMr, vsMn, sinDatoMesa, top3 };
+    });
+
+    // Ranking de mesas por Var% (solo tiene sentido si hay más de una mesa en pantalla)
+    const conDato = filas.filter(f => f.varPct !== null);
+    const orden = [...conDato].sort((a, b) => b.varPct - a.varPct);
+    const podio = { [orden[0]?.sv]: 1, [orden[1]?.sv]: 2, [orden[2]?.sv]: 3 };
+    const peores = orden.slice(-2).map(f => f.sv);
+
+    let totP = 0, totR = 0, totMr = 0, totMn = 0;
+    filas.forEach(f => { totP += f.sP; totR += (f.sR || 0); totMr += 0; });
+
+    const filasHtml = filas.map(f => {
+      let celdaRank = '<span class="text-muted">-</span>';
+      if (filas.length > 1) {
+        if (podio[f.sv]) celdaRank = `<span class="badge-podio podio-${podio[f.sv]}">${podio[f.sv] === 1 ? '🥇' : podio[f.sv] === 2 ? '🥈' : '🥉'}</span>`;
+        else if (peores.includes(f.sv) && filas.length > 3) celdaRank = '<span class="badge-alerta" title="Entre las mesas más bajas"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+      }
+      const top3Html = f.top3.length
+        ? f.top3.map((t, i) => `${i + 1}. ${t.nombre.split(' ')[0]} ${t.varPct >= 0 ? '+' : ''}${t.varPct.toFixed(0)}%`).join('<br>')
+        : '<span class="text-muted">-</span>';
+      return `
+        <tr>
+          <td class="text-start fw-bold text-primary">${f.sv}${f.sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día"></i>' : ''}</td>
+          <td class="fw-bold bg-light">${f.sP.toFixed(1)}</td>
+          <td class="fw-bold">${celdaRealD1(f.sR)}</td>
+          <td>${f.varPct === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.varPct)}</td>
+          <td>${f.vsMr === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.vsMr)}</td>
+          <td>${f.vsMn === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(f.vsMn)}</td>
+          <td>${celdaRank}</td>
+          <td class="text-start small">${top3Html}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const totVar = totP > 0 ? ((totR / totP - 1) * 100) : 0;
+
+    return `
+      <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
+        <div class="px-3 py-2 fw-bold header-cierre">${titulo}</div>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-custom mb-0">
+            <thead>
+              <tr>
+                <th class="text-start header-cierre">MESA</th>
+                <th class="header-cierre">Plan</th>
+                <th class="header-cierre">Real</th>
+                <th class="header-cierre">Var %</th>
+                <th class="header-cierre">Vs Med Real</th>
+                <th class="header-cierre">Vs Med Nec</th>
+                <th class="header-cierre">RANK</th>
+                <th class="text-start header-cierre">TOP 3 VENDEDORES (Var %)</th>
+              </tr>
+            </thead>
+            <tbody>${filasHtml}</tbody>
+            <tfoot class="table-dark fw-bold">
+              <tr>
+                <td class="text-start">${modo === 'RESUMEN_SUPERVISORES' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+                <td>${totP.toFixed(1)}</td>
+                <td>${totR.toFixed(1)}</td>
+                <td>${spanVarPtos(totVar)}</td>
+                <td>-</td><td>-</td><td>-</td><td>-</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     `;
+  }
 
-    wrapper.innerHTML = bannerFotoD1() + bannerSinDatoD1(huboSinDato) + thead + tbody + tfoot;
+  // Sección simple KPI 1 y KPI 2 (solo Plan / Real / Var%, sin medias ni top3 — a pedido)
+  function seccionKpi1y2() {
+    const mesasFiltradas = modo === 'RESUMEN_SUPERVISORES' ? SUPERVISORES_LIST : [modo];
+    let totP1 = 0, totR1 = 0, totP2 = 0, totR2 = 0;
+
+    const filasHtml = mesasFiltradas.map(sv => {
+      const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+      const [k1, k2] = getKpisD1(sv);
+      let s1P = 0, s1R = 0, s2P = 0, s2R = 0, sinDato = false;
+      vends.forEach(v => {
+        const d1 = getKpiD1(v, k1), d2 = getKpiD1(v, k2);
+        const r1 = getRealD1(d1, k1), r2 = getRealD1(d2, k2);
+        if (r1 === null || r2 === null) { sinDato = true; huboSinDato = true; }
+        s1P += d1.plan; s1R += (r1 || 0); s2P += d2.plan; s2R += (r2 || 0);
+      });
+      totP1 += s1P; totR1 += (sinDato ? 0 : s1R); totP2 += s2P; totR2 += (sinDato ? 0 : s2R);
+      const r1m = sinDato ? null : s1R, r2m = sinDato ? null : s2R;
+      const v1 = (r1m !== null && s1P > 0) ? (r1m / s1P - 1) * 100 : null;
+      const v2 = (r2m !== null && s2P > 0) ? (r2m / s2P - 1) * 100 : null;
+      return `
+        <tr>
+          <td class="text-start fw-bold text-primary">${sv}${sinDato ? ' <i class="bi bi-exclamation-triangle-fill text-warning"></i>' : ''}</td>
+          <td class="fw-semibold text-warning text-dark">${k1}</td>
+          <td class="fw-bold bg-light">${s1P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r1m)}</td><td>${v1 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v1)}</td>
+          <td class="fw-semibold text-info text-dark">${k2}</td>
+          <td class="fw-bold bg-light">${s2P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r2m)}</td><td>${v2 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const totVar1 = totP1 > 0 ? ((totR1 / totP1 - 1) * 100) : 0;
+    const totVar2 = totP2 > 0 ? ((totR2 / totP2 - 1) * 100) : 0;
+
+    return `
+      <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
+        <div class="px-3 py-2 fw-bold header-cierre">3. KPI FOCO 1 Y KPI FOCO 2</div>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-custom mb-0">
+            <thead>
+              <tr>
+                <th class="text-start header-cierre">MESA</th>
+                <th colspan="4" class="header-kpi-sel1">KPI 1</th>
+                <th colspan="4" class="header-kpi-sel2">KPI 2</th>
+              </tr>
+              <tr>
+                <th></th>
+                <th class="header-kpi-sel1">Nombre</th><th class="header-kpi-sel1">Plan</th><th class="header-kpi-sel1">Real</th><th class="header-kpi-sel1">Var %</th>
+                <th class="header-kpi-sel2">Nombre</th><th class="header-kpi-sel2">Plan</th><th class="header-kpi-sel2">Real</th><th class="header-kpi-sel2">Var %</th>
+              </tr>
+            </thead>
+            <tbody>${filasHtml}</tbody>
+            <tfoot class="table-dark fw-bold">
+              <tr>
+                <td class="text-start">${modo === 'RESUMEN_SUPERVISORES' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+                <td>-</td><td>${totP1.toFixed(1)}</td><td>${totR1.toFixed(1)}</td><td>${spanVarPtos(totVar1)}</td>
+                <td>-</td><td>${totP2.toFixed(1)}</td><td>${totR2.toFixed(1)}</td><td>${spanVarPtos(totVar2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // MODO 1: TODOS LOS NEGOCIOS EN CIERRE D-1 (CZA + UNG + KPI 1 + KPI 2) — 3 secciones apiladas
+  if (negocio === 'TODOS') {
+    const html =
+      seccionMesaConTop3('1. TOTAL CERVEZA', () => 'CVZ CMQ') +
+      seccionMesaConTop3('2. TOTAL UNG', () => 'UNG') +
+      seccionKpi1y2();
+
+    wrapper.innerHTML = bannerFotoD1() + bannerSinDatoD1(huboSinDato) + html;
     return;
   }
 
@@ -973,24 +1059,26 @@ function renderCierreD1() {
   let kpiKey = negocio;
   if (negocio === 'SEL1') kpiKey = 'COB MICHELOB';
   if (negocio === 'SEL2') kpiKey = 'COB PURE GOLD';
+  // Para KPI 1 y KPI 2 se ocultan Media Real / 7 días / 14 días / Vs Med Real (a pedido) —
+  // se conserva Med-nec, Plan, Real, Var y Vs Med Nec.
+  const esSel = (negocio === 'SEL1' || negocio === 'SEL2');
 
   let thead = `
     <table class="table table-bordered table-hover table-custom mb-0">
       <thead>
         <tr>
           <th rowspan="2" class="text-start header-cierre" style="min-width: 200px;">${modo === 'RESUMEN_SUPERVISORES' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + modo + ')'}</th>
-          <th colspan="7" class="header-kpi-cvz">${kpiKey}</th>
-          <th colspan="2" class="header-cierre">DESVÍOS COMPARATIVOS</th>
+          <th colspan="${esSel ? 3 : 7}" class="header-kpi-cvz">${kpiKey}</th>
+          <th colspan="${esSel ? 1 : 2}" class="header-cierre">DESVÍOS COMPARATIVOS</th>
         </tr>
         <tr>
-          <th class="header-kpi-cvz">Media Real</th>
+          ${esSel ? '' : '<th class="header-kpi-cvz">Media Real</th>'}
           <th class="header-kpi-cvz">Med-nec</th>
-          <th class="header-kpi-cvz">7dias</th>
-          <th class="header-kpi-cvz">14 dias</th>
+          ${esSel ? '' : '<th class="header-kpi-cvz">7dias</th><th class="header-kpi-cvz">14 dias</th>'}
           <th class="header-kpi-cvz bg-primary text-warning fw-bold">Planificación</th>
           <th class="header-kpi-cvz bg-dark text-white fw-bold">Real</th>
           <th class="header-kpi-cvz">Var</th>
-          <th class="header-cierre">Vs Med Real</th>
+          ${esSel ? '' : '<th class="header-cierre">Vs Med Real</th>'}
           <th class="header-cierre">Vs Med Nec</th>
         </tr>
       </thead>
@@ -1016,17 +1104,20 @@ function renderCierreD1() {
       tot.mreal += sMr; tot.mnec += sMn; tot.d7 += s7; tot.d14 += s14; tot.plan += sP; tot.real += sR;
 
       const sRmostrar = sinDatoMesa ? null : sR;
-      const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) : 0;
-      const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) : 0;
+      const varPct = (!sinDatoMesa && sP > 0) ? (sR / sP - 1) * 100 : null;
+      const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) * 100 : null;
+      const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) * 100 : null;
 
       tbody += `
         <tr>
           <td class="text-start fw-bold text-primary">${sv}${sinDatoMesa ? ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Falta VESPER/AD(V) de ese día"></i>' : ''}</td>
-          <td>${sMr.toFixed(1)}</td><td class="text-danger">${sMn.toFixed(1)}</td><td>${s7.toFixed(1)}</td><td>${s14.toFixed(1)}</td>
+          ${esSel ? '' : `<td>${sMr.toFixed(1)}</td>`}
+          <td class="text-danger">${sMn.toFixed(1)}</td>
+          ${esSel ? '' : `<td>${s7.toFixed(1)}</td><td>${s14.toFixed(1)}</td>`}
           <td class="fw-bold bg-light">${sP.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(sRmostrar)}</td>
-          <td>${celdaVarD1(sRmostrar, sP)}</td>
-          <td>${sinDatoMesa ? '<span class="text-muted">N/D</span>' : `<span class="${vsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMr * 100).toFixed(0)}%</span>`}</td>
-          <td>${sinDatoMesa ? '<span class="text-muted">N/D</span>' : `<span class="${vsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMn * 100).toFixed(0)}%</span>`}</td>
+          <td>${varPct === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(varPct)}</td>
+          ${esSel ? '' : `<td>${vsMr === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(vsMr)}</td>`}
+          <td>${vsMn === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(vsMn)}</td>
         </tr>
       `;
     });
@@ -1039,36 +1130,41 @@ function renderCierreD1() {
 
       tot.mreal += d.mreal; tot.mnec += d.mnec; tot.d7 += d.d7; tot.d14 += d.d14; tot.plan += d.plan; tot.real += (realV || 0);
 
-      const vsMr = (realV !== null && d.mreal > 0) ? (realV / d.mreal - 1) : 0;
-      const vsMn = (realV !== null && d.mnec > 0) ? (realV / d.mnec - 1) : 0;
+      const varPct = (realV !== null && d.plan > 0) ? (realV / d.plan - 1) * 100 : null;
+      const vsMr = (realV !== null && d.mreal > 0) ? (realV / d.mreal - 1) * 100 : null;
+      const vsMn = (realV !== null && d.mnec > 0) ? (realV / d.mnec - 1) * 100 : null;
 
       tbody += `
         <tr>
           <td class="text-start fw-semibold">${v.nombre}</td>
-          <td>${d.mreal.toFixed(1)}</td><td class="text-danger">${d.mnec.toFixed(1)}</td><td>${d.d7.toFixed(1)}</td><td>${d.d14.toFixed(1)}</td>
+          ${esSel ? '' : `<td>${d.mreal.toFixed(1)}</td>`}
+          <td class="text-danger">${d.mnec.toFixed(1)}</td>
+          ${esSel ? '' : `<td>${d.d7.toFixed(1)}</td><td>${d.d14.toFixed(1)}</td>`}
           <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(realV)}</td>
-          <td>${celdaVarD1(realV, d.plan)}</td>
-          <td>${realV === null ? '<span class="text-muted">N/D</span>' : `<span class="${vsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMr * 100).toFixed(0)}%</span>`}</td>
-          <td>${realV === null ? '<span class="text-muted">N/D</span>' : `<span class="${vsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vsMn * 100).toFixed(0)}%</span>`}</td>
+          <td>${varPct === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(varPct)}</td>
+          ${esSel ? '' : `<td>${vsMr === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(vsMr)}</td>`}
+          <td>${vsMn === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(vsMn)}</td>
         </tr>
       `;
     });
   }
 
-  const totVarP = tot.plan > 0 ? (tot.real / tot.plan - 1) : 0;
-  const totVsMr = tot.mreal > 0 ? (tot.real / tot.mreal - 1) : 0;
-  const totVsMn = tot.mnec > 0 ? (tot.real / tot.mnec - 1) : 0;
+  const totVarP = tot.plan > 0 ? (tot.real / tot.plan - 1) * 100 : 0;
+  const totVsMr = tot.mreal > 0 ? (tot.real / tot.mreal - 1) * 100 : 0;
+  const totVsMn = tot.mnec > 0 ? (tot.real / tot.mnec - 1) * 100 : 0;
 
   let tfoot = `
       </tbody>
       <tfoot class="table-dark fw-bold">
         <tr>
           <td class="text-start">${modo === 'RESUMEN_SUPERVISORES' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
-          <td>${tot.mreal.toFixed(1)}</td><td class="text-danger">${tot.mnec.toFixed(1)}</td><td>${tot.d7.toFixed(1)}</td><td>${tot.d14.toFixed(1)}</td>
+          ${esSel ? '' : `<td>${tot.mreal.toFixed(1)}</td>`}
+          <td class="text-danger">${tot.mnec.toFixed(1)}</td>
+          ${esSel ? '' : `<td>${tot.d7.toFixed(1)}</td><td>${tot.d14.toFixed(1)}</td>`}
           <td>${tot.plan.toFixed(1)}</td><td>${tot.real.toFixed(1)}</td>
-          <td><span class="${totVarP >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVarP * 100).toFixed(0)}%</span></td>
-          <td><span class="${totVsMr >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVsMr * 100).toFixed(0)}%</span></td>
-          <td><span class="${totVsMn >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVsMn * 100).toFixed(0)}%</span></td>
+          <td>${spanVarPtos(totVarP)}</td>
+          ${esSel ? '' : `<td>${spanVarPtos(totVsMr)}</td>`}
+          <td>${spanVarPtos(totVsMn)}</td>
         </tr>
       </tfoot>
     </table>
@@ -1135,6 +1231,40 @@ function getKpiData(vend, kpiNombre) {
     return vend.kpis[kpiNombre];
   }
   return { obj: 0, real: 0, avance: "0.0%", mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
+}
+
+// ====================================================================
+// SEMÁFORO DE COLORES
+// %Avance / %Tendencia:  <90% rojo | 90-100% amarillo | 100-120% verde | >120% azul
+// %Var (comparaciones):  <-10% rojo | -10-0% amarillo | 0-10% verde | >10% azul
+// ====================================================================
+function claseAvance(pct) {
+  if (pct < 90) return 'sem-rojo';
+  if (pct < 100) return 'sem-amarillo';
+  if (pct <= 120) return 'sem-verde';
+  return 'sem-azul';
+}
+function claseVar(pct) {
+  if (pct < -10) return 'sem-rojo';
+  if (pct < 0) return 'sem-amarillo';
+  if (pct <= 10) return 'sem-verde';
+  return 'sem-azul';
+}
+// Recibe un string tipo "87.3%" (lo que ya devuelven calcAv/calcTend/d.avance) y lo pinta
+function spanAvance(strPct) {
+  const n = parseFloat(strPct) || 0;
+  return `<span class="badge-semaforo ${claseAvance(n)}">${strPct}</span>`;
+}
+// Recibe un número (fracción, ej 0.087 = 8.7%) o ya en % — normaliza a "% con signo" y lo pinta
+function spanVarPct(fraccion) {
+  const n = fraccion * 100;
+  const texto = (n >= 0 ? '+' : '') + n.toFixed(0) + '%';
+  return `<span class="badge-semaforo ${claseVar(n)}">${texto}</span>`;
+}
+// Igual que spanVarPct pero ya recibe el número en puntos porcentuales (no fracción)
+function spanVarPtos(n) {
+  const texto = (n >= 0 ? '+' : '') + n.toFixed(0) + '%';
+  return `<span class="badge-semaforo ${claseVar(n)}">${texto}</span>`;
 }
 
 // Prioriza el valor del AD(V) de hoy sobre el del AD normal, pero SIN tratar un 0 legítimo como "vacío"
@@ -1552,12 +1682,15 @@ function renderSupervisorView() {
   let totSel1 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0, prevendido: 0 };
   let totSel2 = { mreal: 0, mnec: 0, d14: 0, d7: 0, plan: 0, obj: 0, real: 0, prevendido: 0 };
 
-  filtrados.forEach(v => {
-    const dCvz = getKpiData(v, "CVZ CMQ");
-    const dUng = getKpiData(v, "UNG");
-    const dS1 = getKpiData(v, sel1);
-    const dS2 = getKpiData(v, sel2);
+  const filasData = filtrados.map(v => ({
+    v,
+    dCvz: getKpiData(v, "CVZ CMQ"),
+    dUng: getKpiData(v, "UNG"),
+    dS1: getKpiData(v, sel1),
+    dS2: getKpiData(v, sel2)
+  }));
 
+  filasData.forEach(({ v, dCvz, dUng, dS1, dS2 }) => {
     totCvz.mreal += dCvz.mreal; totCvz.mnec += dCvz.mnec; totCvz.d14 += dCvz.d14; totCvz.d7 += dCvz.d7; totCvz.plan += dCvz.plan; totCvz.prevendido += dCvz.prevendido;
     totCvz.obj += dCvz.obj || 0; totCvz.real += dCvz.real || 0;
 
@@ -1575,16 +1708,16 @@ function renderSupervisorView() {
       <td class="text-start fw-semibold">${v.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${v.pv}</small></td>
       <td><span class="badge-adv ${v.estado === 'Aprobado' ? 'bg-success text-white' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
 
-      <td class="fw-semibold text-primary">${dCvz.avance}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="text-muted">${dCvz.prevendido.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(dCvz.avance)}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="text-muted">${dCvz.prevendido.toFixed(1)}</td>
       <td class="${dCvz.plan < dCvz.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dCvz.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'CVZ CMQ', this.value)"></td>
 
-      <td class="fw-semibold text-success">${dUng.avance}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="text-muted">${dUng.prevendido.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(dUng.avance)}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="text-muted">${dUng.prevendido.toFixed(1)}</td>
       <td class="${dUng.plan < dUng.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dUng.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'UNG', this.value)"></td>
 
-      <td class="fw-semibold text-warning text-dark">${dS1.avance}</td><td>${dS1.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td><td>${dS1.d14.toFixed(1)}</td><td>${dS1.d7.toFixed(1)}</td><td class="text-muted">${dS1.prevendido.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(dS1.avance)}</td><td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td>
       <td class="${dS1.plan < dS1.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)"></td>
 
-      <td class="fw-semibold text-info text-dark">${dS2.avance}</td><td>${dS2.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td><td>${dS2.d14.toFixed(1)}</td><td>${dS2.d7.toFixed(1)}</td><td class="text-muted">${dS2.prevendido.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(dS2.avance)}</td><td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td>
       <td class="${dS2.plan < dS2.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)"></td>
 
       <td class="text-nowrap">
@@ -1640,8 +1773,8 @@ function renderSupervisorView() {
       <td class="text-start">TOTAL MESA</td><td>-</td>
       <td>-</td><td>${totCvz.mreal.toFixed(1)}</td><td class="text-danger">${totCvz.mnec.toFixed(1)}</td><td>${totCvz.d14.toFixed(1)}</td><td>${totCvz.d7.toFixed(1)}</td><td>${totCvz.prevendido.toFixed(1)}</td><td class="fw-bold">${totCvz.plan.toFixed(1)}</td>
       <td>-</td><td>${totUng.mreal.toFixed(1)}</td><td class="text-danger">${totUng.mnec.toFixed(1)}</td><td>${totUng.d14.toFixed(1)}</td><td>${totUng.d7.toFixed(1)}</td><td>${totUng.prevendido.toFixed(1)}</td><td class="fw-bold">${totUng.plan.toFixed(1)}</td>
-      <td>-</td><td>${totSel1.mreal.toFixed(1)}</td><td class="text-danger">${totSel1.mnec.toFixed(1)}</td><td>${totSel1.d14.toFixed(1)}</td><td>${totSel1.d7.toFixed(1)}</td><td>${totSel1.prevendido.toFixed(1)}</td><td class="fw-bold">${totSel1.plan.toFixed(1)}</td>
-      <td>-</td><td>${totSel2.mreal.toFixed(1)}</td><td class="text-danger">${totSel2.mnec.toFixed(1)}</td><td>${totSel2.d14.toFixed(1)}</td><td>${totSel2.d7.toFixed(1)}</td><td>${totSel2.prevendido.toFixed(1)}</td><td class="fw-bold">${totSel2.plan.toFixed(1)}</td>
+      <td>-</td><td class="text-danger">${totSel1.mnec.toFixed(1)}</td><td class="fw-bold">${totSel1.plan.toFixed(1)}</td>
+      <td>-</td><td class="text-danger">${totSel2.mnec.toFixed(1)}</td><td class="fw-bold">${totSel2.plan.toFixed(1)}</td>
       <td>-</td>
     </tr>
   `;
@@ -1748,8 +1881,6 @@ function renderJefeView() {
   const tbody = document.getElementById('jefeTableBody');
   tbody.innerHTML = '';
 
-  const calcAv = (obj, real) => obj > 0 ? ((real / obj) * 100).toFixed(1) + "%" : "0.0%";
-
   // Factor de tiempo transcurrido del mes: se calcula con el primer vendedor válido de cada mesa
   // (mismo criterio que usa la pantalla del Supervisor para "Tend:")
   function factorTiempoDeMesa(vends) {
@@ -1774,7 +1905,8 @@ function renderJefeView() {
   };
   let totVends = 0, totAprobados = 0;
 
-  SUPERVISORES_LIST.forEach(sv => {
+  // Primera pasada: calcular todo por mesa, para poder rankear después
+  const mesasData = SUPERVISORES_LIST.map(sv => {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
     const [k1, k2] = getKpisForMesa(sv);
 
@@ -1807,14 +1939,18 @@ function renderJefeView() {
     });
     totVends += vends.length; totAprobados += aprobados;
 
+    return { sv, k1, k2, sCza, sUng, s1, s2, aprobados, vends, factorTiempo };
+  });
+
+  mesasData.forEach(({ sv, k1, k2, sCza, sUng, s1, s2, aprobados, vends, factorTiempo }) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-start fw-bold text-primary">${sv}</td>
       <td><span class="badge ${aprobados === vends.length ? 'bg-success' : 'bg-warning text-dark'}">${aprobados}/${vends.length} Aprob</span></td>
-      <td class="fw-semibold text-primary">${calcTend(sCza.obj, sCza.real, factorTiempo)}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td class="fw-bold text-primary">${sCza.plan.toFixed(1)}</td>
-      <td class="fw-semibold text-success">${calcTend(sUng.obj, sUng.real, factorTiempo)}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td class="fw-bold text-success">${sUng.plan.toFixed(1)}</td>
-      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold text-warning text-dark">${calcTend(s1.obj, s1.real, factorTiempo)}</td><td>${s1.mreal.toFixed(1)}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td>${s1.d14.toFixed(1)}</td><td>${s1.d7.toFixed(1)}</td><td class="text-muted">${s1.prevendido.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${s1.plan.toFixed(1)}</td>
-      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold text-info text-dark">${calcTend(s2.obj, s2.real, factorTiempo)}</td><td>${s2.mreal.toFixed(1)}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td>${s2.d14.toFixed(1)}</td><td>${s2.d7.toFixed(1)}</td><td class="text-muted">${s2.prevendido.toFixed(1)}</td><td class="fw-bold text-info text-dark">${s2.plan.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(calcTend(sCza.obj, sCza.real, factorTiempo))}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td class="fw-bold text-primary">${sCza.plan.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(calcTend(sUng.obj, sUng.real, factorTiempo))}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td class="fw-bold text-success">${sUng.plan.toFixed(1)}</td>
+      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(calcTend(s1.obj, s1.real, factorTiempo))}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${s1.plan.toFixed(1)}</td>
+      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(calcTend(s2.obj, s2.real, factorTiempo))}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td class="fw-bold text-info text-dark">${s2.plan.toFixed(1)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1828,13 +1964,17 @@ function renderJefeView() {
         <td class="text-start">TOTAL EMPRESA</td><td>${totAprobados}/${totVends} Aprob</td>
         <td>${calcTend(totEmp.cza.obj, totEmp.cza.real, factorTiempoEmpresa)}</td><td>${totEmp.cza.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.cza.mnec.toFixed(1)}</td><td>${totEmp.cza.d14.toFixed(1)}</td><td>${totEmp.cza.d7.toFixed(1)}</td><td>${totEmp.cza.prevendido.toFixed(1)}</td><td>${totEmp.cza.plan.toFixed(1)}</td>
         <td>${calcTend(totEmp.ung.obj, totEmp.ung.real, factorTiempoEmpresa)}</td><td>${totEmp.ung.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.ung.mnec.toFixed(1)}</td><td>${totEmp.ung.d14.toFixed(1)}</td><td>${totEmp.ung.d7.toFixed(1)}</td><td>${totEmp.ung.prevendido.toFixed(1)}</td><td>${totEmp.ung.plan.toFixed(1)}</td>
-        <td>-</td><td>${calcTend(totEmp.s1.obj, totEmp.s1.real, factorTiempoEmpresa)}</td><td>${totEmp.s1.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>${totEmp.s1.d14.toFixed(1)}</td><td>${totEmp.s1.d7.toFixed(1)}</td><td>${totEmp.s1.prevendido.toFixed(1)}</td><td>${totEmp.s1.plan.toFixed(1)}</td>
-        <td>-</td><td>${calcTend(totEmp.s2.obj, totEmp.s2.real, factorTiempoEmpresa)}</td><td>${totEmp.s2.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>${totEmp.s2.d14.toFixed(1)}</td><td>${totEmp.s2.d7.toFixed(1)}</td><td>${totEmp.s2.prevendido.toFixed(1)}</td><td>${totEmp.s2.plan.toFixed(1)}</td>
+        <td>-</td><td>${calcTend(totEmp.s1.obj, totEmp.s1.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>${totEmp.s1.plan.toFixed(1)}</td>
+        <td>-</td><td>${calcTend(totEmp.s2.obj, totEmp.s2.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>${totEmp.s2.plan.toFixed(1)}</td>
       </tr>
     `;
   }
+
+  renderCompromisoVespertinaJefe();
 }
 
+// ====================================================================
+// 3. VESPERTINA (REAL EXACTO DE VESPER + ELECCIÓN POR MESA)
 // ====================================================================
 // 3. VESPERTINA (REAL EXACTO DE VESPER + ELECCIÓN POR MESA)
 // ====================================================================
@@ -1851,6 +1991,7 @@ function renderVespertinaCierre() {
         <thead>
           <tr>
             <th rowspan="2" class="text-start header-cierre" style="min-width: 180px;">${vista === 'MESAS' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + vista + ')'}</th>
+            <th rowspan="2" class="header-cierre" style="width: 55px;">RANK</th>
             <th colspan="3" class="header-kpi-cvz">1. TOTAL CERVEZA</th>
             <th colspan="3" class="header-kpi-ung">2. TOTAL UNG</th>
             <th colspan="3" class="header-kpi-sel1">3. KPI FOCO 1 (DE LA MESA)</th>
@@ -1870,6 +2011,7 @@ function renderVespertinaCierre() {
     let tot = { czaP: 0, czaR: 0, ungP: 0, ungR: 0, s1P: 0, s1R: 0, s2P: 0, s2R: 0 };
 
     if (vista === 'MESAS') {
+      const filasMesas = [];
       SUPERVISORES_LIST.forEach(sv => {
         const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
         const [k1, k2] = getKpisForMesa(sv);
@@ -1897,19 +2039,34 @@ function renderVespertinaCierre() {
         const v1 = m1P > 0 ? (m1R / m1P - 1) : 0;
         const v2 = m2P > 0 ? (m2R / m2P - 1) : 0;
 
+        filasMesas.push({ sv, k1, k2, mCzaP, mCzaR, mUngP, mUngR, m1P, m1R, m2P, m2R, vCza, vUng, v1, v2, avgVar: (vCza + vUng + v1 + v2) / 4 * 100 });
+      });
+
+      const ordenR = [...filasMesas].sort((a, b) => b.avgVar - a.avgVar);
+      const podioR = { [ordenR[0]?.sv]: 1, [ordenR[1]?.sv]: 2, [ordenR[2]?.sv]: 3 };
+      const peoresR = ordenR.slice(-2).map(f => f.sv);
+
+      filasMesas.forEach(({ sv, k1, k2, mCzaP, mCzaR, mUngP, mUngR, m1P, m1R, m2P, m2R, vCza, vUng, v1, v2 }) => {
+        let celdaRank = '<span class="text-muted">-</span>';
+        if (filasMesas.length > 1) {
+          if (podioR[sv]) celdaRank = `<span class="badge-podio podio-${podioR[sv]}">${podioR[sv] === 1 ? '🥇' : podioR[sv] === 2 ? '🥈' : '🥉'}</span>`;
+          else if (peoresR.includes(sv) && filasMesas.length > 3) celdaRank = '<span class="badge-alerta" title="Entre las más bajas vs. lo planificado"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+        }
         tbody += `
           <tr>
             <td class="text-start fw-bold text-primary">${sv}</td>
-            <td class="fw-bold bg-light">${mCzaP.toFixed(1)}</td><td class="fw-bold">${mCzaR.toFixed(1)}</td><td><span class="${vCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vCza * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${mUngP.toFixed(1)}</td><td class="fw-bold">${mUngR.toFixed(1)}</td><td><span class="${vUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vUng * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${m1P.toFixed(1)} <small class="text-muted d-block">(${k1})</small></td><td class="fw-bold">${m1R.toFixed(1)}</td><td><span class="${v1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v1 * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${m2P.toFixed(1)} <small class="text-muted d-block">(${k2})</small></td><td class="fw-bold">${m2R.toFixed(1)}</td><td><span class="${v2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v2 * 100).toFixed(0)}%</span></td>
+            <td>${celdaRank}</td>
+            <td class="fw-bold bg-light">${mCzaP.toFixed(1)}</td><td class="fw-bold">${mCzaR.toFixed(1)}</td><td>${spanVarPtos(vCza * 100)}</td>
+            <td class="fw-bold bg-light">${mUngP.toFixed(1)}</td><td class="fw-bold">${mUngR.toFixed(1)}</td><td>${spanVarPtos(vUng * 100)}</td>
+            <td class="fw-bold bg-light">${m1P.toFixed(1)} <small class="text-muted d-block">(${k1})</small></td><td class="fw-bold">${m1R.toFixed(1)}</td><td>${spanVarPtos(v1 * 100)}</td>
+            <td class="fw-bold bg-light">${m2P.toFixed(1)} <small class="text-muted d-block">(${k2})</small></td><td class="fw-bold">${m2R.toFixed(1)}</td><td>${spanVarPtos(v2 * 100)}</td>
           </tr>
         `;
       });
     } else {
       const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
       const [k1, k2] = getKpisForMesa(vista);
+      const filasVend = [];
 
       vends.forEach(v => {
         const dCza = getKpiData(v, "CVZ CMQ");
@@ -1932,13 +2089,27 @@ function renderVespertinaCierre() {
         const v1 = d1.plan > 0 ? (s1R / d1.plan - 1) : 0;
         const v2 = d2.plan > 0 ? (s2R / d2.plan - 1) : 0;
 
+        filasVend.push({ v, dCza, dUng, d1, d2, czaR, ungR, s1R, s2R, vCza, vUng, v1, v2, avgVar: (vCza + vUng + v1 + v2) / 4 * 100 });
+      });
+
+      const ordenRv = [...filasVend].sort((a, b) => b.avgVar - a.avgVar);
+      const podioRv = { [ordenRv[0]?.v.pv]: 1, [ordenRv[1]?.v.pv]: 2, [ordenRv[2]?.v.pv]: 3 };
+      const peoresRv = ordenRv.slice(-2).map(f => f.v.pv);
+
+      filasVend.forEach(({ v, dCza, dUng, d1, d2, czaR, ungR, s1R, s2R, vCza, vUng, v1, v2 }) => {
+        let celdaRank = '<span class="text-muted">-</span>';
+        if (filasVend.length > 1) {
+          if (podioRv[v.pv]) celdaRank = `<span class="badge-podio podio-${podioRv[v.pv]}">${podioRv[v.pv] === 1 ? '🥇' : podioRv[v.pv] === 2 ? '🥈' : '🥉'}</span>`;
+          else if (peoresRv.includes(v.pv) && filasVend.length > 3) celdaRank = '<span class="badge-alerta" title="Entre los más bajos vs. lo planificado"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+        }
         tbody += `
           <tr>
             <td class="text-start fw-semibold">${v.nombre}</td>
-            <td class="fw-bold bg-light">${dCza.plan.toFixed(1)}</td><td class="fw-bold">${czaR.toFixed(1)}</td><td><span class="${vCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vCza * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${dUng.plan.toFixed(1)}</td><td class="fw-bold">${ungR.toFixed(1)}</td><td><span class="${vUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(vUng * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${d1.plan.toFixed(1)}</td><td class="fw-bold">${s1R.toFixed(1)}</td><td><span class="${v1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v1 * 100).toFixed(0)}%</span></td>
-            <td class="fw-bold bg-light">${d2.plan.toFixed(1)}</td><td class="fw-bold">${s2R.toFixed(1)}</td><td><span class="${v2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v2 * 100).toFixed(0)}%</span></td>
+            <td>${celdaRank}</td>
+            <td class="fw-bold bg-light">${dCza.plan.toFixed(1)}</td><td class="fw-bold">${czaR.toFixed(1)}</td><td>${spanVarPtos(vCza * 100)}</td>
+            <td class="fw-bold bg-light">${dUng.plan.toFixed(1)}</td><td class="fw-bold">${ungR.toFixed(1)}</td><td>${spanVarPtos(vUng * 100)}</td>
+            <td class="fw-bold bg-light">${d1.plan.toFixed(1)}</td><td class="fw-bold">${s1R.toFixed(1)}</td><td>${spanVarPtos(v1 * 100)}</td>
+            <td class="fw-bold bg-light">${d2.plan.toFixed(1)}</td><td class="fw-bold">${s2R.toFixed(1)}</td><td>${spanVarPtos(v2 * 100)}</td>
           </tr>
         `;
       });
@@ -1954,10 +2125,11 @@ function renderVespertinaCierre() {
         <tfoot class="table-dark fw-bold">
           <tr>
             <td class="text-start">${vista === 'MESAS' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
-            <td>${tot.czaP.toFixed(1)}</td><td>${tot.czaR.toFixed(1)}</td><td><span class="${tVCza >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tVCza * 100).toFixed(0)}%</span></td>
-            <td>${tot.ungP.toFixed(1)}</td><td>${tot.ungR.toFixed(1)}</td><td><span class="${tVUng >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tVUng * 100).toFixed(0)}%</span></td>
-            <td>${tot.s1P.toFixed(1)}</td><td>${tot.s1R.toFixed(1)}</td><td><span class="${tV1 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tV1 * 100).toFixed(0)}%</span></td>
-            <td>${tot.s2P.toFixed(1)}</td><td>${tot.s2R.toFixed(1)}</td><td><span class="${tV2 >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(tV2 * 100).toFixed(0)}%</span></td>
+            <td>-</td>
+            <td>${tot.czaP.toFixed(1)}</td><td>${tot.czaR.toFixed(1)}</td><td>${spanVarPtos(tVCza * 100)}</td>
+            <td>${tot.ungP.toFixed(1)}</td><td>${tot.ungR.toFixed(1)}</td><td>${spanVarPtos(tVUng * 100)}</td>
+            <td>${tot.s1P.toFixed(1)}</td><td>${tot.s1R.toFixed(1)}</td><td>${spanVarPtos(tV1 * 100)}</td>
+            <td>${tot.s2P.toFixed(1)}</td><td>${tot.s2R.toFixed(1)}</td><td>${spanVarPtos(tV2 * 100)}</td>
           </tr>
         </tfoot>
       </table>
@@ -2017,7 +2189,7 @@ function renderVespertinaCierre() {
           <td class="text-start fw-bold text-primary">${sv}</td>
           <td class="fw-bold bg-light">${sP.toFixed(1)}</td>
           <td class="fw-bold">${sR.toFixed(1)}</td>
-          <td><span class="${varP >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varP * 100).toFixed(0)}%</span></td>
+          <td>${spanVarPtos(varP * 100)}</td>
           <td class="text-danger fw-semibold">${sMn.toFixed(1)}</td>
           <td>${s7.toFixed(1)}</td>
           <td>${s14.toFixed(1)}</td>
@@ -2044,7 +2216,7 @@ function renderVespertinaCierre() {
           <td class="text-start fw-semibold">${v.nombre}</td>
           <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
           <td class="fw-bold">${realHoy.toFixed(1)}</td>
-          <td><span class="${varP >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(varP * 100).toFixed(0)}%</span></td>
+          <td>${spanVarPtos(varP * 100)}</td>
           <td class="text-danger fw-semibold">${mnecM.toFixed(1)}</td>
           <td>${d7M.toFixed(1)}</td>
           <td>${d14M.toFixed(1)}</td>
@@ -2062,7 +2234,7 @@ function renderVespertinaCierre() {
           <td class="text-start">${vista === 'MESAS' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
           <td>${tot.plan.toFixed(1)}</td>
           <td>${tot.real.toFixed(1)}</td>
-          <td><span class="${totVarP >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(totVarP * 100).toFixed(0)}%</span></td>
+          <td>${spanVarPtos(totVarP * 100)}</td>
           <td class="text-danger">${tot.mnecAdv.toFixed(1)}</td>
           <td>${tot.d7Adv.toFixed(1)}</td>
           <td>${tot.d14Adv.toFixed(1)}</td>
@@ -2152,17 +2324,76 @@ async function guardarVespertina() {
     DATA_COMPLETA.mesas_kpis[item.sv] = [item.kpi1_name, item.kpi2_name];
   });
   guardarLocal();
+  const hoy = fechaLocalISO();
   try {
     const batch = dbFire.batch();
     DATOS_VESPERTINA.forEach(item => {
       batch.set(refMesaKpi(item.sv), { kpi1: item.kpi1_name, kpi2: item.kpi2_name }, { merge: true });
     });
+    // Compromiso del día (para que Planificación → Jefe de Ventas muestre mañana "lo que se propuso hoy")
+    const compromiso = {};
+    DATOS_VESPERTINA.forEach(item => {
+      compromiso[item.sv] = { cza: item.cza || 0, ung: item.ung || 0, kpi1_name: item.kpi1_name, kpi1: item.kpi1 || 0, kpi2_name: item.kpi2_name, kpi2: item.kpi2 || 0 };
+    });
+    batch.set(dbFire.collection('compromisos_vespertina').doc(hoy), { fecha: hoy, mesas: compromiso });
     await batch.commit();
     alert("¡Compromisos y KPIs por mesa guardados para mañana exitosamente!");
   } catch (err) {
     console.warn("Error guardando mesas_kpis en Firestore:", err);
     alert("No se pudo guardar en Firebase (revisá la conexión). Quedó guardado localmente.");
   }
+}
+
+// Lee el compromiso que se propuso en la Vespertina de AYER (que es lo que corresponde a la
+// planificación de HOY) y lo muestra en Planificación → Jefe de Ventas.
+async function renderCompromisoVespertinaJefe() {
+  const msg = document.getElementById('compromisoVesperJefeMsg');
+  const tabla = document.getElementById('tablaCompromisoVesperJefe');
+  const tbody = document.getElementById('compromisoVesperJefeBody');
+  const tfoot = document.getElementById('compromisoVesperJefeFoot');
+  if (!msg || !tabla) return;
+
+  const ayer = fechaLocalISO(new Date(Date.now() - 86400000));
+  let mesas = null;
+  try {
+    const doc = await dbFire.collection('compromisos_vespertina').doc(ayer).get();
+    if (doc.exists) mesas = doc.data().mesas;
+  } catch (err) {
+    console.warn("Error leyendo compromisos_vespertina:", err);
+  }
+
+  if (!mesas) {
+    msg.textContent = 'Todavía no hay un compromiso guardado desde la Vespertina de ayer (se guarda al apretar "Guardar Vespertina para Mañana").';
+    tabla.style.display = 'none';
+    return;
+  }
+  msg.textContent = '';
+  tabla.style.display = '';
+
+  let totCza = 0, totUng = 0;
+  tbody.innerHTML = SUPERVISORES_LIST.map(sv => {
+    const m = mesas[sv] || { cza: 0, ung: 0, kpi1_name: '-', kpi1: 0, kpi2_name: '-', kpi2: 0 };
+    totCza += m.cza || 0; totUng += m.ung || 0;
+    return `
+      <tr>
+        <td class="text-start fw-semibold text-primary">${sv}</td>
+        <td>${(m.cza || 0).toFixed(1)}</td>
+        <td>${(m.ung || 0).toFixed(1)}</td>
+        <td>${m.kpi1_name || '-'}: ${(m.kpi1 || 0).toFixed(1)}</td>
+        <td>${m.kpi2_name || '-'}: ${(m.kpi2 || 0).toFixed(1)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  tfoot.innerHTML = `
+    <tr>
+      <td class="text-start">TOTAL DISTRIBUIDORA</td>
+      <td>${totCza.toFixed(1)}</td>
+      <td>${totUng.toFixed(1)}</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+  `;
 }
 
 // ====================================================================
