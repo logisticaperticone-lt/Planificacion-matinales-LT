@@ -1066,33 +1066,59 @@ function renderCierreD1() {
   // Sección simple KPI 1 y KPI 2 (solo Plan / Real / Var%, sin medias ni top3 — a pedido)
   // Sección simple KPI 1 y KPI 2 (solo Plan / Real / Var%, sin medias ni top3 — a pedido)
   function seccionKpi1y2() {
-    const mesasFiltradas = modo === 'RESUMEN_SUPERVISORES' ? SUPERVISORES_LIST : [modo];
+    const esResumen = modo === 'RESUMEN_SUPERVISORES';
     let totP1 = 0, totR1 = 0, totP2 = 0, totR2 = 0;
+    let filasHtml = '';
 
-    const filasHtml = mesasFiltradas.map(sv => {
+    if (esResumen) {
+      filasHtml = SUPERVISORES_LIST.map(sv => {
+        const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+        const [k1, k2] = getKpisD1(sv);
+        let s1P = 0, s1R = 0, s2P = 0, s2R = 0, sinDato = false;
+        vends.forEach(v => {
+          const d1 = getKpiD1(v, k1), d2 = getKpiD1(v, k2);
+          const r1 = getRealD1(d1, k1), r2 = getRealD1(d2, k2);
+          if (r1 === null || r2 === null) { sinDato = true; huboSinDato = true; }
+          s1P += d1.plan; s1R += (r1 || 0); s2P += d2.plan; s2R += (r2 || 0);
+        });
+        totP1 += s1P; totR1 += (sinDato ? 0 : s1R); totP2 += s2P; totR2 += (sinDato ? 0 : s2R);
+        const r1m = sinDato ? null : s1R, r2m = sinDato ? null : s2R;
+        const v1 = (r1m !== null && s1P > 0) ? (r1m / s1P - 1) * 100 : null;
+        const v2 = (r2m !== null && s2P > 0) ? (r2m / s2P - 1) * 100 : null;
+        return `
+          <tr>
+            <td class="text-start fw-bold text-primary">${sv}${sinDato ? ' <i class="bi bi-exclamation-triangle-fill text-warning"></i>' : ''}</td>
+            <td class="fw-semibold text-warning text-dark">${k1}</td>
+            <td class="fw-bold bg-light">${s1P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r1m)}</td><td>${v1 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v1)}</td>
+            <td class="fw-semibold text-info text-dark">${k2}</td>
+            <td class="fw-bold bg-light">${s2P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r2m)}</td><td>${v2 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v2)}</td>
+          </tr>
+        `;
+      }).join('');
+    } else {
+      // Mesa específica: una fila por VENDEDOR (antes se quedaba solo en el total de la mesa)
+      const sv = modo;
       const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
       const [k1, k2] = getKpisD1(sv);
-      let s1P = 0, s1R = 0, s2P = 0, s2R = 0, sinDato = false;
-      vends.forEach(v => {
+      filasHtml = vends.map(v => {
         const d1 = getKpiD1(v, k1), d2 = getKpiD1(v, k2);
         const r1 = getRealD1(d1, k1), r2 = getRealD1(d2, k2);
-        if (r1 === null || r2 === null) { sinDato = true; huboSinDato = true; }
-        s1P += d1.plan; s1R += (r1 || 0); s2P += d2.plan; s2R += (r2 || 0);
-      });
-      totP1 += s1P; totR1 += (sinDato ? 0 : s1R); totP2 += s2P; totR2 += (sinDato ? 0 : s2R);
-      const r1m = sinDato ? null : s1R, r2m = sinDato ? null : s2R;
-      const v1 = (r1m !== null && s1P > 0) ? (r1m / s1P - 1) * 100 : null;
-      const v2 = (r2m !== null && s2P > 0) ? (r2m / s2P - 1) * 100 : null;
-      return `
-        <tr>
-          <td class="text-start fw-bold text-primary">${sv}${sinDato ? ' <i class="bi bi-exclamation-triangle-fill text-warning"></i>' : ''}</td>
-          <td class="fw-semibold text-warning text-dark">${k1}</td>
-          <td class="fw-bold bg-light">${s1P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r1m)}</td><td>${v1 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v1)}</td>
-          <td class="fw-semibold text-info text-dark">${k2}</td>
-          <td class="fw-bold bg-light">${s2P.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r2m)}</td><td>${v2 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v2)}</td>
-        </tr>
-      `;
-    }).join('');
+        const sinDato = (r1 === null || r2 === null);
+        if (sinDato) huboSinDato = true;
+        totP1 += d1.plan; totR1 += (r1 || 0); totP2 += d2.plan; totR2 += (r2 || 0);
+        const v1 = (r1 !== null && d1.plan > 0) ? (r1 / d1.plan - 1) * 100 : null;
+        const v2 = (r2 !== null && d2.plan > 0) ? (r2 / d2.plan - 1) * 100 : null;
+        return `
+          <tr>
+            <td class="text-start fw-semibold">${v.nombre}${sinDato ? ' <i class="bi bi-exclamation-triangle-fill text-warning"></i>' : ''}</td>
+            <td class="fw-semibold text-warning text-dark">${k1}</td>
+            <td class="fw-bold bg-light">${d1.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r1)}</td><td>${v1 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v1)}</td>
+            <td class="fw-semibold text-info text-dark">${k2}</td>
+            <td class="fw-bold bg-light">${d2.plan.toFixed(1)}</td><td class="fw-bold">${celdaRealD1(r2)}</td><td>${v2 === null ? '<span class="text-muted">N/D</span>' : spanVarPtos(v2)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
 
     const totVar1 = totP1 > 0 ? ((totR1 / totP1 - 1) * 100) : 0;
     const totVar2 = totP2 > 0 ? ((totR2 / totP2 - 1) * 100) : 0;
@@ -1104,7 +1130,7 @@ function renderCierreD1() {
           <table class="table table-bordered table-hover table-custom mb-0">
             <thead>
               <tr>
-                <th class="text-start header-cierre">MESA</th>
+                <th class="text-start header-cierre">${esResumen ? 'MESA' : 'VENDEDOR'}</th>
                 <th colspan="4" class="header-kpi-sel1">KPI 1</th>
                 <th colspan="4" class="header-kpi-sel2">KPI 2</th>
               </tr>
@@ -1117,7 +1143,7 @@ function renderCierreD1() {
             <tbody>${filasHtml}</tbody>
             <tfoot class="table-dark fw-bold">
               <tr>
-                <td class="text-start">${modo === 'RESUMEN_SUPERVISORES' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+                <td class="text-start">${esResumen ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
                 <td>-</td><td>${totP1.toFixed(1)}</td><td>${totR1.toFixed(1)}</td><td>${spanVarPtos(totVar1)}</td>
                 <td>-</td><td>${totP2.toFixed(1)}</td><td>${totR2.toFixed(1)}</td><td>${spanVarPtos(totVar2)}</td>
               </tr>
