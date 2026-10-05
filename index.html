@@ -416,16 +416,16 @@
               <tr>
                 <th rowspan="2" class="text-start">SUPERVISOR / MESA</th>
                 <th rowspan="2">ESTADO</th>
-                <th colspan="7" class="header-kpi-cvz">1. VOL. CZA CMQ</th>
-                <th colspan="7" class="header-kpi-ung">2. VOL. UNG</th>
-                <th colspan="4" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
-                <th colspan="4" class="header-kpi-sel2">4. KPI SECUNDARIO 2</th>
+                <th colspan="8" class="header-kpi-cvz">1. VOL. CZA CMQ</th>
+                <th colspan="8" class="header-kpi-ung">2. VOL. UNG</th>
+                <th colspan="5" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
+                <th colspan="5" class="header-kpi-sel2">4. KPI SECUNDARIO 2</th>
               </tr>
               <tr>
-                <th class="header-kpi-cvz">% Tend.</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz text-warning">PLAN</th>
-                <th class="header-kpi-ung">% Tend.</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung text-warning">PLAN</th>
-                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">% Tend.</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">% Tend.</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+                <th class="header-kpi-cvz">% Tend.</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz">Compromiso</th><th class="header-kpi-cvz text-warning">PLAN</th>
+                <th class="header-kpi-ung">% Tend.</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung">Compromiso</th><th class="header-kpi-ung text-warning">PLAN</th>
+                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">% Tend.</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">Compromiso</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">% Tend.</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">Compromiso</th><th class="header-kpi-sel2 text-warning">PLAN</th>
               </tr>
             </thead>
             <tbody id="jefeTableBody"></tbody>
@@ -434,25 +434,7 @@
         </div>
       </div>
 
-      <div class="card card-custom p-3 mt-3 bg-white shadow-sm">
-        <h6 class="fw-bold mb-2"><i class="bi bi-flag-fill text-primary me-1"></i>Compromiso propuesto en la Vespertina anterior</h6>
-        <div id="compromisoVesperJefeMsg" class="small text-muted"></div>
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm table-custom mb-0" id="tablaCompromisoVesperJefe" style="display:none;">
-            <thead>
-              <tr>
-                <th class="text-start">SUPERVISOR / MESA</th>
-                <th>CZA comprometido</th>
-                <th>UNG comprometido</th>
-                <th>KPI 1 comprometido</th>
-                <th>KPI 2 comprometido</th>
-              </tr>
-            </thead>
-            <tbody id="compromisoVesperJefeBody"></tbody>
-            <tfoot class="table-dark fw-bold" id="compromisoVesperJefeFoot"></tfoot>
-          </table>
-        </div>
-      </div>
+      <div id="bannerCompromisoDistri" class="small text-muted mt-2"></div>
     </div>
   </div>
 
@@ -559,15 +541,15 @@
         <!-- Carga Directa por Archivos Individuales -->
         <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Opción 2: Cargar Archivos Independientes (.xlsx / .csv)</h6>
         <div class="row g-3">
-  <!-- Archivo 0: AD(D-1) -->
+  <!-- Archivo 0: FACTURADO HASTA HOY (mismo formato que PEDIDOS PARA MAÑANA, todo el mes sin el día de hoy) -->
   <div class="col-md-3">
     <div class="card p-3 h-100 border bg-white shadow-sm">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-secondary">0. AD (D-1)</span>
-        <small class="text-secondary fw-bold">Ayer</small>
+        <span class="badge bg-secondary">0. FACTURADO HASTA HOY</span>
+        <small class="text-secondary fw-bold">Mes acumulado</small>
       </div>
-      <p class="text-muted small mb-3">Sube <strong>AD(D-1).xlsx</strong> para la comparativa.</p>
-      <input type="file" id="fileInputADD1" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'ADD1')">
+      <p class="text-muted small mb-3">Mismo formato que <strong>PEDIDOS PARA MAÑANA</strong>, con la venta del mes hasta ayer. Se usa para saber qué clientes son nuevos en cobertura/CCC.</p>
+      <input type="file" id="fileInputFacturado" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'FACTURADO')">
     </div>
   </div>
 
@@ -583,14 +565,14 @@
     </div>
   </div>
 
-  <!-- Archivo 2: VESPER -->
+  <!-- Archivo 2: PEDIDOS PARA MAÑANA (antes "VESPER") -->
   <div class="col-md-3">
     <div class="card p-3 h-100 border bg-white shadow-sm">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-dark">2. VESPER</span>
+        <span class="badge bg-dark">2. PEDIDOS PARA MAÑANA</span>
         <small class="text-dark fw-bold">Tarde</small>
       </div>
-      <p class="text-muted small mb-3">Sube <strong>VESPER.xlsx</strong> con real del día.</p>
+      <p class="text-muted small mb-3">Antes "VESPER" — la venta del día de hoy, mismo archivo de siempre.</p>
       <input type="file" id="fileInputVesper" class="form-control form-control-sm mb-2" accept=".xlsx, .xls, .csv" onchange="procesarArchivoIndividual(event, 'VESPER')">
     </div>
   </div>
@@ -723,11 +705,23 @@ const LISTA_KPIS_TOTAL = [
   "COB PREMIUM",
   "COB UNG",
   "COB LATONES",
+  "COB BALANCED CHOICES",
+  "COB LATONES 1890",
+  "CCC GATORADE",
+  "CCC RED BULL",
+  "CCC CONVIVENCIA PEPSI/PEPSI BLACK 1.5L/2L",
   "LATONES",
   "TOP",
   "CORE + VALUE",
   "PREMIUM",
-  "BALANCED CHOICES"
+  "BALANCED CHOICES",
+  "VOL PURE GOLD",
+  "VOL MICHELOB",
+  "VOL BALANCED CHOICES",
+  "VOL LATONES",
+  "VOL LATONES 1890",
+  "VOL GATORADE",
+  "VOL RED BULL"
 ];
 
 // Base cargada con los datos reales de AD.xlsx, AD(V).xlsx y VESPER.xlsx
@@ -1383,18 +1377,176 @@ function valorADV(campoAdv, campoNormal) {
   return typeof campoAdv === 'number' ? campoAdv : (campoNormal || 0);
 }
 
-// KPIs de cobertura (COB ...) => Real Hoy = clientes nuevos que compraron hoy (col. H del AD(V)).
-// KPIs de volumen => Real Hoy sale de VESPER.
+// KPIs de cobertura clásicos (COB ...) => antes: Real Hoy = col. H del AD(V) (a mano).
+// KPIs "de clientes nuevos" (COB ... y CCC ...) => ahora, si están cargados FACTURADO HASTA HOY
+// y PEDIDOS PARA MAÑANA, el Real sale calculado solo (ver motor más abajo); si no, cae al
+// mecanismo viejo (columna H del AD-V) para no perder nada mientras se adopta lo nuevo.
+// KPIs de volumen (incluye los nuevos VOL ...) => Real Hoy sale de PEDIDOS PARA MAÑANA (VESPER).
 function esKpiCobertura(kpiNombre) {
-  return String(kpiNombre || '').trim().toUpperCase().startsWith('COB');
+  const n = String(kpiNombre || '').trim().toUpperCase();
+  return n.startsWith('COB') || n.startsWith('CCC');
 }
 
 function getRealHoy(d, kpiNombre) {
   if (typeof d.realFoto === 'number') return d.realFoto; // Real congelado en la foto del día (Cierre D-1)
   if (esKpiCobertura(kpiNombre)) {
-    return (typeof d.hoy_adv === 'number') ? d.hoy_adv : 0; // 0 si AD(V) todavía no está cargado
+    if (typeof d.coberturaNueva === 'number') return d.coberturaNueva; // motor nuevo (Facturado + Pedidos Mañana)
+    return (typeof d.hoy_adv === 'number') ? d.hoy_adv : 0; // 0 si nada de lo anterior está cargado
   }
   return d.realVesper || 0;
+}
+
+// ====================================================================
+// MOTOR DE COBERTURA "DESDE CERO CADA VEZ" (sin memoria guardada)
+// Compara FACTURADO HASTA HOY (todo el mes hasta ayer) contra PEDIDOS PARA MAÑANA (el día de
+// hoy) para saber qué clientes son nuevos en cada marca/segmento — reemplaza la columna H
+// del AD(V), que había que ir completando a mano.
+// ====================================================================
+let FILAS_FACTURADO_HASTA_HOY = [];
+let FILAS_PEDIDOS_MANANA = [];
+
+// Convierte las filas crudas del Excel (mismo formato que VESPER) a un objeto liviano por línea
+function normalizarFilasVenta(filas) {
+  const norm = x => String(x == null ? '' : x).replace(/\s+/g, ' ').trim().toUpperCase();
+  const out = [];
+  for (let i = 1; i < filas.length; i++) {
+    const row = filas[i];
+    if (!row || row.length < 42) continue;
+    const pv = parseInt(row[14]) || parseInt(row[13]) || parseInt(row[4]) || 0;
+    const clienteCod = row[4];
+    if (!pv || !clienteCod) continue;
+    out.push({
+      pv,
+      clienteCod: String(clienteCod),
+      marca: norm(row[20]),           // U: Descripción de Marca
+      calibre: parseInt(row[22]) || 0, // W: Calibre
+      segCza: norm(row[48]).replace(/\s+/g, ''),  // AW
+      segTop: norm(row[49]).replace(/\s+/g, ''),  // AX
+      segBc: norm(row[50]).replace(/\s+/g, ''),   // AY
+      unidadNegocio: parseInt(row[34]) || 0,        // AI
+      cantidad: parseFloat(row[41]) || 0            // AP
+    });
+  }
+  return out;
+}
+
+// Definición de cada KPI "de clientes nuevos" o "de volumen" en base a las filas normalizadas
+const DEFINICIONES_KPI_VENTA = {
+  'COB CZA':              { tipo: 'cobertura', filtro: f => f.unidadNegocio === 1 },
+  'COB UNG':               { tipo: 'cobertura', filtro: f => f.unidadNegocio === 3 },
+  'COB PURE GOLD':         { tipo: 'cobertura', filtro: f => f.marca === 'STELLA ARTOIS PURE GOLD' },
+  'COB MICHELOB':          { tipo: 'cobertura', filtro: f => f.marca === 'MICHELOB ULTRA' },
+  'COB BALANCED CHOICES':  { tipo: 'cobertura', filtro: f => f.segBc === 'BALANCEDCHOICES' },
+  'COB LATONES':           { tipo: 'cobertura', filtro: f => f.calibre === 566 },
+  'COB LATONES 1890':      { tipo: 'cobertura', filtro: f => f.calibre === 566 && f.marca === 'QUILMES 1890' },
+  'CCC GATORADE':          { tipo: 'cobertura', filtro: f => f.marca === 'GATORADE' },
+  'CCC RED BULL':          { tipo: 'cobertura', filtro: f => f.marca === 'RED BULL' },
+  'VOL PURE GOLD':         { tipo: 'volumen', filtro: f => f.marca === 'STELLA ARTOIS PURE GOLD' },
+  'VOL MICHELOB':          { tipo: 'volumen', filtro: f => f.marca === 'MICHELOB ULTRA' },
+  'VOL BALANCED CHOICES':  { tipo: 'volumen', filtro: f => f.segBc === 'BALANCEDCHOICES' },
+  'VOL LATONES':           { tipo: 'volumen', filtro: f => f.calibre === 566 },
+  'VOL LATONES 1890':      { tipo: 'volumen', filtro: f => f.calibre === 566 && f.marca === 'QUILMES 1890' },
+  'VOL GATORADE':          { tipo: 'volumen', filtro: f => f.marca === 'GATORADE' },
+  'VOL RED BULL':          { tipo: 'volumen', filtro: f => f.marca === 'RED BULL' }
+};
+const KPI_CONVIVENCIA = 'CCC CONVIVENCIA PEPSI/PEPSI BLACK 1.5L/2L';
+
+// pv -> Set(clienteCod) que cumplen el filtro, dentro de un conjunto de filas
+function clientesPorPv(filas, filtroFn) {
+  const mapa = new Map();
+  filas.forEach(f => {
+    if (!filtroFn(f)) return;
+    if (!mapa.has(f.pv)) mapa.set(f.pv, new Set());
+    mapa.get(f.pv).add(f.clienteCod);
+  });
+  return mapa;
+}
+
+// Clientes que aparecen HOY cumpliendo el filtro pero NO aparecían en "hasta hoy" (ayer) — por vendedor
+function coberturaNuevaPorPv(filasHastaHoy, filasHoy, filtroFn) {
+  const yaCompraron = clientesPorPv(filasHastaHoy, filtroFn);
+  const hoy = clientesPorPv(filasHoy, filtroFn);
+  const resultado = new Map();
+  hoy.forEach((clientesHoy, pv) => {
+    const yaSet = yaCompraron.get(pv) || new Set();
+    let nuevos = 0;
+    clientesHoy.forEach(c => { if (!yaSet.has(c)) nuevos++; });
+    resultado.set(pv, nuevos);
+  });
+  return resultado;
+}
+
+function sumaPorPv(filas, filtroFn) {
+  const mapa = new Map();
+  filas.forEach(f => {
+    if (!filtroFn(f)) return;
+    mapa.set(f.pv, (mapa.get(f.pv) || 0) + f.cantidad);
+  });
+  return mapa;
+}
+
+// Convivencia Pepsi/Pepsi Black 1.5L + 2L: el cliente cuenta solo si compró AMBOS tamaños
+// (no alcanza con uno de los dos). "Nuevo" = logró la convivencia hoy y no la tenía hasta ayer.
+function clientesConConvivenciaPorPv(filas) {
+  const con15 = clientesPorPv(filas, f => f.marca === 'PEPSI' && f.calibre === 4);  // 1500 CC PET
+  const con2 = clientesPorPv(filas, f => f.marca === 'PEPSI' && f.calibre === 2);   // 2000 CC PET
+  const resultado = new Map();
+  con15.forEach((set15, pv) => {
+    const set2 = con2.get(pv) || new Set();
+    const ambos = new Set([...set15].filter(c => set2.has(c)));
+    resultado.set(pv, ambos);
+  });
+  return resultado;
+}
+function convivenciaNuevaPorPv(filasHastaHoy, filasHoy) {
+  const yaConv = clientesConConvivenciaPorPv(filasHastaHoy);
+  const hoyConv = clientesConConvivenciaPorPv(filasHoy);
+  const resultado = new Map();
+  hoyConv.forEach((set, pv) => {
+    const yaSet = yaConv.get(pv) || new Set();
+    let nuevos = 0;
+    set.forEach(c => { if (!yaSet.has(c)) nuevos++; });
+    resultado.set(pv, nuevos);
+  });
+  return resultado;
+}
+
+// Recalcula TODOS los KPI del motor nuevo y los deja en vend.kpis[...].coberturaNueva / .realVesper.
+// Se llama sola cada vez que se termina de cargar cualquiera de los dos archivos de venta.
+function recalcularVentasAvanzadas() {
+  if (!FILAS_PEDIDOS_MANANA.length) return; // sin el día de hoy no hay nada que calcular
+
+  Object.entries(DEFINICIONES_KPI_VENTA).forEach(([kpiKey, def]) => {
+    if (def.tipo === 'cobertura') {
+      const mapa = coberturaNuevaPorPv(FILAS_FACTURADO_HASTA_HOY, FILAS_PEDIDOS_MANANA, def.filtro);
+      DATA_COMPLETA.vendedores.forEach(v => {
+        if (!v.kpis[kpiKey]) v.kpis[kpiKey] = { plan: 0 };
+        v.kpis[kpiKey].coberturaNueva = mapa.get(v.pv) || 0;
+      });
+    } else {
+      const mapa = sumaPorPv(FILAS_PEDIDOS_MANANA, def.filtro);
+      DATA_COMPLETA.vendedores.forEach(v => {
+        if (!v.kpis[kpiKey]) v.kpis[kpiKey] = { plan: 0 };
+        v.kpis[kpiKey].realVesper = parseFloat((mapa.get(v.pv) || 0).toFixed(2));
+      });
+    }
+  });
+
+  const mapaConv = convivenciaNuevaPorPv(FILAS_FACTURADO_HASTA_HOY, FILAS_PEDIDOS_MANANA);
+  DATA_COMPLETA.vendedores.forEach(v => {
+    if (!v.kpis[KPI_CONVIVENCIA]) v.kpis[KPI_CONVIVENCIA] = { plan: 0 };
+    v.kpis[KPI_CONVIVENCIA].coberturaNueva = mapaConv.get(v.pv) || 0;
+  });
+
+  guardarVendedoresCompleto(DATA_COMPLETA.vendedores);
+}
+
+// Carga el archivo "FACTURADO HASTA HOY" (venta acumulada del mes, sin el día de hoy)
+function actualizarDesdeFilasFacturadoHastaHoy(filas) {
+  FILAS_FACTURADO_HASTA_HOY = normalizarFilasVenta(filas);
+  DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { FACTURADO: fechaLocalISO() });
+  dbFire.collection('cargas').doc('estado').set({ FACTURADO: DATA_COMPLETA.cargas.FACTURADO }, { merge: true }).catch(e => console.warn(e));
+  recalcularVentasAvanzadas();
 }
 
 
@@ -1987,9 +2139,20 @@ function aprobarMesaSupervisor() {
   renderSupervisorView();
 }
 
-function renderJefeView() {
+async function renderJefeView() {
   const tbody = document.getElementById('jefeTableBody');
   tbody.innerHTML = '';
+
+  // Compromiso que se propuso AYER en la Vespertina (corresponde a la planificación de HOY)
+  const ayer = fechaLocalISO(new Date(Date.now() - 86400000));
+  let compromisoMesas = null;
+  try {
+    const doc = await dbFire.collection('compromisos_vespertina').doc(ayer).get();
+    if (doc.exists) compromisoMesas = doc.data().mesas;
+  } catch (err) {
+    console.warn("Error leyendo compromisos_vespertina:", err);
+  }
+  const compromisoDe = sv => (compromisoMesas && compromisoMesas[sv]) || null;
 
   // Factor de tiempo transcurrido del mes: se calcula con el primer vendedor válido de cada mesa
   // (mismo criterio que usa la pantalla del Supervisor para "Tend:")
@@ -2007,11 +2170,24 @@ function renderJefeView() {
   }
   const calcTend = (obj, real, factorTiempo) => obj > 0 ? (((real / obj) / factorTiempo) * 100).toFixed(1) + "%" : "0.0%";
 
+  // Celda de PLAN coloreada según esté por debajo o por encima del compromiso de ayer
+  function celdaPlanVsCompromiso(plan, compromiso, claseBase) {
+    if (compromiso === null || typeof compromiso !== 'number' || compromiso <= 0) {
+      return `<td class="fw-bold ${claseBase}">${plan.toFixed(1)}</td>`;
+    }
+    const varPct = (plan / compromiso - 1) * 100;
+    const titulo = varPct >= 0 ? 'Por encima del compromiso de ayer' : 'Por debajo del compromiso de ayer';
+    return `<td class="fw-bold ${claseVar(varPct)}" title="${titulo} (${varPct >= 0 ? '+' : ''}${varPct.toFixed(0)}%)">${plan.toFixed(1)}</td>`;
+  }
+  function celdaCompromiso(compromiso) {
+    return (compromiso === null || typeof compromiso !== 'number') ? '<span class="text-muted">-</span>' : compromiso.toFixed(1);
+  }
+
   let totEmp = {
-    cza: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 },
-    ung: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 },
-    s1: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 },
-    s2: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 }
+    cza: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0, compromiso: 0 },
+    ung: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0, compromiso: 0 },
+    s1: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0, compromiso: 0 },
+    s2: { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0, compromiso: 0 }
   };
   let totVends = 0, totAprobados = 0;
 
@@ -2019,6 +2195,7 @@ function renderJefeView() {
   const mesasData = SUPERVISORES_LIST.map(sv => {
     const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
     const [k1, k2] = getKpisForMesa(sv);
+    const comp = compromisoDe(sv);
 
     let sCza = { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
     let sUng = { obj: 0, real: 0, mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
@@ -2041,26 +2218,34 @@ function renderJefeView() {
       if (v.estado === 'Aprobado') aprobados++;
     });
 
+    // Compromiso de KPI1/KPI2 solo es comparable si el KPI foco de la mesa no cambió desde ayer
+    const compCza = comp ? (comp.cza || 0) : null;
+    const compUng = comp ? (comp.ung || 0) : null;
+    const compS1 = (comp && comp.kpi1_name === k1) ? (comp.kpi1 || 0) : null;
+    const compS2 = (comp && comp.kpi2_name === k2) ? (comp.kpi2 || 0) : null;
+
     const factorTiempo = factorTiempoDeMesa(vends);
 
     ["obj", "real", "mreal", "mnec", "d14", "d7", "prevendido", "plan"].forEach(campo => {
       totEmp.cza[campo] += sCza[campo]; totEmp.ung[campo] += sUng[campo];
       totEmp.s1[campo] += s1[campo]; totEmp.s2[campo] += s2[campo];
     });
+    if (compCza !== null) totEmp.cza.compromiso += compCza;
+    if (compUng !== null) totEmp.ung.compromiso += compUng;
     totVends += vends.length; totAprobados += aprobados;
 
-    return { sv, k1, k2, sCza, sUng, s1, s2, aprobados, vends, factorTiempo };
+    return { sv, k1, k2, sCza, sUng, s1, s2, aprobados, vends, factorTiempo, compCza, compUng, compS1, compS2 };
   });
 
-  mesasData.forEach(({ sv, k1, k2, sCza, sUng, s1, s2, aprobados, vends, factorTiempo }) => {
+  mesasData.forEach(({ sv, k1, k2, sCza, sUng, s1, s2, aprobados, vends, factorTiempo, compCza, compUng, compS1, compS2 }) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-start fw-bold text-primary">${sv}</td>
       <td><span class="badge ${aprobados === vends.length ? 'bg-success' : 'bg-warning text-dark'}">${aprobados}/${vends.length} Aprob</span></td>
-      <td class="fw-semibold">${spanAvance(calcTend(sCza.obj, sCza.real, factorTiempo))}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td class="fw-bold text-primary">${sCza.plan.toFixed(1)}</td>
-      <td class="fw-semibold">${spanAvance(calcTend(sUng.obj, sUng.real, factorTiempo))}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td class="fw-bold text-success">${sUng.plan.toFixed(1)}</td>
-      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(calcTend(s1.obj, s1.real, factorTiempo))}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${s1.plan.toFixed(1)}</td>
-      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(calcTend(s2.obj, s2.real, factorTiempo))}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td class="fw-bold text-info text-dark">${s2.plan.toFixed(1)}</td>
+      <td class="fw-semibold">${spanAvance(calcTend(sCza.obj, sCza.real, factorTiempo))}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td>${celdaCompromiso(compCza)}</td>${celdaPlanVsCompromiso(sCza.plan, compCza, 'text-primary')}
+      <td class="fw-semibold">${spanAvance(calcTend(sUng.obj, sUng.real, factorTiempo))}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td>${celdaCompromiso(compUng)}</td>${celdaPlanVsCompromiso(sUng.plan, compUng, 'text-success')}
+      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(calcTend(s1.obj, s1.real, factorTiempo))}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS1)}</td>${celdaPlanVsCompromiso(s1.plan, compS1, 'text-warning text-dark')}
+      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(calcTend(s2.obj, s2.real, factorTiempo))}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS2)}</td>${celdaPlanVsCompromiso(s2.plan, compS2, 'text-info text-dark')}
     `;
     tbody.appendChild(tr);
   });
@@ -2072,17 +2257,31 @@ function renderJefeView() {
     tfoot.innerHTML = `
       <tr>
         <td class="text-start">TOTAL EMPRESA</td><td>${totAprobados}/${totVends} Aprob</td>
-        <td>${calcTend(totEmp.cza.obj, totEmp.cza.real, factorTiempoEmpresa)}</td><td>${totEmp.cza.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.cza.mnec.toFixed(1)}</td><td>${totEmp.cza.d14.toFixed(1)}</td><td>${totEmp.cza.d7.toFixed(1)}</td><td>${totEmp.cza.prevendido.toFixed(1)}</td><td>${totEmp.cza.plan.toFixed(1)}</td>
-        <td>${calcTend(totEmp.ung.obj, totEmp.ung.real, factorTiempoEmpresa)}</td><td>${totEmp.ung.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.ung.mnec.toFixed(1)}</td><td>${totEmp.ung.d14.toFixed(1)}</td><td>${totEmp.ung.d7.toFixed(1)}</td><td>${totEmp.ung.prevendido.toFixed(1)}</td><td>${totEmp.ung.plan.toFixed(1)}</td>
-        <td>-</td><td>${calcTend(totEmp.s1.obj, totEmp.s1.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>${totEmp.s1.plan.toFixed(1)}</td>
-        <td>-</td><td>${calcTend(totEmp.s2.obj, totEmp.s2.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>${totEmp.s2.plan.toFixed(1)}</td>
+        <td>${calcTend(totEmp.cza.obj, totEmp.cza.real, factorTiempoEmpresa)}</td><td>${totEmp.cza.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.cza.mnec.toFixed(1)}</td><td>${totEmp.cza.d14.toFixed(1)}</td><td>${totEmp.cza.d7.toFixed(1)}</td><td>${totEmp.cza.prevendido.toFixed(1)}</td><td>${totEmp.cza.compromiso.toFixed(1)}</td><td>${totEmp.cza.plan.toFixed(1)}</td>
+        <td>${calcTend(totEmp.ung.obj, totEmp.ung.real, factorTiempoEmpresa)}</td><td>${totEmp.ung.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.ung.mnec.toFixed(1)}</td><td>${totEmp.ung.d14.toFixed(1)}</td><td>${totEmp.ung.d7.toFixed(1)}</td><td>${totEmp.ung.prevendido.toFixed(1)}</td><td>${totEmp.ung.compromiso.toFixed(1)}</td><td>${totEmp.ung.plan.toFixed(1)}</td>
+        <td>-</td><td>${calcTend(totEmp.s1.obj, totEmp.s1.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s1.plan.toFixed(1)}</td>
+        <td>-</td><td>${calcTend(totEmp.s2.obj, totEmp.s2.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s2.plan.toFixed(1)}</td>
       </tr>
     `;
   }
 
-  renderCompromisoVespertinaJefe();
+  // Banner: % de la distribuidora respecto del compromiso de ayer (CZA y UNG)
+  const bannerEl = document.getElementById('bannerCompromisoDistri');
+  if (bannerEl) {
+    if (!compromisoMesas) {
+      bannerEl.innerHTML = '<i class="bi bi-info-circle me-1"></i>Todavía no hay un compromiso guardado desde la Vespertina de ayer (se guarda al apretar "Guardar Vespertina para Mañana").';
+    } else {
+      const vCza = totEmp.cza.compromiso > 0 ? (totEmp.cza.plan / totEmp.cza.compromiso - 1) * 100 : null;
+      const vUng = totEmp.ung.compromiso > 0 ? (totEmp.ung.plan / totEmp.ung.compromiso - 1) * 100 : null;
+      bannerEl.innerHTML = '<i class="bi bi-flag-fill text-primary me-1"></i><strong>Distribuidora vs. compromiso de ayer:</strong> ' +
+        `CZA ${totEmp.cza.plan.toFixed(1)} / ${totEmp.cza.compromiso.toFixed(1)} comprometido ${vCza === null ? '' : '(' + spanVarPtos(vCza) + ')'} ` +
+        `&nbsp;|&nbsp; UNG ${totEmp.ung.plan.toFixed(1)} / ${totEmp.ung.compromiso.toFixed(1)} comprometido ${vUng === null ? '' : '(' + spanVarPtos(vUng) + ')'}`;
+    }
+  }
 }
 
+// ====================================================================
+// 3. VESPERTINA (REAL EXACTO DE VESPER + ELECCIÓN POR MESA)
 // ====================================================================
 // 3. VESPERTINA (REAL EXACTO DE VESPER + ELECCIÓN POR MESA)
 // ====================================================================
@@ -2456,56 +2655,6 @@ async function guardarVespertina() {
 
 // Lee el compromiso que se propuso en la Vespertina de AYER (que es lo que corresponde a la
 // planificación de HOY) y lo muestra en Planificación → Jefe de Ventas.
-async function renderCompromisoVespertinaJefe() {
-  const msg = document.getElementById('compromisoVesperJefeMsg');
-  const tabla = document.getElementById('tablaCompromisoVesperJefe');
-  const tbody = document.getElementById('compromisoVesperJefeBody');
-  const tfoot = document.getElementById('compromisoVesperJefeFoot');
-  if (!msg || !tabla) return;
-
-  const ayer = fechaLocalISO(new Date(Date.now() - 86400000));
-  let mesas = null;
-  try {
-    const doc = await dbFire.collection('compromisos_vespertina').doc(ayer).get();
-    if (doc.exists) mesas = doc.data().mesas;
-  } catch (err) {
-    console.warn("Error leyendo compromisos_vespertina:", err);
-  }
-
-  if (!mesas) {
-    msg.textContent = 'Todavía no hay un compromiso guardado desde la Vespertina de ayer (se guarda al apretar "Guardar Vespertina para Mañana").';
-    tabla.style.display = 'none';
-    return;
-  }
-  msg.textContent = '';
-  tabla.style.display = '';
-
-  let totCza = 0, totUng = 0;
-  tbody.innerHTML = SUPERVISORES_LIST.map(sv => {
-    const m = mesas[sv] || { cza: 0, ung: 0, kpi1_name: '-', kpi1: 0, kpi2_name: '-', kpi2: 0 };
-    totCza += m.cza || 0; totUng += m.ung || 0;
-    return `
-      <tr>
-        <td class="text-start fw-semibold text-primary">${sv}</td>
-        <td>${(m.cza || 0).toFixed(1)}</td>
-        <td>${(m.ung || 0).toFixed(1)}</td>
-        <td>${m.kpi1_name || '-'}: ${(m.kpi1 || 0).toFixed(1)}</td>
-        <td>${m.kpi2_name || '-'}: ${(m.kpi2 || 0).toFixed(1)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  tfoot.innerHTML = `
-    <tr>
-      <td class="text-start">TOTAL DISTRIBUIDORA</td>
-      <td>${totCza.toFixed(1)}</td>
-      <td>${totUng.toFixed(1)}</td>
-      <td>-</td>
-      <td>-</td>
-    </tr>
-  `;
-}
-
 // ====================================================================
 // 4. ANALISTA: PROCESAMIENTO DIRECTO DE ARCHIVOS EXCEL
 // ====================================================================
@@ -2573,10 +2722,9 @@ function procesarArchivoIndividual(evt, tipo) {
           actualizarDesdeFilasADV(json);
           badge.textContent = `Cargado: ${file.name} (AD-V)`;
           badge.className = "badge bg-success";
-        } else if (tipo === 'ADD1') {
-          // Deberás clonar tu función actualizarDesdeFilasAD y llamarla actualizarDesdeFilasADD1 para procesar este archivo específico.
-          // actualizarDesdeFilasADD1(json);
-          badge.textContent = `Cargado: ${file.name} (AD D-1)`;
+        } else if (tipo === 'FACTURADO') {
+          actualizarDesdeFilasFacturadoHastaHoy(json);
+          badge.textContent = `Cargado: ${file.name} (Facturado hasta hoy)`;
           badge.className = "badge bg-success";
         }
 
@@ -2689,6 +2837,7 @@ function actualizarDesdeFilasADV(filas) {
 }
 
 function actualizarDesdeFilasVesperMaster(filas) {
+  FILAS_PEDIDOS_MANANA = normalizarFilasVenta(filas); // motor nuevo de cobertura/CCC/volumen
   let ventasPorPv = {};
   const norm = x => String(x == null ? '' : x).replace(/\s+/g, '').toUpperCase();
 
@@ -2727,6 +2876,7 @@ function actualizarDesdeFilasVesperMaster(filas) {
   });
 
   DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { VESPER: fechaLocalISO() });
+  recalcularVentasAvanzadas(); // COB/CCC/VOL nuevos, a partir de PEDIDOS PARA MAÑANA + FACTURADO HASTA HOY
   guardarVendedoresCompleto(DATA_COMPLETA.vendedores);
   dbFire.collection('cargas').doc('estado').set({ VESPER: DATA_COMPLETA.cargas.VESPER }, { merge: true }).catch(e => console.warn(e));
   actualizarRealYHistorialHoy();
@@ -2815,7 +2965,14 @@ function renderTodoLoVisible() {
   const visible = id => document.getElementById(id) && !document.getElementById(id).classList.contains('d-none');
   if (visible('etapaCierreD1')) renderCierreD1();
   if (visible('etapaPlanificacion')) renderPlanCurrentView();
-  if (visible('etapaVespertina')) renderVespertina();
+  // OJO: acá va SOLO renderVespertinaCierre() (la tabla de "Cumplimiento de Hoy"), nunca
+  // renderVespertina() completo. Este callback se dispara con CUALQUIER cambio en vivo de
+  // cualquier vendedor (aunque no tenga nada que ver con esta mesa), y renderVespertina()
+  // reconstruye también la tabla de "Compromiso para Mañana" — si el Jefe estaba a mitad de
+  // escribir un número ahí (antes de que el campo pierda el foco y dispare el guardado en
+  // DATOS_VESPERTINA), ese re-render la pisa y el tipeo se pierde en silencio: después
+  // "Guardar Vespertina" graba los valores viejos, como si no hubiera pasado nada.
+  if (visible('etapaVespertina')) renderVespertinaCierre();
   if (visible('etapaAnalista')) renderAnalistaView();
   // El Histórico se consulta bajo demanda (no tiene listener en vivo), no hace falta redibujarlo acá.
 }
