@@ -1330,11 +1330,17 @@ function renderPlanCurrentView() {
   }
 }
 
+// Forma "vacía" de un KPI — TODOS los campos en 0, nunca undefined (evita que cualquier
+// pantalla que haga ".algo.toFixed(...)" reviente cuando un KPI recién se crea con un solo campo).
+function kpiVacio() {
+  return { obj: 0, real: 0, avance: "0.0%", mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
+}
+
 function getKpiData(vend, kpiNombre) {
   if (vend.kpis && vend.kpis[kpiNombre]) {
     return vend.kpis[kpiNombre];
   }
-  return { obj: 0, real: 0, avance: "0.0%", mreal: 0, mnec: 0, d14: 0, d7: 0, prevendido: 0, plan: 0 };
+  return kpiVacio();
 }
 
 // ====================================================================
@@ -1520,13 +1526,13 @@ function recalcularVentasAvanzadas() {
     if (def.tipo === 'cobertura') {
       const mapa = coberturaNuevaPorPv(FILAS_FACTURADO_HASTA_HOY, FILAS_PEDIDOS_MANANA, def.filtro);
       DATA_COMPLETA.vendedores.forEach(v => {
-        if (!v.kpis[kpiKey]) v.kpis[kpiKey] = { plan: 0 };
+        if (!v.kpis[kpiKey]) v.kpis[kpiKey] = kpiVacio();
         v.kpis[kpiKey].coberturaNueva = mapa.get(v.pv) || 0;
       });
     } else {
       const mapa = sumaPorPv(FILAS_PEDIDOS_MANANA, def.filtro);
       DATA_COMPLETA.vendedores.forEach(v => {
-        if (!v.kpis[kpiKey]) v.kpis[kpiKey] = { plan: 0 };
+        if (!v.kpis[kpiKey]) v.kpis[kpiKey] = kpiVacio();
         v.kpis[kpiKey].realVesper = parseFloat((mapa.get(v.pv) || 0).toFixed(2));
       });
     }
@@ -1534,7 +1540,7 @@ function recalcularVentasAvanzadas() {
 
   const mapaConv = convivenciaNuevaPorPv(FILAS_FACTURADO_HASTA_HOY, FILAS_PEDIDOS_MANANA);
   DATA_COMPLETA.vendedores.forEach(v => {
-    if (!v.kpis[KPI_CONVIVENCIA]) v.kpis[KPI_CONVIVENCIA] = { plan: 0 };
+    if (!v.kpis[KPI_CONVIVENCIA]) v.kpis[KPI_CONVIVENCIA] = kpiVacio();
     v.kpis[KPI_CONVIVENCIA].coberturaNueva = mapaConv.get(v.pv) || 0;
   });
 
@@ -1907,8 +1913,8 @@ async function guardarVendedor() {
 
   vend.kpis["CVZ CMQ"].plan = planCza;
   vend.kpis["UNG"].plan = planUng;
-  if (!vend.kpis[sel1]) vend.kpis[sel1] = { plan: 0 };
-  if (!vend.kpis[sel2]) vend.kpis[sel2] = { plan: 0 };
+  if (!vend.kpis[sel1]) vend.kpis[sel1] = kpiVacio();
+  if (!vend.kpis[sel2]) vend.kpis[sel2] = kpiVacio();
   vend.kpis[sel1].plan = planS1;
   vend.kpis[sel2].plan = planS2;
   vend.estado = "Enviado";
@@ -2045,7 +2051,7 @@ function renderSupervisorView() {
 function cambiarPlanSupervisor(pv, kpi, val) {
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
   if (!vend) return;
-  if (!vend.kpis[kpi]) vend.kpis[kpi] = { plan: 0 };
+  if (!vend.kpis[kpi]) vend.kpis[kpi] = kpiVacio();
   vend.kpis[kpi].plan = parseFloat(val) || 0;
   guardarVendedorParcial(pv, { kpis: { [kpi]: vend.kpis[kpi] } });
   renderSupervisorView();
@@ -2556,50 +2562,41 @@ function renderVespertinaCierre() {
   wrapper.innerHTML = thead + tbody + tfoot;
 }
 
-function renderVespertina() {
-  renderVespertinaCierre();
-
-  const tbody = document.getElementById('cuerpoTablaVespertina');
-  tbody.innerHTML = '';
-
-  let sumCza = 0, sumUng = 0, sumK1 = 0, sumK2 = 0;
-
-  DATOS_VESPERTINA.forEach((row, idx) => {
-    const vCza = parseFloat(row.cza) || 0;
-    const vUng = parseFloat(row.ung) || 0;
-    const vK1 = parseFloat(row.kpi1) || 0;
-    const vK2 = parseFloat(row.kpi2) || 0;
-
-    sumCza += vCza; sumUng += vUng; sumK1 += vK1; sumK2 += vK2;
-
-    // Generar opciones de KPIs para esta mesa
-    let opts1 = '', opts2 = '';
-    LISTA_KPIS_TOTAL.forEach(k => {
-      opts1 += `<option value="${k}" ${k === row.kpi1_name ? 'selected' : ''}>${k}</option>`;
-      opts2 += `<option value="${k}" ${k === row.kpi2_name ? 'selected' : ''}>${k}</option>`;
-    });
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="text-start fw-bold bg-light">${row.clave} <small class="text-muted d-block" style="font-size:0.7rem;">${row.sv}</small></td>
-      <td style="background-color: #e0f2fe;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-primary mx-auto" style="width:95px;" value="${row.cza}" onchange="cambiarVesperRow(${idx}, 'cza', this.value)"></td>
-      <td style="background-color: #dcfce7;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-success mx-auto" style="width:95px;" value="${row.ung}" onchange="cambiarVesperRow(${idx}, 'ung', this.value)"></td>
-      <td style="background-color: #fef3c7;">
-        <div class="d-flex align-items-center gap-1 justify-content-center">
-          <select class="form-select form-select-sm fw-bold border-warning" style="width:135px;" onchange="cambiarVesperKpiNombre(${idx}, 'kpi1_name', this.value)">${opts1}</select>
-          <input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-warning" style="width:75px;" value="${row.kpi1}" onchange="cambiarVesperRow(${idx}, 'kpi1', this.value)">
-        </div>
-      </td>
-      <td style="background-color: #ede9fe;">
-        <div class="d-flex align-items-center gap-1 justify-content-center">
-          <select class="form-select form-select-sm fw-bold border-info" style="width:135px;" onchange="cambiarVesperKpiNombre(${idx}, 'kpi2_name', this.value)">${opts2}</select>
-          <input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info" style="width:75px;" value="${row.kpi2}" onchange="cambiarVesperRow(${idx}, 'kpi2', this.value)">
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
+// HTML de UNA fila del compromiso — se usa tanto para armar la tabla entera como para
+// refrescar una sola fila en vivo cuando otra PC cambia esa mesa, sin tocar las demás filas.
+function filaVespertinaHtml(row, idx) {
+  let opts1 = '', opts2 = '';
+  LISTA_KPIS_TOTAL.forEach(k => {
+    opts1 += `<option value="${k}" ${k === row.kpi1_name ? 'selected' : ''}>${k}</option>`;
+    opts2 += `<option value="${k}" ${k === row.kpi2_name ? 'selected' : ''}>${k}</option>`;
   });
+  return `
+    <td class="text-start fw-bold bg-light">${row.clave} <small class="text-muted d-block" style="font-size:0.7rem;">${row.sv}</small></td>
+    <td style="background-color: #e0f2fe;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-primary mx-auto" style="width:95px;" value="${row.cza}" onchange="cambiarVesperRow(${idx}, 'cza', this.value)"></td>
+    <td style="background-color: #dcfce7;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-success mx-auto" style="width:95px;" value="${row.ung}" onchange="cambiarVesperRow(${idx}, 'ung', this.value)"></td>
+    <td style="background-color: #fef3c7;">
+      <div class="d-flex align-items-center gap-1 justify-content-center">
+        <select class="form-select form-select-sm fw-bold border-warning" style="width:135px;" onchange="cambiarVesperKpiNombre(${idx}, 'kpi1_name', this.value)">${opts1}</select>
+        <input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-warning" style="width:75px;" value="${row.kpi1}" onchange="cambiarVesperRow(${idx}, 'kpi1', this.value)">
+      </div>
+    </td>
+    <td style="background-color: #ede9fe;">
+      <div class="d-flex align-items-center gap-1 justify-content-center">
+        <select class="form-select form-select-sm fw-bold border-info" style="width:135px;" onchange="cambiarVesperKpiNombre(${idx}, 'kpi2_name', this.value)">${opts2}</select>
+        <input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info" style="width:75px;" value="${row.kpi2}" onchange="cambiarVesperRow(${idx}, 'kpi2', this.value)">
+      </div>
+    </td>
+  `;
+}
 
+function renderPieVespertina() {
+  let sumCza = 0, sumUng = 0, sumK1 = 0, sumK2 = 0;
+  DATOS_VESPERTINA.forEach(row => {
+    sumCza += parseFloat(row.cza) || 0;
+    sumUng += parseFloat(row.ung) || 0;
+    sumK1 += parseFloat(row.kpi1) || 0;
+    sumK2 += parseFloat(row.kpi2) || 0;
+  });
   document.getElementById('pieTablaVespertina').innerHTML = `
     <tr>
       <td class="text-start">TOTAL COMPROMISO</td>
@@ -2611,9 +2608,49 @@ function renderVespertina() {
   `;
 }
 
+function renderVespertina() {
+  renderVespertinaCierre();
+
+  const tbody = document.getElementById('cuerpoTablaVespertina');
+  tbody.innerHTML = '';
+
+  DATOS_VESPERTINA.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.id = `vesperCompRow-${idx}`;
+    tr.innerHTML = filaVespertinaHtml(row, idx);
+    tbody.appendChild(tr);
+  });
+
+  renderPieVespertina();
+}
+
+// Refresca SOLO la fila de una mesa (usado por el sondeo en vivo de otras PCs). Si el usuario
+// tiene el cursor puesto en un campo de esa misma fila, no la toca — así nunca le pisa lo que
+// está escribiendo en este momento (mismo problema que ya resolvimos en "Cumplimiento de Hoy").
+function refrescarFilaVespertina(idx) {
+  const tr = document.getElementById(`vesperCompRow-${idx}`);
+  if (!tr) return;
+  if (tr.contains(document.activeElement)) return; // el usuario está editando esta fila ahora mismo
+  tr.innerHTML = filaVespertinaHtml(DATOS_VESPERTINA[idx], idx);
+  renderPieVespertina();
+}
+
+// Guarda el compromiso de UNA mesa en Firestore (merge) — nunca toca el documento de otra mesa.
+function guardarCompromisoMesaEnNube(sv) {
+  const row = DATOS_VESPERTINA.find(r => r.sv === sv);
+  if (!row) return;
+  guardarLocal();
+  refMesaKpi(sv).set({
+    kpi1: row.kpi1_name, kpi2: row.kpi2_name,          // nombres (ya existían)
+    cza: row.cza, ung: row.ung,                        // compromiso numérico de hoy, en vivo
+    kpi1Valor: row.kpi1, kpi2Valor: row.kpi2
+  }, { merge: true }).catch(err => console.warn("Error guardando compromiso de " + sv + ":", err));
+}
+
 function cambiarVesperRow(idx, campo, val) {
   DATOS_VESPERTINA[idx][campo] = val === '' ? 0 : parseFloat(val);
-  renderVespertina();
+  renderPieVespertina();
+  guardarCompromisoMesaEnNube(DATOS_VESPERTINA[idx].sv);
 }
 
 function cambiarVesperKpiNombre(idx, campo, nombre) {
@@ -2624,7 +2661,8 @@ function cambiarVesperKpiNombre(idx, campo, nombre) {
   if (campo === 'kpi1_name') DATA_COMPLETA.mesas_kpis[sv][0] = nombre;
   if (campo === 'kpi2_name') DATA_COMPLETA.mesas_kpis[sv][1] = nombre;
   guardarLocal();
-  renderVespertina();
+  renderVespertina(); // acá sí se reconstruye la fila entera: cambió qué KPI se puede elegir
+  guardarCompromisoMesaEnNube(sv);
 }
 
 async function guardarVespertina() {
@@ -3004,6 +3042,22 @@ function iniciarListenersFirestore() {
       if (change.type === 'removed') { delete DATA_COMPLETA.mesas_kpis[sv]; return; }
       const d = change.doc.data();
       DATA_COMPLETA.mesas_kpis[sv] = [d.kpi1, d.kpi2];
+
+      // Compromiso de Vespertina en vivo: si esta mesa cambió en otra PC, se refleja acá —
+      // SOLO en esa fila puntual, y solo si el usuario no la tiene con el cursor adentro.
+      const idx = DATOS_VESPERTINA.findIndex(r => r.sv === sv);
+      if (idx >= 0 && typeof d.cza === 'number') {
+        const row = DATOS_VESPERTINA[idx];
+        const cambio = row.cza !== d.cza || row.ung !== d.ung || row.kpi1 !== d.kpi1Valor || row.kpi2 !== d.kpi2Valor
+          || row.kpi1_name !== d.kpi1 || row.kpi2_name !== d.kpi2;
+        if (cambio) {
+          row.cza = d.cza; row.ung = d.ung; row.kpi1 = d.kpi1Valor; row.kpi2 = d.kpi2Valor;
+          row.kpi1_name = d.kpi1; row.kpi2_name = d.kpi2;
+          if (document.getElementById('etapaVespertina') && !document.getElementById('etapaVespertina').classList.contains('d-none')) {
+            refrescarFilaVespertina(idx);
+          }
+        }
+      }
     });
     guardarLocal();
     renderTodoLoVisible();
