@@ -1337,8 +1337,11 @@ function kpiVacio() {
 }
 
 function getKpiData(vend, kpiNombre) {
+  // Se funde SIEMPRE sobre la base de kpiVacio(): así, aunque el objeto guardado (en Firestore
+  // o en una copia vieja de localStorage, de antes de este arreglo) le falte algún campo, nunca
+  // se devuelve "undefined" para nada — se completa con 0 en vez de romper toda la pantalla.
   if (vend.kpis && vend.kpis[kpiNombre]) {
-    return vend.kpis[kpiNombre];
+    return Object.assign({}, kpiVacio(), vend.kpis[kpiNombre]);
   }
   return kpiVacio();
 }
@@ -3090,9 +3093,13 @@ async function inicializarDatos() {
     if (localVesper) DATOS_VESPERTINA = JSON.parse(localVesper);
   } catch (e) { /* sin nada guardado todavía, se sigue con los datos de ejemplo */ }
 
-  onRoleChange();
-  renderCierreD1();
-  renderVespertina();
+  // Estos 3 renders iniciales usan lo que haya quedado en localStorage — si esa copia es vieja o
+  // le falta algo y rompe (como pasó: "Cannot read properties of undefined"), NO puede frenar la
+  // conexión a Firebase de acá abajo. Por eso van cada uno en su propio try/catch: en el peor caso
+  // la pantalla se ve vacía un instante, hasta que Firestore conecte y la vuelva a dibujar bien.
+  try { onRoleChange(); } catch (e) { console.warn("Render inicial (localStorage) falló, se sigue con Firebase:", e); }
+  try { renderCierreD1(); } catch (e) { console.warn("Render inicial (localStorage) falló, se sigue con Firebase:", e); }
+  try { renderVespertina(); } catch (e) { console.warn("Render inicial (localStorage) falló, se sigue con Firebase:", e); }
 
   iniciarListenersFirestore();
 }
