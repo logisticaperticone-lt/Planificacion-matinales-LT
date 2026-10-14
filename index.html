@@ -625,7 +625,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
         <div>
           <h4 class="mb-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Histórico de Cierre D-1</h4>
-          <small class="text-muted">Plan vs. Real de cada foto congelada — para ver quién suele planificar por encima o por debajo de lo real.</small>
+          <small class="text-muted">% Cumplimiento acumulado (Σ Real / Σ Plan) por vendedor — CZA, UNG y los 2 indicadores propios de su mesa (KPI 1 / KPI 2), sin importar cuál haya sido el KPI elegido cada día del período.</small>
         </div>
       </div>
       <div class="d-flex flex-wrap gap-2 align-items-end">
@@ -654,10 +654,11 @@
             <tr>
               <th class="text-start">VENDEDOR</th>
               <th>MESA</th>
-              <th>DÍAS EVALUADOS</th>
-              <th>CUMPLIM. PROMEDIO</th>
-              <th>CUMPLIM. GLOBAL (Σ Real / Σ Plan)</th>
-              <th>DIAGNÓSTICO</th>
+              <th>DÍAS</th>
+              <th>CZA</th>
+              <th>UNG</th>
+              <th>KPI 1 (mesa)</th>
+              <th>KPI 2 (mesa)</th>
             </tr>
           </thead>
           <tbody id="historicoTableBody"></tbody>
@@ -721,7 +722,10 @@ const LISTA_KPIS_TOTAL = [
   "VOL LATONES",
   "VOL LATONES 1890",
   "VOL GATORADE",
-  "VOL RED BULL"
+  "VOL RED BULL",
+  "VOL VALUE",
+  "VOL 0.0",
+  "VOL INNOVACIONES CORE"
 ];
 
 // Base cargada con los datos reales de AD.xlsx, AD(V).xlsx y VESPER.xlsx
@@ -1433,6 +1437,7 @@ function normalizarFilasVenta(filas) {
       segTop: norm(row[49]).replace(/\s+/g, ''),  // AX
       segBc: norm(row[50]).replace(/\s+/g, ''),   // AY
       unidadNegocio: parseInt(row[34]) || 0,        // AI
+      articulo: parseInt(row[17]) || 0,             // R: Código de Artículo
       cantidad: parseFloat(row[41]) || 0            // AP
     });
   }
@@ -1456,7 +1461,11 @@ const DEFINICIONES_KPI_VENTA = {
   'VOL LATONES':           { tipo: 'volumen', filtro: f => f.calibre === 566 },
   'VOL LATONES 1890':      { tipo: 'volumen', filtro: f => f.calibre === 566 && f.marca === 'QUILMES 1890' },
   'VOL GATORADE':          { tipo: 'volumen', filtro: f => f.marca === 'GATORADE' },
-  'VOL RED BULL':          { tipo: 'volumen', filtro: f => f.marca === 'RED BULL' }
+  'VOL RED BULL':          { tipo: 'volumen', filtro: f => f.marca === 'RED BULL' },
+  // --- Nuevos KPIs de segmento CZA (brindis/marca, no el SEG_CZA grueso del archivo fuente) ---
+  'VOL VALUE':             { tipo: 'volumen', filtro: f => f.marca === 'QUILMES 1890' || f.marca === 'QUILMES BAJO CERO' },
+  'VOL 0.0':               { tipo: 'volumen', filtro: f => f.marca === 'CORONA CERO' || f.marca === 'STELLA ARTOIS 0.0%' || f.marca === 'QUILMES 0.0%' },
+  'VOL INNOVACIONES CORE': { tipo: 'volumen', filtro: f => [15624, 1978, 63068, 32471, 32472].includes(f.articulo) }
 };
 const KPI_CONVIVENCIA = 'CCC CONVIVENCIA PEPSI/PEPSI BLACK 1.5L/2L';
 
@@ -1690,17 +1699,31 @@ async function registrarHistorialDia(fecha) {
   const hist = DATA_COMPLETA.historial_d1;
   const nuevasFilas = [];
 
+  // Traduce el nombre literal del KPI de ese día a su "slot" fijo (CZA/UNG/KPI1/KPI2), para que el
+  // histórico acumule por slot sin importar qué KPI concreto estuvo elegido para kpi1/kpi2 ese día.
+  const slotDe = (e, k) => {
+    if (k === 'CVZ CMQ') return 'CZA';
+    if (k === 'UNG') return 'UNG';
+    if (Array.isArray(e.kpisMesa)) {
+      if (k === e.kpisMesa[0]) return 'KPI1';
+      if (k === e.kpisMesa[1]) return 'KPI2';
+    }
+    return null; // KPI que no corresponde a ninguno de los 4 slots de este día (no debería pasar)
+  };
+
   (foto.datos || []).forEach(e => {
     Object.keys(e.plan || {}).forEach(k => {
       const plan = e.plan[k] || 0;
       if (plan <= 0) return; // sin plan no hay nada que evaluar
       if (!e.real || typeof e.real[k] !== 'number') return; // real de ese KPI todavía no cargado
+      const slot = slotDe(e, k);
+      if (!slot) return;
       const real = e.real[k];
       const cumplimiento = (real / plan) * 100;
-      let row = hist.find(r => r.fecha === fecha && r.pv === e.pv && r.kpi === k);
+      let row = hist.find(r => r.fecha === fecha && r.pv === e.pv && r.slot === slot);
       const yaExistia = !!row;
-      if (!row) { row = { fecha, pv: e.pv, kpi: k }; hist.push(row); }
-      row.nombre = e.nombre; row.sv = e.sv; row.plan = plan; row.real = real; row.cumplimiento = cumplimiento;
+      if (!row) { row = { fecha, pv: e.pv, slot }; hist.push(row); }
+      row.nombre = e.nombre; row.sv = e.sv; row.kpi = k; row.plan = plan; row.real = real; row.cumplimiento = cumplimiento;
       // Solo hace falta escribirla a Firestore si es nueva o cambió el real
       if (!yaExistia || row._realEscrito !== real) { nuevasFilas.push({ ...row }); row._realEscrito = real; }
     });
@@ -1724,27 +1747,44 @@ async function registrarHistorialDia(fecha) {
   }
 }
 
-// Agrupa el histórico por vendedor dentro del período/mesa elegidos
+// Agrupa el histórico por vendedor Y por SLOT (CZA / UNG / KPI1 / KPI2) dentro del período/mesa
+// elegidos — cumplimiento acumulado (Σ Real / Σ Plan) de cada slot por separado. KPI1 y KPI2 se
+// acumulan en su slot sin importar qué KPI concreto haya estado seleccionado ese día para la mesa
+// (si cambió a mitad del período, ambos días igual suman al mismo slot).
 function calcularRankingHistorico(filas) {
   const porVendedor = {};
   filas.forEach(r => {
     if (!porVendedor[r.pv]) {
-      porVendedor[r.pv] = { pv: r.pv, nombre: r.nombre, sv: r.sv, sumCump: 0, n: 0, fechas: new Set(), sumPlan: 0, sumReal: 0 };
+      porVendedor[r.pv] = { pv: r.pv, nombre: r.nombre, sv: r.sv, fechas: new Set(), slots: {} };
     }
     const c = porVendedor[r.pv];
-    c.sumCump += Math.min(r.cumplimiento, 300); // se acota para que un outlier no distorsione el promedio
-    c.n++;
     c.fechas.add(r.fecha);
-    c.sumPlan += r.plan;
-    c.sumReal += r.real;
+    const slot = r.slot || (r.kpi === 'CVZ CMQ' ? 'CZA' : r.kpi === 'UNG' ? 'UNG' : null);
+    if (!slot) return; // filas viejas de antes de este cambio, sin slot ni KPI reconocible: se ignoran
+    if (!c.slots[slot]) c.slots[slot] = { sumPlan: 0, sumReal: 0, kpiNombre: r.kpi };
+    c.slots[slot].sumPlan += r.plan;
+    c.slots[slot].sumReal += r.real;
+    c.slots[slot].kpiNombre = r.kpi; // se queda con el más reciente (último leído) para mostrar de etiqueta
   });
+
+  const cumplimientoDe = s => (s && s.sumPlan > 0) ? (s.sumReal / s.sumPlan * 100) : null;
 
   return Object.values(porVendedor).map(c => ({
     pv: c.pv, nombre: c.nombre, sv: c.sv,
     dias: c.fechas.size,
-    cumplimientoProm: c.n ? (c.sumCump / c.n) : 0,
-    cumplimientoGlobal: c.sumPlan > 0 ? (c.sumReal / c.sumPlan * 100) : 0
-  })).sort((a, b) => a.cumplimientoProm - b.cumplimientoProm);
+    cza: cumplimientoDe(c.slots.CZA),
+    ung: cumplimientoDe(c.slots.UNG),
+    kpi1: { nombre: c.slots.KPI1 ? c.slots.KPI1.kpiNombre : null, cumplimiento: cumplimientoDe(c.slots.KPI1) },
+    kpi2: { nombre: c.slots.KPI2 ? c.slots.KPI2.kpiNombre : null, cumplimiento: cumplimientoDe(c.slots.KPI2) }
+  })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+function badgeCumplimiento(pct) {
+  if (pct === null || pct === undefined) return '<span class="text-muted">—</span>';
+  let badgeClass = 'bg-success';
+  if (pct < 85) badgeClass = 'bg-danger';
+  else if (pct > 115) badgeClass = 'bg-warning text-dark';
+  return `<span class="badge ${badgeClass}">${pct.toFixed(0)}%</span>`;
 }
 
 async function renderHistorico() {
@@ -1785,23 +1825,19 @@ async function renderHistorico() {
   msg.textContent = '';
 
   ranking.forEach(c => {
-    let diag, badgeClass;
-    if (c.cumplimientoProm >= 85 && c.cumplimientoProm <= 115) {
-      diag = 'Planifica ajustado'; badgeClass = 'bg-success';
-    } else if (c.cumplimientoProm < 85) {
-      diag = 'Sobre-planifica (real bien por debajo del plan)'; badgeClass = 'bg-danger';
-    } else {
-      diag = 'Sub-planifica (real muy por encima del plan)'; badgeClass = 'bg-warning text-dark';
-    }
+    const colKpi = k => k.nombre
+      ? `<td>${badgeCumplimiento(k.cumplimiento)} <small class="text-muted d-block" style="font-size:0.65rem;">${k.nombre}</small></td>`
+      : `<td class="text-muted">—</td>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-start fw-semibold">${c.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${c.pv}</small></td>
       <td class="text-start text-muted">${c.sv}</td>
       <td>${c.dias}</td>
-      <td class="fw-bold">${c.cumplimientoProm.toFixed(1)}%</td>
-      <td>${c.cumplimientoGlobal.toFixed(1)}%</td>
-      <td><span class="badge ${badgeClass}">${diag}</span></td>
+      <td>${badgeCumplimiento(c.cza)}</td>
+      <td>${badgeCumplimiento(c.ung)}</td>
+      ${colKpi(c.kpi1)}
+      ${colKpi(c.kpi2)}
     `;
     tbody.appendChild(tr);
   });
