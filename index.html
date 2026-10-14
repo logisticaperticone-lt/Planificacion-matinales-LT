@@ -699,7 +699,11 @@ const SUPERVISORES_LIST = [
   "MESA MAYORISTA"
 ];
 
+// Orden: primero todos los indicadores de cobertura/clientes nuevos (COB + CCC), después todos
+// los de volumen (sin prefijo y VOL ...) — para que al elegir KPI 1 / KPI 2 de una mesa aparezcan
+// agrupados por tipo, en vez de mezclados.
 const LISTA_KPIS_TOTAL = [
+  // --- Cobertura / clientes nuevos ---
   "COB MICHELOB",
   "COB PURE GOLD",
   "COB CZA",
@@ -711,6 +715,10 @@ const LISTA_KPIS_TOTAL = [
   "CCC GATORADE",
   "CCC RED BULL",
   "CCC CONVIVENCIA PEPSI/PEPSI BLACK 1.5L/2L",
+  "CCC VALUE",
+  "CCC 0.0",
+  "CCC INNOVACIONES CORE",
+  // --- Volumen ---
   "LATONES",
   "TOP",
   "CORE + VALUE",
@@ -724,11 +732,8 @@ const LISTA_KPIS_TOTAL = [
   "VOL GATORADE",
   "VOL RED BULL",
   "VOL VALUE",
-  "CCC VALUE",
   "VOL 0.0",
-  "CCC 0.0",
-  "VOL INNOVACIONES CORE",
-  "CCC INNOVACIONES CORE"
+  "VOL INNOVACIONES CORE"
 ];
 
 // Base cargada con los datos reales de AD.xlsx, AD(V).xlsx y VESPER.xlsx
