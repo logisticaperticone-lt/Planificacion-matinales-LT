@@ -724,8 +724,11 @@ const LISTA_KPIS_TOTAL = [
   "VOL GATORADE",
   "VOL RED BULL",
   "VOL VALUE",
+  "CCC VALUE",
   "VOL 0.0",
-  "VOL INNOVACIONES CORE"
+  "CCC 0.0",
+  "VOL INNOVACIONES CORE",
+  "CCC INNOVACIONES CORE"
 ];
 
 // Base cargada con los datos reales de AD.xlsx, AD(V).xlsx y VESPER.xlsx
@@ -1463,9 +1466,13 @@ const DEFINICIONES_KPI_VENTA = {
   'VOL GATORADE':          { tipo: 'volumen', filtro: f => f.marca === 'GATORADE' },
   'VOL RED BULL':          { tipo: 'volumen', filtro: f => f.marca === 'RED BULL' },
   // --- Nuevos KPIs de segmento CZA (brindis/marca, no el SEG_CZA grueso del archivo fuente) ---
-  'VOL VALUE':             { tipo: 'volumen', filtro: f => f.marca === 'QUILMES 1890' || f.marca === 'QUILMES BAJO CERO' },
-  'VOL 0.0':               { tipo: 'volumen', filtro: f => f.marca === 'CORONA CERO' || f.marca === 'STELLA ARTOIS 0.0%' || f.marca === 'QUILMES 0.0%' },
-  'VOL INNOVACIONES CORE': { tipo: 'volumen', filtro: f => [15624, 1978, 63068, 32471, 32472].includes(f.articulo) }
+  // Cada uno con su par VOL (volumen) y CCC (clientes nuevos / cobertura), igual que MICHELOB, PURE GOLD, etc.
+  'VOL VALUE':             { tipo: 'volumen',   filtro: f => f.marca === 'QUILMES 1890' || f.marca === 'QUILMES BAJO CERO' },
+  'CCC VALUE':             { tipo: 'cobertura', filtro: f => f.marca === 'QUILMES 1890' || f.marca === 'QUILMES BAJO CERO' },
+  'VOL 0.0':               { tipo: 'volumen',   filtro: f => f.marca === 'CORONA CERO' || f.marca === 'STELLA ARTOIS 0.0%' || f.marca === 'QUILMES 0.0%' },
+  'CCC 0.0':               { tipo: 'cobertura', filtro: f => f.marca === 'CORONA CERO' || f.marca === 'STELLA ARTOIS 0.0%' || f.marca === 'QUILMES 0.0%' },
+  'VOL INNOVACIONES CORE': { tipo: 'volumen',   filtro: f => [15624, 1978, 63068, 32471, 32472].includes(f.articulo) },
+  'CCC INNOVACIONES CORE': { tipo: 'cobertura', filtro: f => [15624, 1978, 63068, 32471, 32472].includes(f.articulo) }
 };
 const KPI_CONVIVENCIA = 'CCC CONVIVENCIA PEPSI/PEPSI BLACK 1.5L/2L';
 
