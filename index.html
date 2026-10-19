@@ -81,12 +81,25 @@
       <button class="nav-phase-btn" id="btnFaseVesper" onclick="cambiarFase('vesper')">
         <i class="bi bi-sunset me-1"></i> 3. VESPERTINA
       </button>
-      <button class="nav-phase-btn" id="btnFaseAnalista" onclick="cambiarFase('analista')">
-        <i class="bi bi-gear-wide-connected me-1"></i> 4. ANALISTA
-      </button>
-      <button class="nav-phase-btn" id="btnFaseHistorico" onclick="cambiarFase('historico')">
-        <i class="bi bi-clock-history me-1"></i> 5. HISTÓRICO
-      </button>
+
+      <!-- Grupo restringido: Analista / Histórico / Ajustes, detrás de PIN para que un supervisor
+           no entre sin querer y cambie una configuración que afecta a todo el sistema. -->
+      <div class="position-relative">
+        <button class="nav-phase-btn" id="btnGrupoNoTocar" onclick="toggleMenuNoTocar()">
+          <i class="bi bi-lock-fill me-1"></i> NO TOCAR — ANALISTA <i class="bi bi-caret-down-fill ms-1" style="font-size:0.6rem;"></i>
+        </button>
+        <div id="menuNoTocar" class="d-none shadow-lg rounded-3 overflow-hidden" style="position:absolute; top:110%; left:0; z-index:1050; min-width:220px; background:#fff;">
+          <button class="w-100 text-start border-0 bg-white text-dark px-3 py-2" style="font-size:0.85rem;" onclick="irAFaseRestringida('analista')">
+            <i class="bi bi-gear-wide-connected me-2 text-primary"></i>4. ANALISTA
+          </button>
+          <button class="w-100 text-start border-0 bg-white text-dark px-3 py-2 border-top" style="font-size:0.85rem;" onclick="irAFaseRestringida('historico')">
+            <i class="bi bi-clock-history me-2 text-primary"></i>5. HISTÓRICO
+          </button>
+          <button class="w-100 text-start border-0 bg-white text-dark px-3 py-2 border-top" style="font-size:0.85rem;" onclick="irAFaseRestringida('ajustes')">
+            <i class="bi bi-sliders me-2 text-primary"></i>6. AJUSTES
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Estado y Controles Rápidos -->
@@ -531,15 +544,8 @@
           <span class="badge bg-success" id="estadoCargaBadge">Base de datos sincronizada</span>
         </div>
 
-        <!-- Opción Maestra: Subir Libro Completo -->
-        <div class="bg-light p-3 rounded-3 border mb-4">
-          <h6 class="fw-bold text-primary mb-1"><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>Opción 1: Subir Archivo Maestro Completo (.xlsx)</h6>
-          <p class="text-muted small mb-2">Sube el libro completo. El sistema detectará automáticamente las pestañas <strong>AD</strong>, <strong>AD (V)</strong> y <strong>VESPER</strong> y las procesará en un solo paso.</p>
-          <input type="file" id="excelFileInput" class="form-control" accept=".xlsx, .xls, .csv" onchange="procesarArchivoExcel(event)">
-        </div>
-
         <!-- Carga Directa por Archivos Individuales -->
-        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Opción 2: Cargar Archivos Independientes (.xlsx / .csv)</h6>
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Cargar Archivos (.xlsx / .csv)</h6>
         <div class="row g-3">
   <!-- Archivo 0: FACTURADO HASTA HOY (mismo formato que PEDIDOS PARA MAÑANA, todo el mes sin el día de hoy) -->
   <div class="col-md-3">
@@ -589,28 +595,80 @@
     </div>
   </div>
 </div>
+      </div>
 
-        <div class="table-responsive" style="max-height: 480px;">
+      <!-- Tabla consolidada por supervisor — AD (matinal) -->
+      <div class="card card-custom p-4 bg-white mb-4 border-start border-4 border-dark shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-diagram-3-fill text-dark me-2"></i>Consolidado por Supervisor — AD</h5>
+            <small class="text-muted">Objetivo / Real / Avance / Tendencia / Real mes anterior / Variación — datos tal cual vienen del AD, agrupados por mesa, con subtotal por supervisor y total de la compañía.</small>
+          </div>
+          <div>
+            <label class="form-label small fw-semibold mb-1 me-2">Segmento</label>
+            <select id="selectSegmentoConsolidado" class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="renderConsolidadoSupervisor()">
+              <option value="CVZ CMQ">CZA</option>
+              <option value="UNG">UNG</option>
+              <option value="PREMIUM">PREMIUM</option>
+              <option value="CORE + VALUE">CORE+VALUE</option>
+              <option value="AGUAS">AGUAS</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-responsive" style="max-height: 560px;">
           <table class="table table-bordered table-hover table-custom mb-0">
             <thead>
               <tr>
-                <th rowspan="2" class="text-start">PV</th>
-                <th rowspan="2" class="text-start">VENDEDOR</th>
-                <th rowspan="2" class="text-start">MESA</th>
-                <th rowspan="2">ESTADO</th>
-                <th colspan="6" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
-                <th colspan="6" class="header-kpi-ung">VOLUMEN UNG</th>
-                <th colspan="6" class="header-kpi-sel1" id="thAnSel1">IND 1</th>
-                <th colspan="6" class="header-kpi-sel2" id="thAnSel2">IND 2</th>
-              </tr>
-              <tr>
-                <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz text-warning">PLAN</th>
-                <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung text-warning">PLAN</th>
-                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Real</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">-14 D</th><th class="header-kpi-sel1">-7 D</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Real</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">-14 D</th><th class="header-kpi-sel2">-7 D</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+                <th class="text-start">SV</th>
+                <th class="text-start">VENDEDOR</th>
+                <th>PV</th>
+                <th>Objetivo</th>
+                <th>Real</th>
+                <th>Avance</th>
+                <th>Tend</th>
+                <th>M-1 Real</th>
+                <th>Vs M-1</th>
               </tr>
             </thead>
-            <tbody id="analistaTableBody"></tbody>
+            <tbody id="consolidadoSupervisorBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tabla consolidada por supervisor — AD (V) (vespertina / proyección de mañana) -->
+      <div class="card card-custom p-4 bg-white mb-4 border-start border-4 border-success shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-diagram-3-fill text-success me-2"></i>Consolidado por Supervisor — AD (V)</h5>
+            <small class="text-muted">Mismo formato, con los datos del AD (V). Asumo las mismas columnas que el AD (Objetivo/Real/Avance/Tend/M-1 Real/Vs M-1) — si algún número no cierra al probarlo, pasame el AD (V).xlsx real y lo ajusto.</small>
+          </div>
+          <div>
+            <label class="form-label small fw-semibold mb-1 me-2">Segmento</label>
+            <select id="selectSegmentoConsolidadoADV" class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="renderConsolidadoSupervisorADV()">
+              <option value="CVZ CMQ">CZA</option>
+              <option value="UNG">UNG</option>
+              <option value="PREMIUM">PREMIUM</option>
+              <option value="CORE + VALUE">CORE+VALUE</option>
+              <option value="AGUAS">AGUAS</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-responsive" style="max-height: 560px;">
+          <table class="table table-bordered table-hover table-custom mb-0">
+            <thead>
+              <tr>
+                <th class="text-start">SV</th>
+                <th class="text-start">VENDEDOR</th>
+                <th>PV</th>
+                <th>Objetivo</th>
+                <th>Real</th>
+                <th>Avance</th>
+                <th>Tend</th>
+                <th>M-1 Real</th>
+                <th>Vs M-1</th>
+              </tr>
+            </thead>
+            <tbody id="consolidadoSupervisorADVBody"></tbody>
           </table>
         </div>
       </div>
@@ -668,6 +726,16 @@
     </div>
   </div>
 
+  <!-- ==================================================================== -->
+  <!-- ETAPA 6: AJUSTES (Segmentación de marcas / Innovaciones Core / Día-Valor / Vendedor→Supervisor) -->
+  <!-- ==================================================================== -->
+  <div id="etapaAjustes" class="d-none">
+    <div class="card card-custom p-4 bg-white shadow-sm text-center text-muted">
+      <i class="bi bi-cone-striped" style="font-size:2rem;"></i>
+      <p class="mb-0 mt-2">Esta pestaña todavía no tiene nada cargado. La vamos a ir completando más adelante.</p>
+    </div>
+  </div>
+
 </div>
 
 <!-- Scripts de Integración y Lógica -->
@@ -690,6 +758,9 @@ const refMesaKpi = sv => dbFire.collection('mesas_kpis').doc(sv);
 const refFotoD1 = fecha => dbFire.collection('fotos_d1').doc(fecha);
 const refCargas = () => dbFire.collection('cargas').doc('estado');
 const refHistorial = id => dbFire.collection('historial_d1').doc(id);
+const refConfigSegMarcas = () => dbFire.collection('config').doc('segmentacion_marcas');
+const refConfigInnovaciones = () => dbFire.collection('config').doc('innovaciones_core');
+const refConfigDiaValor = () => dbFire.collection('config').doc('dia_valor');
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
@@ -760,18 +831,51 @@ function getKpisForMesa(sv) {
 // ====================================================================
 // NAVEGACIÓN ENTRE LAS 4 ETAPAS
 // ====================================================================
+// PIN simple para el grupo "NO TOCAR — ANALISTA" (Analista/Histórico/Ajustes). No es seguridad real
+// (esto es una página compartida sin login), es solo para que un supervisor no entre haciendo clic
+// sin querer y cambie algo que afecta a todo el sistema. Para cambiarlo, editá esta línea.
+const PIN_NO_TOCAR = '2026';
+
+function toggleMenuNoTocar() {
+  document.getElementById('menuNoTocar').classList.toggle('d-none');
+}
+// Cierra el menú si se hace clic afuera
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('menuNoTocar');
+  const btn = document.getElementById('btnGrupoNoTocar');
+  if (!menu || menu.classList.contains('d-none')) return;
+  if (!menu.contains(e.target) && e.target !== btn) menu.classList.add('d-none');
+});
+
+function irAFaseRestringida(fase) {
+  document.getElementById('menuNoTocar').classList.add('d-none');
+  if (sessionStorage.getItem('accesoNoTocarOk') !== '1') {
+    const pin = prompt('Esta sección es solo para Analista / Jefe de Ventas.\nIngresá el PIN para entrar:');
+    if (pin === null) return;
+    if (pin !== PIN_NO_TOCAR) { alert('PIN incorrecto.'); return; }
+    sessionStorage.setItem('accesoNoTocarOk', '1');
+  }
+  cambiarFase(fase);
+}
+
+// Pone en "active" (resaltado) el botón del grupo NO TOCAR cuando se está en alguna de sus 3 pestañas.
+function marcarGrupoNoTocar(activo) {
+  const btn = document.getElementById('btnGrupoNoTocar');
+  if (btn) btn.classList.toggle('active', activo);
+}
+
 function cambiarFase(fase) {
   document.getElementById('etapaCierreD1').classList.add('d-none');
   document.getElementById('etapaPlanificacion').classList.add('d-none');
   document.getElementById('etapaVespertina').classList.add('d-none');
   document.getElementById('etapaAnalista').classList.add('d-none');
   document.getElementById('etapaHistorico').classList.add('d-none');
+  document.getElementById('etapaAjustes').classList.add('d-none');
 
   document.getElementById('btnFaseCierre').classList.remove('active');
   document.getElementById('btnFasePlan').classList.remove('active');
   document.getElementById('btnFaseVesper').classList.remove('active');
-  document.getElementById('btnFaseAnalista').classList.remove('active');
-  document.getElementById('btnFaseHistorico').classList.remove('active');
+  marcarGrupoNoTocar(false);
 
   if (fase === 'cierre') {
     document.getElementById('etapaCierreD1').classList.remove('d-none');
@@ -788,12 +892,16 @@ function cambiarFase(fase) {
   } else if (fase === 'analista') {
     document.getElementById('etapaAnalista').classList.remove('d-none');
     document.getElementById('viewAnalista').classList.remove('d-none'); // Forzar reaparición
-    document.getElementById('btnFaseAnalista').classList.add('active');
+    marcarGrupoNoTocar(true);
     renderAnalistaView();
   } else if (fase === 'historico') {
     document.getElementById('etapaHistorico').classList.remove('d-none');
-    document.getElementById('btnFaseHistorico').classList.add('active');
+    marcarGrupoNoTocar(true);
     renderHistorico();
+  } else if (fase === 'ajustes') {
+    document.getElementById('etapaAjustes').classList.remove('d-none');
+    marcarGrupoNoTocar(true);
+    renderAjustes();
   }
 }
 
@@ -1436,20 +1544,100 @@ function normalizarFilasVenta(filas) {
     const pv = parseInt(row[14]) || parseInt(row[13]) || parseInt(row[4]) || 0;
     const clienteCod = row[4];
     if (!pv || !clienteCod) continue;
+    const marcaTexto = norm(row[20]); // U: Descripción de Marca
+    const infoMarca = infoDeMarca(marcaTexto);
     out.push({
       pv,
       clienteCod: String(clienteCod),
-      marca: norm(row[20]),           // U: Descripción de Marca
+      marca: marcaTexto,
       calibre: parseInt(row[22]) || 0, // W: Calibre
-      segCza: norm(row[48]).replace(/\s+/g, ''),  // AW
-      segTop: norm(row[49]).replace(/\s+/g, ''),  // AX
-      segBc: norm(row[50]).replace(/\s+/g, ''),   // AY
+      // SEG_CZA / SEG_TOP / SEG_BC ya NO se leen del Excel (columnas 48/49/50): se calculan en vivo
+      // a partir de la tabla "Segmentación de Marcas" de la pestaña Ajustes (infoDeMarca).
+      segCza: infoMarca ? infoMarca.segmento.replace(/\s+/g, '') : '',
+      segTop: (infoMarca && infoMarca.esTop) ? 'TOP' : '',
+      segBc: (infoMarca && infoMarca.esBc) ? 'BALANCEDCHOICES' : '',
       unidadNegocio: parseInt(row[34]) || 0,        // AI
       articulo: parseInt(row[17]) || 0,             // R: Código de Artículo
       cantidad: parseFloat(row[41]) || 0            // AP
     });
   }
   return out;
+}
+
+// ====================================================================
+// AJUSTES — Segmentación de marcas, Innovaciones Core y Valor del Día
+// Configurable desde la pestaña "6. AJUSTES"; se guarda en Firestore (colección "config") y
+// se cachea en memoria acá. Mientras no se haya cargado desde Firestore (o la primera vez que
+// se usa el sistema), arranca con esta semilla por defecto, sacada de tu maestro de marcas.
+// ====================================================================
+const SEMILLA_SEGMENTACION_MARCAS = [
+  { codigo: 56,  descripcion: 'STOUT QUILMES',             marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 130, descripcion: 'QUILMES RED LAGER',         marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 687, descripcion: 'QUILMES IPA',                marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 665, descripcion: 'QUILMES HINCHADA',           marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 354, descripcion: 'QUILMES DOBLE',              marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 667, descripcion: 'QUILMES CLASICA',            marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 172, descripcion: 'QUILMES 0.0%',               marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: true, esTop: false, esBc: false },
+  { codigo: 47,  descripcion: 'QUILMES',                    marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 132, descripcion: 'BUDWEISER',                  marcaAgrupada: 'BUDWEISER',     segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 519, descripcion: 'BRAHMA DORADA',               marcaAgrupada: 'BRAHMA',        segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 666, descripcion: 'BRAHMA CHOPP',                marcaAgrupada: 'BRAHMA',        segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 16,  descripcion: 'BRAHMA',                      marcaAgrupada: 'BRAHMA',        segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 66,  descripcion: 'BOCK QUILMES',                marcaAgrupada: 'QUILMES',       segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 26,  descripcion: 'ANDES',                       marcaAgrupada: 'ANDES',         segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 704, descripcion: 'ANDES BLANCA',                marcaAgrupada: 'ANDES',         segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 881, descripcion: 'BRAHMA FT LIMON',             marcaAgrupada: 'BRAHMA',        segDetallado: 'CORE',          segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 135, descripcion: 'QUILMES BAJO CERO',           marcaAgrupada: 'BAJO CERO',     segDetallado: 'VALUE',         segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 142, descripcion: 'QUILMES 1890',                marcaAgrupada: '1890',          segDetallado: 'VALUE',         segmento: 'CORE + VALUE', es00: false, esTop: false, esBc: false },
+  { codigo: 88,  descripcion: 'MICHELOB ULTRA GLUTEN FREE',  marcaAgrupada: 'MICHELOB',      segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 531, descripcion: 'MICHELOB ULTRA',              marcaAgrupada: 'MICHELOB',      segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 356, descripcion: 'MICHELOB ULTRA',              marcaAgrupada: 'MICHELOB',      segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 777, descripcion: 'ANDES ORIGEN RUBIA ORO',      marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 287, descripcion: 'ANDES ORIGEN RUBIA',          marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 285, descripcion: 'ANDES ORIGEN ROJA',           marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 284, descripcion: 'ANDES ORIGEN NEGRA',          marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 378, descripcion: 'ANDES ORIGEN IPA ROJA',       marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 283, descripcion: 'ANDES ORIGEN IPA',            marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 681, descripcion: 'ANDES ORIGEN FRESQUITA',      marcaAgrupada: 'ANDES ORIGEN',  segDetallado: 'CORE+',         segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 328, descripcion: 'TEMPLE WOLF IPA',             marcaAgrupada: 'TEMPLE',        segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 407, descripcion: 'TEMPLE SCOTISH',              marcaAgrupada: 'TEMPLE',        segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 329, descripcion: 'TEMPLE HONEY',                marcaAgrupada: 'TEMPLE',        segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 600, descripcion: 'TEMPLE GOLDEN',               marcaAgrupada: 'TEMPLE',        segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 298, descripcion: 'TEMPLE COSMICA',              marcaAgrupada: 'TEMPLE',        segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 989, descripcion: 'CHACHINGO',                   marcaAgrupada: 'CHACHINGO',     segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 258, descripcion: '27 EAZY',                     marcaAgrupada: '27 EAZY',       segDetallado: 'HE',            segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 301, descripcion: 'STELLA ARTOIS NOIRE',         marcaAgrupada: 'STELLA ARTOIS', segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 719, descripcion: 'STELLA ARTOIS LAGER',         marcaAgrupada: 'STELLA ARTOIS', segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 573, descripcion: 'STELLA ARTOIS BLANCHE',       marcaAgrupada: 'STELLA ARTOIS', segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 609, descripcion: 'STELLA ARTOIS 0.0%',          marcaAgrupada: 'STELLA ARTOIS', segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: true, esTop: false, esBc: false },
+  { codigo: 35,  descripcion: 'STELLA ARTOIS',                marcaAgrupada: 'STELLA ARTOIS', segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 817, descripcion: 'STELLA ARTOIS PURE GOLD',     marcaAgrupada: 'STELLA ARTOIS', segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 747, descripcion: 'GOOSE ISLAND LAGER',          marcaAgrupada: 'GOOSE ISLAND',  segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 305, descripcion: 'GOOSE ISLAND',                 marcaAgrupada: 'GOOSE ISLAND',  segDetallado: 'PREMIUM',       segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 229, descripcion: 'PATAGONIA WEISSE',             marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 577, descripcion: 'PATAGONIA VERA IPA',           marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 778, descripcion: 'PATAGONIA LAGER DEL SUR',      marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 668, descripcion: 'PATAGONIA IPA ESTELAR',        marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 552, descripcion: 'PATAGONIA IPA',                 marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 230, descripcion: 'PATAGONIA BOHEMIAN PILSENER',  marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 231, descripcion: 'PATAGONIA AMBER LAGER',        marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 367, descripcion: 'PATAGONIA 24.7',                marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 279, descripcion: 'PAT SENDERO',                   marcaAgrupada: 'PATAGONIA',     segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false },
+  { codigo: 775, descripcion: 'CORONA CERO',                   marcaAgrupada: 'CORONA',        segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: true, esTop: false, esBc: false },
+  { codigo: 271, descripcion: 'CORONA',                        marcaAgrupada: 'CORONA',        segDetallado: 'SUPER PREMIUM', segmento: 'PREMIUM',      es00: false, esTop: false, esBc: false }
+];
+const SEMILLA_INNOVACIONES_CORE = [15624, 1978, 63068, 32471, 32472];
+
+// Caché en memoria (se carga desde Firestore al entrar a la pestaña Ajustes, o se usa la semilla
+// de arriba si todavía no hay nada guardado)
+let SEGMENTACION_MARCAS = SEMILLA_SEGMENTACION_MARCAS.slice();
+let INNOVACIONES_CORE_CODIGOS = SEMILLA_INNOVACIONES_CORE.slice();
+let DIA_VALOR_EXCEPCIONES = {}; // { 'YYYY-MM-DD': valor } — ej. feriados en 0, medios días especiales, etc.
+
+// Busca la info de segmentación de una marca por su texto de descripción (ya normalizado a
+// MAYÚSCULAS, igual que f.marca en normalizarFilasVenta) — null si no está cargada en la tabla.
+function infoDeMarca(marcaTexto) {
+  return SEGMENTACION_MARCAS.find(m => m.descripcion === marcaTexto) || null;
 }
 
 // Definición de cada KPI "de clientes nuevos" o "de volumen" en base a las filas normalizadas
@@ -1470,14 +1658,15 @@ const DEFINICIONES_KPI_VENTA = {
   'VOL LATONES 1890':      { tipo: 'volumen', filtro: f => f.calibre === 566 && f.marca === 'QUILMES 1890' },
   'VOL GATORADE':          { tipo: 'volumen', filtro: f => f.marca === 'GATORADE' },
   'VOL RED BULL':          { tipo: 'volumen', filtro: f => f.marca === 'RED BULL' },
-  // --- Nuevos KPIs de segmento CZA (brindis/marca, no el SEG_CZA grueso del archivo fuente) ---
+  // --- Nuevos KPIs de segmento CZA — leen la tabla editable de la pestaña AJUSTES (SEGMENTACION_MARCAS /
+  // INNOVACIONES_CORE_CODIGOS), no una lista fija: cambiar la segmentación ahí los actualiza sin tocar código.
   // Cada uno con su par VOL (volumen) y CCC (clientes nuevos / cobertura), igual que MICHELOB, PURE GOLD, etc.
-  'VOL VALUE':             { tipo: 'volumen',   filtro: f => f.marca === 'QUILMES 1890' || f.marca === 'QUILMES BAJO CERO' },
-  'CCC VALUE':             { tipo: 'cobertura', filtro: f => f.marca === 'QUILMES 1890' || f.marca === 'QUILMES BAJO CERO' },
-  'VOL 0.0':               { tipo: 'volumen',   filtro: f => f.marca === 'CORONA CERO' || f.marca === 'STELLA ARTOIS 0.0%' || f.marca === 'QUILMES 0.0%' },
-  'CCC 0.0':               { tipo: 'cobertura', filtro: f => f.marca === 'CORONA CERO' || f.marca === 'STELLA ARTOIS 0.0%' || f.marca === 'QUILMES 0.0%' },
-  'VOL INNOVACIONES CORE': { tipo: 'volumen',   filtro: f => [15624, 1978, 63068, 32471, 32472].includes(f.articulo) },
-  'CCC INNOVACIONES CORE': { tipo: 'cobertura', filtro: f => [15624, 1978, 63068, 32471, 32472].includes(f.articulo) }
+  'VOL VALUE':             { tipo: 'volumen',   filtro: f => (infoDeMarca(f.marca) || {}).segDetallado === 'VALUE' },
+  'CCC VALUE':             { tipo: 'cobertura', filtro: f => (infoDeMarca(f.marca) || {}).segDetallado === 'VALUE' },
+  'VOL 0.0':               { tipo: 'volumen',   filtro: f => (infoDeMarca(f.marca) || {}).es00 === true },
+  'CCC 0.0':               { tipo: 'cobertura', filtro: f => (infoDeMarca(f.marca) || {}).es00 === true },
+  'VOL INNOVACIONES CORE': { tipo: 'volumen',   filtro: f => INNOVACIONES_CORE_CODIGOS.includes(f.articulo) },
+  'CCC INNOVACIONES CORE': { tipo: 'cobertura', filtro: f => INNOVACIONES_CORE_CODIGOS.includes(f.articulo) }
 };
 const KPI_CONVIVENCIA = 'CCC CONVIVENCIA PEPSI/PEPSI BLACK 1.5L/2L';
 
@@ -1853,6 +2042,176 @@ async function renderHistorico() {
     `;
     tbody.appendChild(tr);
   });
+}
+
+// ====================================================================
+// AJUSTES — Segmentación de marcas / Innovaciones Core / Valor del Día / Vendedor→Supervisor
+// ====================================================================
+
+// Valor del día para una fecha (YYYY-MM-DD o Date): excepción cargada a mano, si existe; si no,
+// la regla por defecto (hábil=1, sábado=0.5, domingo=0). Pensado para alimentar la tendencia.
+function valorDelDia(fecha) {
+  const iso = (fecha instanceof Date) ? fechaLocalISO(fecha) : fecha;
+  if (Object.prototype.hasOwnProperty.call(DIA_VALOR_EXCEPCIONES, iso)) return DIA_VALOR_EXCEPCIONES[iso];
+  const dow = new Date(iso + 'T12:00:00').getDay(); // 0=domingo ... 6=sábado
+  if (dow === 0) return 0;
+  if (dow === 6) return 0.5;
+  return 1;
+}
+
+async function guardarSegmentacionMarcas() {
+  try {
+    await refConfigSegMarcas().set({ filas: SEGMENTACION_MARCAS });
+  } catch (err) {
+    console.warn("Error guardando segmentación de marcas:", err);
+    alert("No se pudo guardar en Firebase (revisá la conexión). Los cambios quedan solo en esta PC por ahora.");
+  }
+}
+
+const CAMPOS_BOOLEANOS_MARCA = ['es00', 'esTop', 'esBc'];
+function cambiarCampoMarca(idx, campo, valor) {
+  const fila = SEGMENTACION_MARCAS[idx];
+  if (!fila) return;
+  fila[campo] = (campo === 'codigo') ? (parseInt(valor) || 0)
+    : CAMPOS_BOOLEANOS_MARCA.includes(campo) ? !!valor
+    : String(valor).toUpperCase().trim();
+  guardarSegmentacionMarcas();
+}
+
+function agregarFilaMarca() {
+  SEGMENTACION_MARCAS.push({ codigo: 0, descripcion: '', marcaAgrupada: '', segDetallado: '', segmento: '', es00: false, esTop: false, esBc: false });
+  guardarSegmentacionMarcas();
+  renderAjustes();
+}
+
+function borrarFilaMarca(idx) {
+  if (!confirm("¿Borrar esta marca de la tabla de segmentación?")) return;
+  SEGMENTACION_MARCAS.splice(idx, 1);
+  guardarSegmentacionMarcas();
+  renderAjustes();
+}
+
+async function guardarInnovaciones() {
+  try {
+    await refConfigInnovaciones().set({ codigos: INNOVACIONES_CORE_CODIGOS });
+  } catch (err) {
+    console.warn("Error guardando innovaciones core:", err);
+    alert("No se pudo guardar en Firebase (revisá la conexión). Los cambios quedan solo en esta PC por ahora.");
+  }
+}
+
+function agregarCodigoInnovacion() {
+  const input = document.getElementById('ajustesNuevoCodigoArticulo');
+  const cod = parseInt(input.value) || 0;
+  if (!cod) { alert("Ingresá un código de artículo válido."); return; }
+  if (INNOVACIONES_CORE_CODIGOS.includes(cod)) { alert("Ese código ya está en la lista."); return; }
+  INNOVACIONES_CORE_CODIGOS.push(cod);
+  input.value = '';
+  guardarInnovaciones();
+  renderAjustes();
+}
+
+function borrarCodigoInnovacion(cod) {
+  INNOVACIONES_CORE_CODIGOS = INNOVACIONES_CORE_CODIGOS.filter(c => c !== cod);
+  guardarInnovaciones();
+  renderAjustes();
+}
+
+async function guardarDiaValor() {
+  try {
+    await refConfigDiaValor().set({ excepciones: DIA_VALOR_EXCEPCIONES });
+  } catch (err) {
+    console.warn("Error guardando valor del día:", err);
+    alert("No se pudo guardar en Firebase (revisá la conexión). Los cambios quedan solo en esta PC por ahora.");
+  }
+}
+
+function agregarExcepcionDia() {
+  const fecha = document.getElementById('ajustesNuevaFechaExcepcion').value;
+  const valor = parseFloat(document.getElementById('ajustesNuevoValorExcepcion').value);
+  if (!fecha) { alert("Elegí una fecha."); return; }
+  DIA_VALOR_EXCEPCIONES[fecha] = valor;
+  guardarDiaValor();
+  renderAjustes();
+}
+
+function borrarExcepcionDia(fecha) {
+  delete DIA_VALOR_EXCEPCIONES[fecha];
+  guardarDiaValor();
+  renderAjustes();
+}
+
+function cambiarSupervisorVendedor(pv, nuevoSv) {
+  const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
+  if (!vend) return;
+  vend.sv = nuevoSv;
+  guardarVendedorParcial(pv, { sv: nuevoSv });
+}
+
+function renderAjustes() {
+  // --- Segmentación de marcas ---
+  const tbodyMarcas = document.getElementById('ajustesMarcasBody');
+  if (tbodyMarcas) {
+    tbodyMarcas.innerHTML = '';
+    SEGMENTACION_MARCAS.forEach((fila, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="number" class="form-control form-control-sm text-center" value="${fila.codigo}" onchange="cambiarCampoMarca(${idx}, 'codigo', this.value)"></td>
+        <td><input type="text" class="form-control form-control-sm" value="${fila.descripcion}" onchange="cambiarCampoMarca(${idx}, 'descripcion', this.value)"></td>
+        <td><input type="text" class="form-control form-control-sm text-center" value="${fila.marcaAgrupada}" onchange="cambiarCampoMarca(${idx}, 'marcaAgrupada', this.value)"></td>
+        <td><input type="text" class="form-control form-control-sm text-center" value="${fila.segDetallado}" onchange="cambiarCampoMarca(${idx}, 'segDetallado', this.value)" placeholder="CORE / VALUE / PREMIUM..."></td>
+        <td><input type="text" class="form-control form-control-sm text-center" value="${fila.segmento}" onchange="cambiarCampoMarca(${idx}, 'segmento', this.value)" placeholder="CORE + VALUE / PREMIUM"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" ${fila.es00 ? 'checked' : ''} onchange="cambiarCampoMarca(${idx}, 'es00', this.checked)"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" ${fila.esTop ? 'checked' : ''} onchange="cambiarCampoMarca(${idx}, 'esTop', this.checked)"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" ${fila.esBc ? 'checked' : ''} onchange="cambiarCampoMarca(${idx}, 'esBc', this.checked)"></td>
+        <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="borrarFilaMarca(${idx})"><i class="bi bi-trash3"></i></button></td>
+      `;
+      tbodyMarcas.appendChild(tr);
+    });
+  }
+
+  // --- Innovaciones Core ---
+  const chips = document.getElementById('ajustesInnovacionesChips');
+  if (chips) {
+    chips.innerHTML = INNOVACIONES_CORE_CODIGOS.length
+      ? INNOVACIONES_CORE_CODIGOS.map(cod => `
+          <span class="badge bg-warning text-dark fw-semibold py-2 px-3" style="font-size:0.85rem;">
+            ${cod} <i class="bi bi-x-lg ms-2" style="cursor:pointer;" onclick="borrarCodigoInnovacion(${cod})"></i>
+          </span>
+        `).join('')
+      : '<span class="text-muted small">Todavía no cargaste ningún código.</span>';
+  }
+
+  // --- Valor del Día ---
+  const tbodyDia = document.getElementById('ajustesDiaValorBody');
+  const msgDia = document.getElementById('ajustesDiaValorVacioMsg');
+  if (tbodyDia) {
+    const fechas = Object.keys(DIA_VALOR_EXCEPCIONES).sort();
+    tbodyDia.innerHTML = fechas.map(f => `
+      <tr>
+        <td>${f}</td>
+        <td>${DIA_VALOR_EXCEPCIONES[f]}</td>
+        <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="borrarExcepcionDia('${f}')"><i class="bi bi-trash3"></i></button></td>
+      </tr>
+    `).join('');
+    if (msgDia) msgDia.textContent = fechas.length ? '' : 'Sin excepciones cargadas — se usa la regla por defecto (hábil=1, sábado=0.5, domingo=0) para todos los días.';
+  }
+
+  // --- Vendedor → Supervisor ---
+  const tbodyVS = document.getElementById('ajustesVendedorSupervisorBody');
+  if (tbodyVS) {
+    const vendedoresOrdenados = [...DATA_COMPLETA.vendedores].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    tbodyVS.innerHTML = vendedoresOrdenados.map(v => `
+      <tr>
+        <td class="text-start">${v.nombre} <small class="text-muted d-block" style="font-size:0.7rem;">PV: ${v.pv}</small></td>
+        <td>
+          <select class="form-select form-select-sm" onchange="cambiarSupervisorVendedor(${v.pv}, this.value)">
+            ${SUPERVISORES_LIST.map(sv => `<option value="${sv}" ${sv === v.sv ? 'selected' : ''}>${sv}</option>`).join('')}
+          </select>
+        </td>
+      </tr>
+    `).join('');
+  }
 }
 
 function renderVendedorView() {
@@ -2748,37 +3107,94 @@ async function guardarVespertina() {
 // 4. ANALISTA: PROCESAMIENTO DIRECTO DE ARCHIVOS EXCEL
 // ====================================================================
 function renderAnalistaView() {
-  const tbody = document.getElementById('analistaTableBody');
-  tbody.innerHTML = '';
+  renderConsolidadoSupervisor();
+  renderConsolidadoSupervisorADV();
+}
 
-  DATA_COMPLETA.vendedores.forEach(v => {
-    const [sel1, sel2] = getKpisForMesa(v.sv);
-    const dCvz = getKpiData(v, "CVZ CMQ");
-    const dUng = getKpiData(v, "UNG");
-    const d1 = getKpiData(v, sel1);
-    const d2 = getKpiData(v, sel2);
+// Tabla consolidada por supervisor: Objetivo/Real/Avance/Tend/M-1 Real/Vs M-1, agrupada por mesa,
+// con subtotal por supervisor y total "LOGISTICA TOTAL" al final. Todo sale tal cual de lo que
+// trae el Excel para ese segmento (vend.kpis[segmento][campo + sufijo] — la misma sección que haya
+// en la columna A: CVZ CMQ, UNG, PREMIUM, CORE + VALUE, AGUAS...). sufijo='' lee los campos del AD
+// (obj/real/tend/m1real/vsm1); sufijo='_adv' lee los mismos campos del AD (V) (obj_adv/real_adv/...).
+// IMPORTANTE: si algún segmento no aparece, es porque el texto de esa sección en el Excel no
+// coincide exactamente con el nombre que usa el selector — avisame el texto real de la columna A
+// de ese bloque y lo ajusto.
+function renderConsolidadoGenerico(tbodyId, selectId, sufijo) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const select = document.getElementById(selectId);
+  const segmento = select ? select.value : 'CVZ CMQ';
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="text-start fw-bold">${v.pv}</td>
-      <td class="text-start">${v.nombre}</td>
-      <td class="text-start text-muted">${v.sv}</td>
-      <td><span class="badge ${v.estado === 'Aprobado' ? 'bg-success' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
-      
-      <!-- CZA -->
-      <td class="text-primary fw-semibold">${dCvz.avance}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="fw-bold text-primary">${dCvz.plan}</td>
+  let filas = '';
+  let totalObj = 0, totalReal = 0, totalTend = 0, totalM1 = 0;
 
-      <!-- UNG -->
-      <td class="text-success fw-semibold">${dUng.avance}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="fw-bold text-success">${dUng.plan}</td>
-
-      <!-- SEL 1 -->
-      <td class="text-warning text-dark fw-semibold">${d1.avance} <small class="d-block">(${sel1})</small></td><td>${d1.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${d1.mnec.toFixed(1)}</td><td>${d1.d14.toFixed(1)}</td><td>${d1.d7.toFixed(1)}</td><td class="fw-bold text-warning text-dark">${d1.plan}</td>
-
-      <!-- SEL 2 -->
-      <td class="text-info text-dark fw-semibold">${d2.avance} <small class="d-block">(${sel2})</small></td><td>${d2.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${d2.mnec.toFixed(1)}</td><td>${d2.d14.toFixed(1)}</td><td>${d2.d7.toFixed(1)}</td><td class="fw-bold text-info text-dark">${d2.plan}</td>
-    `;
-    tbody.appendChild(tr);
+  SUPERVISORES_LIST.forEach(sv => {
+    const vendedoresMesa = DATA_COMPLETA.vendedores.filter(v => v.sv === sv).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    if (!vendedoresMesa.length) return;
+    let subObj = 0, subReal = 0, subTend = 0, subM1 = 0;
+    vendedoresMesa.forEach(v => {
+      const k = (v.kpis && v.kpis[segmento]) ? v.kpis[segmento] : {};
+      const obj = k['obj' + sufijo] || 0;
+      const real = k['real' + sufijo] || 0;
+      const tend = k['tend' + sufijo] || 0;       // volumen proyectado del mes (ya viene del Excel)
+      const m1real = k['m1real' + sufijo] || 0;   // volumen real del mes anterior (del Excel)
+      const vsm1 = k['vsm1' + sufijo] || 0;       // fracción, ej. 0.1647 = +16.47% (del Excel)
+      // Avance = Tend / Objetivo (así lo define el propio Excel: la columna "Avance" es el
+      // resultado de Tend/Objetivo, no Real/Objetivo — lo confirmé celda por celda en el AD).
+      const avanceNum = obj > 0 ? (tend / obj) * 100 : 0;
+      subObj += obj; subReal += real; subTend += tend; subM1 += m1real;
+      filas += `
+        <tr>
+          <td class="text-start text-muted">${sv}</td>
+          <td class="text-start">${v.nombre}</td>
+          <td>${v.pv}</td>
+          <td>${obj.toFixed(1)}</td>
+          <td>${real.toFixed(1)}</td>
+          <td>${spanAvance(avanceNum.toFixed(1) + '%')}</td>
+          <td>${tend.toFixed(1)}</td>
+          <td>${m1real.toFixed(1)}</td>
+          <td>${spanVarPct(vsm1)}</td>
+        </tr>`;
+    });
+    const subAvancePct = subObj > 0 ? (subTend / subObj) * 100 : 0;
+    const subVsM1 = subM1 > 0 ? (subReal - subM1) / subM1 : 0;
+    filas += `
+      <tr class="fw-bold" style="background:#e9ecef;">
+        <td class="text-start" colspan="2">SUBTOTAL ${sv}</td>
+        <td></td>
+        <td>${subObj.toFixed(1)}</td>
+        <td>${subReal.toFixed(1)}</td>
+        <td>${spanAvance(subAvancePct.toFixed(1) + '%')}</td>
+        <td>${subTend.toFixed(1)}</td>
+        <td>${subM1.toFixed(1)}</td>
+        <td>${spanVarPct(subVsM1)}</td>
+      </tr>`;
+    totalObj += subObj; totalReal += subReal; totalTend += subTend; totalM1 += subM1;
   });
+
+  const totalAvancePct = totalObj > 0 ? (totalTend / totalObj) * 100 : 0;
+  const totalVsM1 = totalM1 > 0 ? (totalReal - totalM1) / totalM1 : 0;
+  filas += `
+    <tr class="fw-bold text-white" style="background:#212529;">
+      <td class="text-start" colspan="2">LOGISTICA TOTAL</td>
+      <td></td>
+      <td>${totalObj.toFixed(1)}</td>
+      <td>${totalReal.toFixed(1)}</td>
+      <td>${totalAvancePct.toFixed(1)}%</td>
+      <td>${totalTend.toFixed(1)}</td>
+      <td>${totalM1.toFixed(1)}</td>
+      <td>${(totalVsM1 * 100).toFixed(0)}%</td>
+    </tr>`;
+
+  tbody.innerHTML = filas;
+}
+
+function renderConsolidadoSupervisor() {
+  renderConsolidadoGenerico('consolidadoSupervisorBody', 'selectSegmentoConsolidado', '');
+}
+
+function renderConsolidadoSupervisorADV() {
+  renderConsolidadoGenerico('consolidadoSupervisorADVBody', 'selectSegmentoConsolidadoADV', '_adv');
 }
 
 // Carga individual por archivo directo (AD, VESPER, ADV)
@@ -2882,6 +3298,9 @@ function actualizarDesdeFilasAD(filas) {
       vend.kpis[segActual].real = parseNum(row[6]);
       const avVal = row[8];
       vend.kpis[segActual].avance = (typeof avVal === 'number') ? (avVal * 100).toFixed(1) + '%' : String(avVal || '0%');
+      vend.kpis[segActual].tend = parseNum(row[9]);       // J: Tend (volumen proyectado del mes, no %)
+      vend.kpis[segActual].m1real = parseNum(row[10]);    // K: M-1 Real (volumen del mes anterior)
+      vend.kpis[segActual].vsm1 = parseNum(row[11]);      // L: Vs M-1 (fracción, ej. 0.1647 = +16.47%)
       vend.kpis[segActual].mreal = parseNum(row[12]);
       vend.kpis[segActual].mnec = parseNum(row[13]);
       vend.kpis[segActual].d14 = parseNum(row[17]);
@@ -2912,6 +3331,13 @@ function actualizarDesdeFilasADV(filas) {
       if (!vend.kpis[segActual]) vend.kpis[segActual] = {};
       const parseNum = val => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
       if (segActual.toUpperCase().startsWith('COB')) vend.kpis[segActual].hoy_adv = parseNum(row[7]); // Col H: clientes nuevos hoy
+      // Mismas posiciones de columna que en AD.xlsx (asumiendo igual layout en AD (V) — a confirmar
+      // con un archivo real si algún número no cierra): Objetivo/Real/Avance/Tend/M-1 Real/Vs M-1.
+      vend.kpis[segActual].obj_adv = parseNum(row[5]);
+      vend.kpis[segActual].real_adv = parseNum(row[6]);
+      vend.kpis[segActual].tend_adv = parseNum(row[9]);
+      vend.kpis[segActual].m1real_adv = parseNum(row[10]);
+      vend.kpis[segActual].vsm1_adv = parseNum(row[11]);
       vend.kpis[segActual].mreal_adv = parseNum(row[12]);
       vend.kpis[segActual].mnec_adv = parseNum(row[13]);
       vend.kpis[segActual].d14_adv = parseNum(row[17]);
@@ -2929,6 +3355,9 @@ function actualizarDesdeFilasVesperMaster(filas) {
   FILAS_PEDIDOS_MANANA = normalizarFilasVenta(filas); // motor nuevo de cobertura/CCC/volumen
   let ventasPorPv = {};
   const norm = x => String(x == null ? '' : x).replace(/\s+/g, '').toUpperCase();
+  // misma normalización (con espacio simple) que usa normalizarFilasVenta/infoDeMarca, para que
+  // la búsqueda en SEGMENTACION_MARCAS por descripción coincida
+  const normMarca = x => String(x == null ? '' : x).replace(/\s+/g, ' ').trim().toUpperCase();
 
   for (let i = 1; i < filas.length; i++) {
     const row = filas[i];
@@ -2938,9 +3367,12 @@ function actualizarDesdeFilasVesperMaster(filas) {
     const un = parseInt(row[34]) || 0;          // AI: Unidad de negocio (1 = CZA, 3 = UNG)
     const cant = parseFloat(row[41]) || 0;      // AP: Cantidades totales
     const calibre = parseInt(row[22]) || 0;     // W: Calibre (566 = LATONES)
-    const segCza = norm(row[48]);               // AW: SEG_CZA (PREMIUM / CORE + VALUE)
-    const segTop = norm(row[49]);               // AX: SEG_TOP (TOP)
-    const segBc = norm(row[50]);                // AY: SEG_BC (BALANCED CHOICES)
+    // SEG_CZA / SEG_TOP / SEG_BC ya NO se leen del Excel (columnas 48/49/50): se calculan en vivo
+    // a partir de la tabla "Segmentación de Marcas" de la pestaña Ajustes (infoDeMarca).
+    const infoMarcaFila = infoDeMarca(normMarca(row[20])); // U: Descripción de Marca
+    const segCza = infoMarcaFila ? norm(infoMarcaFila.segmento) : '';
+    const segTop = (infoMarcaFila && infoMarcaFila.esTop) ? 'TOP' : '';
+    const segBc = (infoMarcaFila && infoMarcaFila.esBc) ? 'BALANCEDCHOICES' : '';
 
     if (!pv) continue;
     if (!ventasPorPv[pv]) {
@@ -3129,6 +3561,27 @@ function iniciarListenersFirestore() {
     if (doc.exists) DATA_COMPLETA.cargas = doc.data();
     guardarLocal();
   }, err => console.warn("Listener cargas:", err));
+
+  // Config de AJUSTES (segmentación de marcas / innovaciones core / valor del día) — en vivo,
+  // para que un cambio de un supervisor se refleje al toque en todas las PCs, igual que el resto.
+  refConfigSegMarcas().onSnapshot(doc => {
+    SEGMENTACION_MARCAS = (doc.exists && Array.isArray(doc.data().filas) && doc.data().filas.length)
+      ? doc.data().filas : SEMILLA_SEGMENTACION_MARCAS.slice();
+    recalcularVentasAvanzadas();
+    if (document.getElementById('etapaAjustes') && !document.getElementById('etapaAjustes').classList.contains('d-none')) renderAjustes();
+  }, err => console.warn("Listener segmentacion_marcas:", err));
+
+  refConfigInnovaciones().onSnapshot(doc => {
+    INNOVACIONES_CORE_CODIGOS = (doc.exists && Array.isArray(doc.data().codigos) && doc.data().codigos.length)
+      ? doc.data().codigos : SEMILLA_INNOVACIONES_CORE.slice();
+    recalcularVentasAvanzadas();
+    if (document.getElementById('etapaAjustes') && !document.getElementById('etapaAjustes').classList.contains('d-none')) renderAjustes();
+  }, err => console.warn("Listener innovaciones_core:", err));
+
+  refConfigDiaValor().onSnapshot(doc => {
+    DIA_VALOR_EXCEPCIONES = (doc.exists && doc.data().excepciones) ? doc.data().excepciones : {};
+    if (document.getElementById('etapaAjustes') && !document.getElementById('etapaAjustes').classList.contains('d-none')) renderAjustes();
+  }, err => console.warn("Listener dia_valor:", err));
 }
 
 async function inicializarDatos() {
