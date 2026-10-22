@@ -396,8 +396,8 @@
               <tr>
                 <th class="header-kpi-cvz">% Avance</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz text-warning fw-bold">PLAN</th>
                 <th class="header-kpi-ung">% Avance</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
-                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel1">% Avance</th><th class="header-kpi-sel1">Real</th><th class="header-kpi-sel1 text-warning fw-bold">PLAN</th>
+                <th class="header-kpi-sel2">% Avance</th><th class="header-kpi-sel2">Real</th><th class="header-kpi-sel2 text-warning fw-bold">PLAN</th>
               </tr>
             </thead>
             <tbody id="supTableBody"></tbody>
@@ -1538,6 +1538,12 @@ function getRealHoy(d, kpiNombre) {
   return d.realVesper || 0;
 }
 
+// Avance para los KPI foco (dinámicos, elegidos por mesa): no tienen Objetivo cargado, así que
+// el Avance se calcula contra el PLAN (compromiso del vendedor), no contra un Objetivo inexistente.
+function avanceSinObj(real, plan) {
+  return plan > 0 ? ((real / plan) * 100).toFixed(1) + '%' : '0.0%';
+}
+
 // ====================================================================
 // MOTOR DE COBERTURA "DESDE CERO CADA VEZ" (sin memoria guardada)
 // Compara FACTURADO HASTA HOY (todo el mes hasta ayer) contra PEDIDOS PARA MAÑANA (el día de
@@ -2270,10 +2276,11 @@ function renderVendedorView() {
 
   // KPI 1
   const dSel1 = getKpiData(vend, sel1);
+  const realSel1 = getRealHoy(dSel1, sel1);
   document.getElementById('vCardTitleSel1').textContent = sel1;
-  document.getElementById('vAvanceSel1').textContent = `% Avance: ${dSel1.avance}`;
+  document.getElementById('vAvanceSel1').textContent = `% Avance: ${avanceSinObj(realSel1, dSel1.plan)}`;
   document.getElementById('vObjSel1').textContent = dSel1.obj;
-  document.getElementById('vRealSel1').textContent = dSel1.real.toFixed(2);
+  document.getElementById('vRealSel1').textContent = realSel1.toFixed(2);
   document.getElementById('vMrealSel1').textContent = dSel1.mreal.toFixed(1);
   document.getElementById('vMnecSel1').textContent = dSel1.mnec.toFixed(1);
   document.getElementById('vD14Sel1').textContent = dSel1.d14.toFixed(1);
@@ -2283,10 +2290,11 @@ function renderVendedorView() {
 
   // KPI 2
   const dSel2 = getKpiData(vend, sel2);
+  const realSel2 = getRealHoy(dSel2, sel2);
   document.getElementById('vCardTitleSel2').textContent = sel2;
-  document.getElementById('vAvanceSel2').textContent = `% Avance: ${dSel2.avance}`;
+  document.getElementById('vAvanceSel2').textContent = `% Avance: ${avanceSinObj(realSel2, dSel2.plan)}`;
   document.getElementById('vObjSel2').textContent = dSel2.obj;
-  document.getElementById('vRealSel2').textContent = dSel2.real.toFixed(2);
+  document.getElementById('vRealSel2').textContent = realSel2.toFixed(2);
   document.getElementById('vMrealSel2').textContent = dSel2.mreal.toFixed(1);
   document.getElementById('vMnecSel2').textContent = dSel2.mnec.toFixed(1);
   document.getElementById('vD14Sel2').textContent = dSel2.d14.toFixed(1);
@@ -2392,11 +2400,13 @@ function renderSupervisorView() {
     totUng.mreal += dUng.mreal; totUng.mnec += dUng.mnec; totUng.d14 += dUng.d14; totUng.d7 += dUng.d7; totUng.plan += dUng.plan; totUng.prevendido += dUng.prevendido;
     totUng.obj += dUng.obj || 0; totUng.real += dUng.real || 0;
 
+    const realS1 = getRealHoy(dS1, sel1), realS2 = getRealHoy(dS2, sel2);
+
     totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan; totSel1.prevendido += dS1.prevendido;
-    totSel1.obj += dS1.obj || 0; totSel1.real += dS1.real || 0;
+    totSel1.obj += dS1.obj || 0; totSel1.real += realS1;
 
     totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan; totSel2.prevendido += dS2.prevendido;
-    totSel2.obj += dS2.obj || 0; totSel2.real += dS2.real || 0;
+    totSel2.obj += dS2.obj || 0; totSel2.real += realS2;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -2409,11 +2419,11 @@ function renderSupervisorView() {
       <td class="fw-semibold">${spanAvance(dUng.avance)}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="text-muted">${dUng.prevendido.toFixed(1)}</td>
       <td class="${dUng.plan < dUng.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dUng.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'UNG', this.value)"></td>
 
-      <td class="fw-semibold">${spanAvance(dS1.avance)}</td><td class="text-danger fw-bold">${dS1.mnec.toFixed(1)}</td>
-      <td class="${dS1.plan < dS1.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)"></td>
+      <td class="fw-semibold">${spanAvance(avanceSinObj(realS1, dS1.plan))}</td><td class="fw-bold">${realS1.toFixed(1)}</td>
+      <td><input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)"></td>
 
-      <td class="fw-semibold">${spanAvance(dS2.avance)}</td><td class="text-danger fw-bold">${dS2.mnec.toFixed(1)}</td>
-      <td class="${dS2.plan < dS2.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)"></td>
+      <td class="fw-semibold">${spanAvance(avanceSinObj(realS2, dS2.plan))}</td><td class="fw-bold">${realS2.toFixed(1)}</td>
+      <td><input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)"></td>
 
       <td class="text-nowrap">
         <button class="btn btn-sm btn-outline-success py-0 px-1 me-1" title="Aprobar" onclick="aprobarVendedorMesa(${v.pv})"><i class="bi bi-check-lg"></i></button>
@@ -2441,8 +2451,8 @@ function renderSupervisorView() {
 
   document.getElementById('supMesaAvanceCvz').textContent = calcAv(totCvz.obj, totCvz.real);
   document.getElementById('supMesaAvanceUng').textContent = calcAv(totUng.obj, totUng.real);
-  document.getElementById('supMesaAvanceSel1').textContent = calcAv(totSel1.obj, totSel1.real);
-  document.getElementById('supMesaAvanceSel2').textContent = calcAv(totSel2.obj, totSel2.real);
+  document.getElementById('supMesaAvanceSel1').textContent = avanceSinObj(totSel1.real, totSel1.plan);
+  document.getElementById('supMesaAvanceSel2').textContent = avanceSinObj(totSel2.real, totSel2.plan);
 
   const elTendCvz = document.getElementById('supMesaTendenciaCvz');
   if(elTendCvz) elTendCvz.textContent = "Tend: " + calcTendencia(totCvz.obj, totCvz.real);
@@ -2468,8 +2478,8 @@ function renderSupervisorView() {
       <td class="text-start">TOTAL MESA</td><td>-</td>
       <td>-</td><td>${totCvz.mreal.toFixed(1)}</td><td class="text-danger">${totCvz.mnec.toFixed(1)}</td><td>${totCvz.d14.toFixed(1)}</td><td>${totCvz.d7.toFixed(1)}</td><td>${totCvz.prevendido.toFixed(1)}</td><td class="fw-bold">${totCvz.plan.toFixed(1)}</td>
       <td>-</td><td>${totUng.mreal.toFixed(1)}</td><td class="text-danger">${totUng.mnec.toFixed(1)}</td><td>${totUng.d14.toFixed(1)}</td><td>${totUng.d7.toFixed(1)}</td><td>${totUng.prevendido.toFixed(1)}</td><td class="fw-bold">${totUng.plan.toFixed(1)}</td>
-      <td>-</td><td class="text-danger">${totSel1.mnec.toFixed(1)}</td><td class="fw-bold">${totSel1.plan.toFixed(1)}</td>
-      <td>-</td><td class="text-danger">${totSel2.mnec.toFixed(1)}</td><td class="fw-bold">${totSel2.plan.toFixed(1)}</td>
+      <td>${spanAvance(avanceSinObj(totSel1.real, totSel1.plan))}</td><td>${totSel1.real.toFixed(1)}</td><td class="fw-bold">${totSel1.plan.toFixed(1)}</td>
+      <td>${spanAvance(avanceSinObj(totSel2.real, totSel2.plan))}</td><td>${totSel2.real.toFixed(1)}</td><td class="fw-bold">${totSel2.plan.toFixed(1)}</td>
       <td>-</td>
     </tr>
   `;
@@ -2641,12 +2651,15 @@ async function renderJefeView() {
       const dUng = getKpiData(v, "UNG");
       const d1 = getKpiData(v, k1);
       const d2 = getKpiData(v, k2);
+      // KPI Foco (dinámicos, elegidos por mesa): no tienen Objetivo cargado — el Real sale del
+      // motor de cobertura/volumen (getRealHoy), no del campo ".real" (que siempre queda en 0 para estos).
+      const real1 = getRealHoy(d1, k1), real2 = getRealHoy(d2, k2);
 
       ["obj", "real", "mreal", "mnec", "d14", "d7", "prevendido", "plan"].forEach(campo => {
         sCza[campo] += dCza[campo] || 0;
         sUng[campo] += dUng[campo] || 0;
-        s1[campo] += d1[campo] || 0;
-        s2[campo] += d2[campo] || 0;
+        if (campo === "real") { s1.real += real1; s2.real += real2; }
+        else { s1[campo] += d1[campo] || 0; s2[campo] += d2[campo] || 0; }
       });
       if (v.estado === 'Aprobado') aprobados++;
     });
@@ -2677,8 +2690,8 @@ async function renderJefeView() {
       <td><span class="badge ${aprobados === vends.length ? 'bg-success' : 'bg-warning text-dark'}">${aprobados}/${vends.length} Aprob</span></td>
       <td class="fw-semibold">${spanAvance(calcTend(sCza.obj, sCza.real, factorTiempo))}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td>${celdaCompromiso(compCza)}</td>${celdaPlanVsCompromiso(sCza.plan, compCza, 'text-primary')}
       <td class="fw-semibold">${spanAvance(calcTend(sUng.obj, sUng.real, factorTiempo))}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td>${celdaCompromiso(compUng)}</td>${celdaPlanVsCompromiso(sUng.plan, compUng, 'text-success')}
-      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(calcTend(s1.obj, s1.real, factorTiempo))}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS1)}</td>${celdaPlanVsCompromiso(s1.plan, compS1, 'text-warning text-dark')}
-      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(calcTend(s2.obj, s2.real, factorTiempo))}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS2)}</td>${celdaPlanVsCompromiso(s2.plan, compS2, 'text-info text-dark')}
+      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(avanceSinObj(s1.real, s1.plan))}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS1)}</td>${celdaPlanVsCompromiso(s1.plan, compS1, 'text-warning text-dark')}
+      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(avanceSinObj(s2.real, s2.plan))}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS2)}</td>${celdaPlanVsCompromiso(s2.plan, compS2, 'text-info text-dark')}
     `;
     tbody.appendChild(tr);
   });
@@ -2692,8 +2705,8 @@ async function renderJefeView() {
         <td class="text-start">TOTAL EMPRESA</td><td>${totAprobados}/${totVends} Aprob</td>
         <td>${calcTend(totEmp.cza.obj, totEmp.cza.real, factorTiempoEmpresa)}</td><td>${totEmp.cza.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.cza.mnec.toFixed(1)}</td><td>${totEmp.cza.d14.toFixed(1)}</td><td>${totEmp.cza.d7.toFixed(1)}</td><td>${totEmp.cza.prevendido.toFixed(1)}</td><td>${totEmp.cza.compromiso.toFixed(1)}</td><td>${totEmp.cza.plan.toFixed(1)}</td>
         <td>${calcTend(totEmp.ung.obj, totEmp.ung.real, factorTiempoEmpresa)}</td><td>${totEmp.ung.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.ung.mnec.toFixed(1)}</td><td>${totEmp.ung.d14.toFixed(1)}</td><td>${totEmp.ung.d7.toFixed(1)}</td><td>${totEmp.ung.prevendido.toFixed(1)}</td><td>${totEmp.ung.compromiso.toFixed(1)}</td><td>${totEmp.ung.plan.toFixed(1)}</td>
-        <td>-</td><td>${calcTend(totEmp.s1.obj, totEmp.s1.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s1.plan.toFixed(1)}</td>
-        <td>-</td><td>${calcTend(totEmp.s2.obj, totEmp.s2.real, factorTiempoEmpresa)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s2.plan.toFixed(1)}</td>
+        <td>-</td><td>${avanceSinObj(totEmp.s1.real, totEmp.s1.plan)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s1.plan.toFixed(1)}</td>
+        <td>-</td><td>${avanceSinObj(totEmp.s2.real, totEmp.s2.plan)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s2.plan.toFixed(1)}</td>
       </tr>
     `;
   }
