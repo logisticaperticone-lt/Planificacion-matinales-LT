@@ -1538,10 +1538,22 @@ function getRealHoy(d, kpiNombre) {
   return d.realVesper || 0;
 }
 
-// Avance para los KPI foco (dinámicos, elegidos por mesa): no tienen Objetivo cargado, así que
-// el Avance se calcula contra el PLAN (compromiso del vendedor), no contra un Objetivo inexistente.
+// Real ACUMULADO del mes para los KPI foco (dinámicos, elegidos por mesa), a diferencia de
+// getRealHoy (que es solo lo de HOY, para Vespertina/Cierre D-1): acá es FACTURADO HASTA HOY +
+// PEDIDOS PARA MAÑANA combinados — el total de clientes cubiertos en lo que va del mes.
+function getRealTotal(d, kpiNombre) {
+  if (typeof d.realFoto === 'number') return d.realFoto;
+  if (esKpiCobertura(kpiNombre)) {
+    if (typeof d.coberturaTotal === 'number') return d.coberturaTotal;
+    return (typeof d.hoy_adv === 'number') ? d.hoy_adv : 0;
+  }
+  return d.realVesper || 0;
+}
+
+// No hay Objetivo cargado para los KPI foco (dinámicos, elegidos por mesa): a pedido, el Avance
+// de estos queda fijo en 0% en vez de inventar un cálculo contra el Plan.
 function avanceSinObj(real, plan) {
-  return plan > 0 ? ((real / plan) * 100).toFixed(1) + '%' : '0.0%';
+  return '0.0%';
 }
 
 // ====================================================================
@@ -1714,6 +1726,16 @@ function coberturaNuevaPorPv(filasHastaHoy, filasHoy, filtroFn) {
   return resultado;
 }
 
+// Total de clientes DISTINTOS que cumplen el filtro en todo lo que va del mes (FACTURADO HASTA
+// HOY + PEDIDOS PARA MAÑANA combinados) — a diferencia de coberturaNuevaPorPv, que solo cuenta
+// los nuevos de HOY, esta cuenta el acumulado total del mes para ese KPI.
+function coberturaTotalPorPv(filasHastaHoy, filasHoy, filtroFn) {
+  const combinado = clientesPorPv([...filasHastaHoy, ...filasHoy], filtroFn);
+  const resultado = new Map();
+  combinado.forEach((set, pv) => resultado.set(pv, set.size));
+  return resultado;
+}
+
 function sumaPorPv(filas, filtroFn) {
   const mapa = new Map();
   filas.forEach(f => {
@@ -1757,9 +1779,11 @@ function recalcularVentasAvanzadas() {
   Object.entries(DEFINICIONES_KPI_VENTA).forEach(([kpiKey, def]) => {
     if (def.tipo === 'cobertura') {
       const mapa = coberturaNuevaPorPv(FILAS_FACTURADO_HASTA_HOY, FILAS_PEDIDOS_MANANA, def.filtro);
+      const mapaTotal = coberturaTotalPorPv(FILAS_FACTURADO_HASTA_HOY, FILAS_PEDIDOS_MANANA, def.filtro);
       DATA_COMPLETA.vendedores.forEach(v => {
         if (!v.kpis[kpiKey]) v.kpis[kpiKey] = kpiVacio();
         v.kpis[kpiKey].coberturaNueva = mapa.get(v.pv) || 0;
+        v.kpis[kpiKey].coberturaTotal = mapaTotal.get(v.pv) || 0;
       });
     } else {
       const mapa = sumaPorPv(FILAS_PEDIDOS_MANANA, def.filtro);
@@ -2276,7 +2300,7 @@ function renderVendedorView() {
 
   // KPI 1
   const dSel1 = getKpiData(vend, sel1);
-  const realSel1 = getRealHoy(dSel1, sel1);
+  const realSel1 = getRealTotal(dSel1, sel1);
   document.getElementById('vCardTitleSel1').textContent = sel1;
   document.getElementById('vAvanceSel1').textContent = `% Avance: ${avanceSinObj(realSel1, dSel1.plan)}`;
   document.getElementById('vObjSel1').textContent = dSel1.obj;
@@ -2290,7 +2314,7 @@ function renderVendedorView() {
 
   // KPI 2
   const dSel2 = getKpiData(vend, sel2);
-  const realSel2 = getRealHoy(dSel2, sel2);
+  const realSel2 = getRealTotal(dSel2, sel2);
   document.getElementById('vCardTitleSel2').textContent = sel2;
   document.getElementById('vAvanceSel2').textContent = `% Avance: ${avanceSinObj(realSel2, dSel2.plan)}`;
   document.getElementById('vObjSel2').textContent = dSel2.obj;
@@ -2400,7 +2424,7 @@ function renderSupervisorView() {
     totUng.mreal += dUng.mreal; totUng.mnec += dUng.mnec; totUng.d14 += dUng.d14; totUng.d7 += dUng.d7; totUng.plan += dUng.plan; totUng.prevendido += dUng.prevendido;
     totUng.obj += dUng.obj || 0; totUng.real += dUng.real || 0;
 
-    const realS1 = getRealHoy(dS1, sel1), realS2 = getRealHoy(dS2, sel2);
+    const realS1 = getRealTotal(dS1, sel1), realS2 = getRealTotal(dS2, sel2);
 
     totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan; totSel1.prevendido += dS1.prevendido;
     totSel1.obj += dS1.obj || 0; totSel1.real += realS1;
@@ -2651,9 +2675,9 @@ async function renderJefeView() {
       const dUng = getKpiData(v, "UNG");
       const d1 = getKpiData(v, k1);
       const d2 = getKpiData(v, k2);
-      // KPI Foco (dinámicos, elegidos por mesa): no tienen Objetivo cargado — el Real sale del
-      // motor de cobertura/volumen (getRealHoy), no del campo ".real" (que siempre queda en 0 para estos).
-      const real1 = getRealHoy(d1, k1), real2 = getRealHoy(d2, k2);
+      // KPI Foco (dinámicos, elegidos por mesa): no tienen Objetivo cargado — el Real es el
+      // acumulado total del mes (motor de cobertura), no el campo ".real" (que siempre queda en 0).
+      const real1 = getRealTotal(d1, k1), real2 = getRealTotal(d2, k2);
 
       ["obj", "real", "mreal", "mnec", "d14", "d7", "prevendido", "plan"].forEach(campo => {
         sCza[campo] += dCza[campo] || 0;
