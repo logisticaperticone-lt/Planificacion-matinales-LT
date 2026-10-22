@@ -1043,7 +1043,7 @@ function renderCierreD1() {
       todosVendedores.sort((a, b) => b.varPct - a.varPct);
       const top3Empresa = todosVendedores.slice(0, 3);
       const bannerTop3 = top3Empresa.length ? `
-        <div class="px-3 py-2 small bg-warning-subtle border-bottom">
+        <div class="px-3 py-2 small bg-warning-subtle border-top">
           <i class="bi bi-trophy-fill text-warning me-1"></i><strong>Top 3 vendedores de la empresa:</strong>
           ${top3Empresa.map((t, i) => `${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} ${t.nombre} (${t.sv}) ${t.varPct >= 0 ? '+' : ''}${t.varPct.toFixed(0)}%`).join(' &nbsp;|&nbsp; ')}
         </div>` : '';
@@ -1077,7 +1077,6 @@ function renderCierreD1() {
       return `
         <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
           <div class="px-3 py-2 fw-bold header-cierre">${titulo}</div>
-          ${bannerTop3}
           <div class="table-responsive">
             <table class="table table-bordered table-hover table-custom mb-0">
               <thead>
@@ -1095,16 +1094,17 @@ function renderCierreD1() {
               <tfoot class="table-dark fw-bold">
                 <tr>
                   <td class="text-start">TOTAL EMPRESA</td>
-                  <td>${totP.toFixed(1)}</td>
-                  <td>${totR.toFixed(1)}</td>
-                  <td>${spanVarPtos(totVar)}</td>
-                  <td>${totVsMr === null ? '-' : spanVarPtos(totVsMr)}</td>
-                  <td>${totVsMn === null ? '-' : spanVarPtos(totVsMn)}</td>
-                  <td>-</td>
+                  <td class="text-center">${totP.toFixed(1)}</td>
+                  <td class="text-center">${totR.toFixed(1)}</td>
+                  <td class="text-center">${spanVarPtos(totVar)}</td>
+                  <td class="text-center">${totVsMr === null ? '-' : spanVarPtos(totVsMr)}</td>
+                  <td class="text-center">${totVsMn === null ? '-' : spanVarPtos(totVsMn)}</td>
+                  <td class="text-center">-</td>
                 </tr>
               </tfoot>
             </table>
           </div>
+          ${bannerTop3}
         </div>
       `;
     }
