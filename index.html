@@ -441,8 +441,8 @@
               <tr>
                 <th class="header-kpi-cvz">% Tend.</th><th class="header-kpi-cvz">Med.Real</th><th class="header-kpi-cvz">Med.Nec</th><th class="header-kpi-cvz">-14 D</th><th class="header-kpi-cvz">-7 D</th><th class="header-kpi-cvz">Prevend.</th><th class="header-kpi-cvz">Compromiso</th><th class="header-kpi-cvz text-warning">PLAN</th>
                 <th class="header-kpi-ung">% Tend.</th><th class="header-kpi-ung">Med.Real</th><th class="header-kpi-ung">Med.Nec</th><th class="header-kpi-ung">-14 D</th><th class="header-kpi-ung">-7 D</th><th class="header-kpi-ung">Prevend.</th><th class="header-kpi-ung">Compromiso</th><th class="header-kpi-ung text-warning">PLAN</th>
-                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">% Tend.</th><th class="header-kpi-sel1">Med.Nec</th><th class="header-kpi-sel1">Compromiso</th><th class="header-kpi-sel1 text-warning">PLAN</th>
-                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">% Tend.</th><th class="header-kpi-sel2">Med.Nec</th><th class="header-kpi-sel2">Compromiso</th><th class="header-kpi-sel2 text-warning">PLAN</th>
+                <th class="header-kpi-sel1">KPI Nombre</th><th class="header-kpi-sel1">Avance</th><th class="header-kpi-sel1">Real Acum.</th><th class="header-kpi-sel1">Compromiso</th><th class="header-kpi-sel1 text-warning">PLAN</th>
+                <th class="header-kpi-sel2">KPI Nombre</th><th class="header-kpi-sel2">Avance</th><th class="header-kpi-sel2">Real Acum.</th><th class="header-kpi-sel2">Compromiso</th><th class="header-kpi-sel2 text-warning">PLAN</th>
               </tr>
             </thead>
             <tbody id="jefeTableBody"></tbody>
@@ -2714,8 +2714,8 @@ async function renderJefeView() {
       <td><span class="badge ${aprobados === vends.length ? 'bg-success' : 'bg-warning text-dark'}">${aprobados}/${vends.length} Aprob</span></td>
       <td class="fw-semibold">${spanAvance(calcTend(sCza.obj, sCza.real, factorTiempo))}</td><td>${sCza.mreal.toFixed(1)}</td><td class="text-danger">${sCza.mnec.toFixed(1)}</td><td>${sCza.d14.toFixed(1)}</td><td>${sCza.d7.toFixed(1)}</td><td class="text-muted">${sCza.prevendido.toFixed(1)}</td><td>${celdaCompromiso(compCza)}</td>${celdaPlanVsCompromiso(sCza.plan, compCza, 'text-primary')}
       <td class="fw-semibold">${spanAvance(calcTend(sUng.obj, sUng.real, factorTiempo))}</td><td>${sUng.mreal.toFixed(1)}</td><td class="text-danger">${sUng.mnec.toFixed(1)}</td><td>${sUng.d14.toFixed(1)}</td><td>${sUng.d7.toFixed(1)}</td><td class="text-muted">${sUng.prevendido.toFixed(1)}</td><td>${celdaCompromiso(compUng)}</td>${celdaPlanVsCompromiso(sUng.plan, compUng, 'text-success')}
-      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(avanceSinObj(s1.real, s1.plan))}</td><td class="text-danger">${s1.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS1)}</td>${celdaPlanVsCompromiso(s1.plan, compS1, 'text-warning text-dark')}
-      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(avanceSinObj(s2.real, s2.plan))}</td><td class="text-danger">${s2.mnec.toFixed(1)}</td><td>${celdaCompromiso(compS2)}</td>${celdaPlanVsCompromiso(s2.plan, compS2, 'text-info text-dark')}
+      <td class="fw-semibold text-warning text-dark">${k1}</td><td class="fw-semibold">${spanAvance(avanceSinObj(s1.real, s1.plan))}</td><td class="fw-bold">${s1.real.toFixed(1)}</td><td>${celdaCompromiso(compS1)}</td>${celdaPlanVsCompromiso(s1.plan, compS1, 'text-warning text-dark')}
+      <td class="fw-semibold text-info text-dark">${k2}</td><td class="fw-semibold">${spanAvance(avanceSinObj(s2.real, s2.plan))}</td><td class="fw-bold">${s2.real.toFixed(1)}</td><td>${celdaCompromiso(compS2)}</td>${celdaPlanVsCompromiso(s2.plan, compS2, 'text-info text-dark')}
     `;
     tbody.appendChild(tr);
   });
@@ -2729,8 +2729,8 @@ async function renderJefeView() {
         <td class="text-start">TOTAL EMPRESA</td><td>${totAprobados}/${totVends} Aprob</td>
         <td>${calcTend(totEmp.cza.obj, totEmp.cza.real, factorTiempoEmpresa)}</td><td>${totEmp.cza.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.cza.mnec.toFixed(1)}</td><td>${totEmp.cza.d14.toFixed(1)}</td><td>${totEmp.cza.d7.toFixed(1)}</td><td>${totEmp.cza.prevendido.toFixed(1)}</td><td>${totEmp.cza.compromiso.toFixed(1)}</td><td>${totEmp.cza.plan.toFixed(1)}</td>
         <td>${calcTend(totEmp.ung.obj, totEmp.ung.real, factorTiempoEmpresa)}</td><td>${totEmp.ung.mreal.toFixed(1)}</td><td class="text-danger">${totEmp.ung.mnec.toFixed(1)}</td><td>${totEmp.ung.d14.toFixed(1)}</td><td>${totEmp.ung.d7.toFixed(1)}</td><td>${totEmp.ung.prevendido.toFixed(1)}</td><td>${totEmp.ung.compromiso.toFixed(1)}</td><td>${totEmp.ung.plan.toFixed(1)}</td>
-        <td>-</td><td>${avanceSinObj(totEmp.s1.real, totEmp.s1.plan)}</td><td class="text-danger">${totEmp.s1.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s1.plan.toFixed(1)}</td>
-        <td>-</td><td>${avanceSinObj(totEmp.s2.real, totEmp.s2.plan)}</td><td class="text-danger">${totEmp.s2.mnec.toFixed(1)}</td><td>-</td><td>${totEmp.s2.plan.toFixed(1)}</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
       </tr>
     `;
   }
