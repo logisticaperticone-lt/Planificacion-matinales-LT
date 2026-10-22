@@ -224,8 +224,9 @@
               <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecCvz">0</div></div></div>
             </div>
             <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Cvz" class="text-primary">0</strong></span></div>
-              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Cvz" class="text-primary">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-14 Días: <strong id="vD14Cvz" class="text-primary">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-7 Días: <strong id="vD7Cvz" class="text-primary">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">Prevendido: <strong id="vPrevCvz" class="text-primary">0</strong></span></div>
             </div>
             <div class="mt-auto">
               <label class="form-label fw-bold small text-dark d-flex justify-content-between">
@@ -251,8 +252,9 @@
               <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecUng">0</div></div></div>
             </div>
             <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Ung" class="text-success">0</strong></span></div>
-              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Ung" class="text-success">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-14 Días: <strong id="vD14Ung" class="text-success">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-7 Días: <strong id="vD7Ung" class="text-success">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">Prevendido: <strong id="vPrevUng" class="text-success">0</strong></span></div>
             </div>
             <div class="mt-auto">
               <label class="form-label fw-bold small text-dark d-flex justify-content-between">
@@ -278,8 +280,9 @@
               <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel1">0</div></div></div>
             </div>
             <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel1" class="text-warning text-dark">0</strong></span></div>
-              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel1" class="text-warning text-dark">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel1" class="text-warning text-dark">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel1" class="text-warning text-dark">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">Prevendido: <strong id="vPrevSel1" class="text-warning text-dark">0</strong></span></div>
             </div>
             <div class="mt-auto">
               <label class="form-label fw-bold small text-dark d-flex justify-content-between">
@@ -305,8 +308,9 @@
               <div class="col-3"><div class="kpi-card" style="border-left-color: #dc2626;"><div class="kpi-title">Med. Necesaria</div><div class="kpi-val text-danger" id="vMnecSel2">0</div></div></div>
             </div>
             <div class="row g-2 text-center mb-3 bg-light p-2 rounded">
-              <div class="col-6"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel2" class="text-info text-dark">0</strong></span></div>
-              <div class="col-6"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel2" class="text-info text-dark">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-14 Días: <strong id="vD14Sel2" class="text-info text-dark">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">-7 Días: <strong id="vD7Sel2" class="text-info text-dark">0</strong></span></div>
+              <div class="col-4"><span class="ref-box w-100">Prevendido: <strong id="vPrevSel2" class="text-info text-dark">0</strong></span></div>
             </div>
             <div class="mt-auto">
               <label class="form-label fw-bold small text-dark d-flex justify-content-between">
@@ -1019,7 +1023,7 @@ function renderCierreD1() {
         const vsMr = (!sinDatoMesa && sMr > 0) ? (sR / sMr - 1) * 100 : null;
         const vsMn = (!sinDatoMesa && sMn > 0) ? (sR / sMn - 1) * 100 : null;
 
-        return { sv, sP, sR: sRmostrar, varPct, vsMr, vsMn, sinDatoMesa };
+        return { sv, sP, sR: sRmostrar, sMr, sMn, varPct, vsMr, vsMn, sinDatoMesa };
       });
 
       // Ranking de MESAS por Var%
@@ -1044,8 +1048,8 @@ function renderCierreD1() {
           ${top3Empresa.map((t, i) => `${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} ${t.nombre} (${t.sv}) ${t.varPct >= 0 ? '+' : ''}${t.varPct.toFixed(0)}%`).join(' &nbsp;|&nbsp; ')}
         </div>` : '';
 
-      let totP = 0, totR = 0;
-      filas.forEach(f => { totP += f.sP; totR += (f.sR || 0); });
+      let totP = 0, totR = 0, totMr = 0, totMn = 0;
+      filas.forEach(f => { totP += f.sP; totR += (f.sR || 0); totMr += f.sMr; totMn += f.sMn; });
 
       const filasHtml = filas.map(f => {
         let celdaRank = '<span class="text-muted">-</span>';
@@ -1067,6 +1071,8 @@ function renderCierreD1() {
       }).join('');
 
       const totVar = totP > 0 ? ((totR / totP - 1) * 100) : 0;
+      const totVsMr = totMr > 0 ? ((totR / totMr - 1) * 100) : null;
+      const totVsMn = totMn > 0 ? ((totR / totMn - 1) * 100) : null;
 
       return `
         <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
@@ -1092,7 +1098,9 @@ function renderCierreD1() {
                   <td>${totP.toFixed(1)}</td>
                   <td>${totR.toFixed(1)}</td>
                   <td>${spanVarPtos(totVar)}</td>
-                  <td>-</td><td>-</td><td>-</td>
+                  <td>${totVsMr === null ? '-' : spanVarPtos(totVsMr)}</td>
+                  <td>${totVsMn === null ? '-' : spanVarPtos(totVsMn)}</td>
+                  <td>-</td>
                 </tr>
               </tfoot>
             </table>
@@ -1114,7 +1122,7 @@ function renderCierreD1() {
       const varPct = (!sinDato && d.plan > 0) ? (r / d.plan - 1) * 100 : null;
       const vsMr = (!sinDato && d.mreal > 0) ? (r / d.mreal - 1) * 100 : null;
       const vsMn = (!sinDato && d.mnec > 0) ? (r / d.mnec - 1) * 100 : null;
-      return { nombre: v.nombre, plan: d.plan, real: sinDato ? null : r, varPct, vsMr, vsMn, sinDato };
+      return { nombre: v.nombre, plan: d.plan, real: sinDato ? null : r, mreal: d.mreal, mnec: d.mnec, varPct, vsMr, vsMn, sinDato };
     });
 
     const conDato = filas.filter(f => f.varPct !== null);
@@ -1122,8 +1130,8 @@ function renderCierreD1() {
     const podio = { [orden[0]?.nombre]: 1, [orden[1]?.nombre]: 2, [orden[2]?.nombre]: 3 };
     const peores = orden.slice(-2).map(f => f.nombre);
 
-    let totP = 0, totR = 0;
-    filas.forEach(f => { totP += f.plan; totR += (f.real || 0); });
+    let totP = 0, totR = 0, totMr = 0, totMn = 0;
+    filas.forEach(f => { totP += f.plan; totR += (f.real || 0); totMr += f.mreal; totMn += f.mnec; });
 
     const filasHtml = filas.map(f => {
       let celdaRank = '<span class="text-muted">-</span>';
@@ -1145,6 +1153,8 @@ function renderCierreD1() {
     }).join('');
 
     const totVar = totP > 0 ? ((totR / totP - 1) * 100) : 0;
+    const totVsMr = totMr > 0 ? ((totR / totMr - 1) * 100) : null;
+    const totVsMn = totMn > 0 ? ((totR / totMn - 1) * 100) : null;
 
     return `
       <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
@@ -1169,7 +1179,9 @@ function renderCierreD1() {
                 <td>${totP.toFixed(1)}</td>
                 <td>${totR.toFixed(1)}</td>
                 <td>${spanVarPtos(totVar)}</td>
-                <td>-</td><td>-</td><td>-</td>
+                <td>${totVsMr === null ? '-' : spanVarPtos(totVsMr)}</td>
+                <td>${totVsMn === null ? '-' : spanVarPtos(totVsMn)}</td>
+                <td>-</td>
               </tr>
             </tfoot>
           </table>
@@ -2236,22 +2248,24 @@ function renderVendedorView() {
   const dCvz = getKpiData(vend, "CVZ CMQ");
   document.getElementById('vAvanceCvz').textContent = `% Avance: ${dCvz.avance}`;
   document.getElementById('vObjCvz').textContent = dCvz.obj;
-  document.getElementById('vRealCvz').textContent = dCvz.real;
+  document.getElementById('vRealCvz').textContent = dCvz.real.toFixed(2);
   document.getElementById('vMrealCvz').textContent = dCvz.mreal.toFixed(1);
   document.getElementById('vMnecCvz').textContent = dCvz.mnec.toFixed(1);
   document.getElementById('vD14Cvz').textContent = dCvz.d14.toFixed(1);
   document.getElementById('vD7Cvz').textContent = dCvz.d7.toFixed(1);
+  document.getElementById('vPrevCvz').textContent = dCvz.prevendido.toFixed(1);
   document.getElementById('vInpPlanCvz').value = dCvz.plan || 0;
 
   // UNG
   const dUng = getKpiData(vend, "UNG");
   document.getElementById('vAvanceUng').textContent = `% Avance: ${dUng.avance}`;
   document.getElementById('vObjUng').textContent = dUng.obj;
-  document.getElementById('vRealUng').textContent = dUng.real;
+  document.getElementById('vRealUng').textContent = dUng.real.toFixed(2);
   document.getElementById('vMrealUng').textContent = dUng.mreal.toFixed(1);
   document.getElementById('vMnecUng').textContent = dUng.mnec.toFixed(1);
   document.getElementById('vD14Ung').textContent = dUng.d14.toFixed(1);
   document.getElementById('vD7Ung').textContent = dUng.d7.toFixed(1);
+  document.getElementById('vPrevUng').textContent = dUng.prevendido.toFixed(1);
   document.getElementById('vInpPlanUng').value = dUng.plan || 0;
 
   // KPI 1
@@ -2259,11 +2273,12 @@ function renderVendedorView() {
   document.getElementById('vCardTitleSel1').textContent = sel1;
   document.getElementById('vAvanceSel1').textContent = `% Avance: ${dSel1.avance}`;
   document.getElementById('vObjSel1').textContent = dSel1.obj;
-  document.getElementById('vRealSel1').textContent = dSel1.real;
+  document.getElementById('vRealSel1').textContent = dSel1.real.toFixed(2);
   document.getElementById('vMrealSel1').textContent = dSel1.mreal.toFixed(1);
   document.getElementById('vMnecSel1').textContent = dSel1.mnec.toFixed(1);
   document.getElementById('vD14Sel1').textContent = dSel1.d14.toFixed(1);
   document.getElementById('vD7Sel1').textContent = dSel1.d7.toFixed(1);
+  document.getElementById('vPrevSel1').textContent = dSel1.prevendido.toFixed(1);
   document.getElementById('vInpPlanSel1').value = dSel1.plan || 0;
 
   // KPI 2
@@ -2271,11 +2286,12 @@ function renderVendedorView() {
   document.getElementById('vCardTitleSel2').textContent = sel2;
   document.getElementById('vAvanceSel2').textContent = `% Avance: ${dSel2.avance}`;
   document.getElementById('vObjSel2').textContent = dSel2.obj;
-  document.getElementById('vRealSel2').textContent = dSel2.real;
+  document.getElementById('vRealSel2').textContent = dSel2.real.toFixed(2);
   document.getElementById('vMrealSel2').textContent = dSel2.mreal.toFixed(1);
   document.getElementById('vMnecSel2').textContent = dSel2.mnec.toFixed(1);
   document.getElementById('vD14Sel2').textContent = dSel2.d14.toFixed(1);
   document.getElementById('vD7Sel2').textContent = dSel2.d7.toFixed(1);
+  document.getElementById('vPrevSel2').textContent = dSel2.prevendido.toFixed(1);
   document.getElementById('vInpPlanSel2').value = dSel2.plan || 0;
 
   evaluarGap('Cvz', 'CVZ CMQ');
@@ -3283,6 +3299,7 @@ function procesarArchivoExcel(evt) {
 }
 
 function actualizarDesdeFilasAD(filas) {
+  autoCongelarFotoSiCorresponde();
   let segActual = null;
   filas.forEach(row => {
     if (!row || row.length < 5) return;
@@ -3317,6 +3334,7 @@ function actualizarDesdeFilasAD(filas) {
 }
 
 function actualizarDesdeFilasADV(filas) {
+  autoCongelarFotoSiCorresponde();
   let segActual = null;
   filas.forEach(row => {
     if (!row || row.length < 5) return;
@@ -3353,6 +3371,7 @@ function actualizarDesdeFilasADV(filas) {
 }
 
 function actualizarDesdeFilasVesperMaster(filas) {
+  autoCongelarFotoSiCorresponde();
   FILAS_PEDIDOS_MANANA = normalizarFilasVenta(filas); // motor nuevo de cobertura/CCC/volumen
   let ventasPorPv = {};
   const norm = x => String(x == null ? '' : x).replace(/\s+/g, '').toUpperCase();
@@ -3429,6 +3448,48 @@ function descargarJSONGitHub() {
   link.href = URL.createObjectURL(blob);
   link.download = `datos_matinal.json`;
   link.click();
+}
+
+// ====================================================================
+// AUTO-CONGELAR FOTO DEL DÍA ANTERIOR
+// Para no depender de que el Jefe de Ventas se acuerde de apretar "Congelar Foto" todos los
+// días: la primera vez que llega un archivo (AD / AD-V / VESPER) de un día distinto al último
+// procesado, congela automáticamente cómo estaban los datos de ESE día anterior, ANTES de que
+// actualizarDesdeFilasAD() les pise el plan con 0 y el estado con "Pendiente".
+// ====================================================================
+function construirFotoParaFecha(fecha) {
+  const c = DATA_COMPLETA.cargas || {};
+  const datos = DATA_COMPLETA.vendedores.map(v => {
+    const kpisMesa = getKpisForMesa(v.sv);
+    const claves = [...new Set(["CVZ CMQ", "UNG", kpisMesa[0], kpisMesa[1]])];
+    const plan = {}, real = {}, medias = {};
+    claves.forEach(k => {
+      const d = getKpiData(v, k);
+      plan[k] = d.plan || 0;
+      medias[k] = { mreal: d.mreal || 0, mnec: d.mnec || 0, d14: d.d14 || 0, d7: d.d7 || 0, prevendido: d.prevendido || 0 };
+      const cob = esKpiCobertura(k);
+      if ((cob && c.ADV === fecha) || (!cob && c.VESPER === fecha)) real[k] = getRealHoy(d, k);
+    });
+    return { pv: v.pv, nombre: v.nombre, sv: v.sv, kpisMesa, plan, real, medias };
+  });
+  return { fecha, guardada: new Date().toISOString(), datos };
+}
+
+function autoCongelarFotoSiCorresponde() {
+  const hoy = fechaLocalISO();
+  const ultimo = (DATA_COMPLETA.cargas || {}).ultimoDia;
+  if (ultimo && ultimo !== hoy && !(DATA_COMPLETA.fotos_d1 && DATA_COMPLETA.fotos_d1[ultimo])) {
+    const foto = construirFotoParaFecha(ultimo);
+    if (!DATA_COMPLETA.fotos_d1) DATA_COMPLETA.fotos_d1 = {};
+    DATA_COMPLETA.fotos_d1[ultimo] = foto;
+    Object.keys(DATA_COMPLETA.fotos_d1).sort().slice(0, -14).forEach(k => delete DATA_COMPLETA.fotos_d1[k]);
+    refFotoD1(ultimo).set(foto).catch(err => console.warn("Error auto-congelando foto " + ultimo + ":", err));
+    console.log("Foto D-1 auto-congelada para " + ultimo + " (nadie apretó Congelar Foto a tiempo)");
+  }
+  if (ultimo !== hoy) {
+    DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { ultimoDia: hoy });
+    dbFire.collection('cargas').doc('estado').set({ ultimoDia: hoy }, { merge: true }).catch(e => console.warn(e));
+  }
 }
 
 // ====================================================================
