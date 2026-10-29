@@ -542,6 +542,15 @@
           <span class="badge bg-success" id="estadoCargaBadge">Base de datos sincronizada</span>
         </div>
 
+        <!-- Aviso de qué archivos de venta están EN MEMORIA de ESTE navegador ahora mismo — Facturado
+             Hasta Hoy y Pedidos Para Mañana no se guardan en la nube (son muy pesados), así que si se
+             pierden entre una carga y otra (recargaste la página, cerraste la pestaña) la Oportunidad
+             y la Cobertura (COB/CCC) quedan mal calculadas sin que se note a simple vista. -->
+        <div id="avisoDatosSesion" class="alert alert-warning py-2 px-3 mb-3 small d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span id="avisoDatosSesionTexto">Cargando estado...</span>
+        </div>
+
         <!-- Carga Directa por Archivos Individuales -->
         <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Cargar Archivos (.xlsx / .csv)</h6>
         <div class="row g-3">
@@ -3494,6 +3503,35 @@ function renderAnalistaView() {
       : 'Todavía no hay rutas de entrega guardadas';
   }
   renderListaFeriados();
+  renderAvisoDatosSesion();
+}
+
+// Avisa si FACTURADO HASTA HOY y/o PEDIDOS PARA MAÑANA no están en memoria de ESTE navegador
+// ahora mismo — son transitorios (no se guardan en la nube por el peso del archivo), así que si
+// se pierden entre una carga y otra (recargaste la página, cambiaste de pestaña) la Oportunidad y
+// la Cobertura (COB/CCC) quedan mal calculadas sin ningún error visible — este aviso es la única
+// forma de notarlo antes de cerrar la sesión.
+function renderAvisoDatosSesion() {
+  const caja = document.getElementById('avisoDatosSesion');
+  const txt = document.getElementById('avisoDatosSesionTexto');
+  if (!caja || !txt) return;
+  const tieneFacturado = FILAS_FACTURADO_HASTA_HOY.length > 0;
+  const tienePedidos = FILAS_PEDIDOS_MANANA.length > 0;
+
+  caja.classList.remove('alert-warning', 'alert-success', 'alert-secondary');
+  if (tieneFacturado && tienePedidos) {
+    caja.classList.add('alert-success');
+    txt.innerHTML = `<strong>OK:</strong> Facturado Hasta Hoy (${FILAS_FACTURADO_HASTA_HOY.length.toLocaleString('es-AR')} filas) y Pedidos Para Mañana (${FILAS_PEDIDOS_MANANA.length.toLocaleString('es-AR')} filas) están cargados en esta sesión — la Oportunidad y la Cobertura (COB/CCC) se calculan bien.`;
+  } else if (!tieneFacturado && !tienePedidos) {
+    caja.classList.add('alert-secondary');
+    txt.textContent = 'Todavía no cargaste ningún archivo de venta en esta sesión del navegador.';
+  } else if (!tieneFacturado) {
+    caja.classList.add('alert-warning');
+    txt.innerHTML = '<strong>Falta FACTURADO HASTA HOY en esta sesión.</strong> La Oportunidad y la Cobertura (COB/CCC) van a salir mal (van a dar Oportunidad = Entrega) hasta que lo vuelvas a subir, sin recargar la página.';
+  } else {
+    caja.classList.add('alert-warning');
+    txt.innerHTML = '<strong>Falta PEDIDOS PARA MAÑANA (VESPER) en esta sesión.</strong> Subilo para que se recalcule todo junto con el Facturado que ya tenés cargado.';
+  }
 }
 
 // Pinta la lista de feriados sin entrega como chips, cada uno con su botón de borrar.
