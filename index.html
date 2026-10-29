@@ -481,6 +481,8 @@
               <option value="TODOS" selected>📊 TODOS LOS NEGOCIOS (CZA + UNG + KPI 1 + KPI 2)</option>
               <option value="CVZ CMQ">🍺 TOTAL CERVEZA (Detalle Completo + AD-V)</option>
               <option value="UNG">📦 TOTAL UNG (Detalle Completo + AD-V)</option>
+              <option value="KPI1_MESA">🎯 KPI 1 de cada mesa (Detalle: Entrega + Oportunidad)</option>
+              <option value="KPI2_MESA">🎯 KPI 2 de cada mesa (Detalle: Entrega + Oportunidad)</option>
             </select>
           </div>
         </div>
@@ -626,6 +628,19 @@
             </div>
           </div>
         </div>
+
+        <!-- Feriados sin entrega: cuando el día objetivo de la Oportunidad (hoy+2) cae en uno de
+             estos días, se corre al siguiente día hábil (ej. feriado lunes -> se calcula el martes). -->
+        <h6 class="fw-bold text-secondary mb-2 mt-4"><i class="bi bi-calendar-x me-2"></i>Feriados sin Entrega</h6>
+        <p class="text-muted small mb-2">Si el día que le toca a la Oportunidad cae en uno de estos feriados, se corre automáticamente al próximo día con entrega.</p>
+        <div class="d-flex gap-2 align-items-end flex-wrap mb-2">
+          <div>
+            <label class="form-label small fw-semibold mb-1">Fecha del feriado</label>
+            <input type="date" id="inputNuevoFeriado" class="form-control form-control-sm" style="width:170px;">
+          </div>
+          <button class="btn btn-sm btn-outline-dark" onclick="agregarFeriadoEntrega()"><i class="bi bi-plus-lg me-1"></i>Agregar feriado</button>
+        </div>
+        <div id="listaFeriadosEntrega" class="d-flex flex-wrap gap-2"></div>
       </div>
 
       <!-- Tabla consolidada por supervisor — AD (matinal) -->
@@ -793,6 +808,7 @@ const refConfigSegMarcas = () => dbFire.collection('config').doc('segmentacion_m
 const refConfigInnovaciones = () => dbFire.collection('config').doc('innovaciones_core');
 const refConfigDiaValor = () => dbFire.collection('config').doc('dia_valor');
 const refConfigRutasEntrega = () => dbFire.collection('config').doc('rutas_entrega');
+const refConfigFeriados = () => dbFire.collection('config').doc('feriados_entrega');
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
@@ -1703,6 +1719,11 @@ let DIA_VALOR_EXCEPCIONES = {}; // { 'YYYY-MM-DD': valor } — ej. feriados en 0
 // archivos salvo que cambien las rutas o los días de entrega.
 let RUTAS_ENTREGA = [];
 
+// Feriados sin entrega (ej. el 9/11 por la visita del Papa) — fechas ISO "YYYY-MM-DD". Cuando el
+// día objetivo de la Oportunidad (ver diaSemanaManana) cae en uno de estos días, se corre al
+// siguiente día que sí tenga entrega.
+let FERIADOS_ENTREGA = [];
+
 // Busca la info de segmentación de una marca por su texto de descripción (ya normalizado a
 // MAYÚSCULAS, igual que f.marca en normalizarFilasVenta) — null si no está cargada en la tabla.
 function infoDeMarca(marcaTexto) {
@@ -1829,13 +1850,35 @@ function convivenciaNuevaPorPv(filasHastaHoy, filasHoy) {
   return resultado;
 }
 
-// Nombre del día de MAÑANA (relativo a hoy), en las mismas siglas que usamos para guardar
+// Nombre del día objetivo de la Oportunidad, en las mismas siglas que usamos para guardar
 // RUTAS_ENTREGA (LUN/MAR/MIE/JUE/VIE/SAB/DOM).
+//
+// OJO: son +2 días desde HOY (el día en que se hace la Vespertina y se sube el archivo), no +1.
+// Motivo: la Vespertina de HOY ya sube el VESPER con los pedidos de MAÑANA (ya cerrados, no hay
+// nada para empujar ahí) — lo único sobre lo que todavía se puede actuar es la entrega del día
+// siguiente a ese, es decir PASADO MAÑANA. Como esto se calcula y se guarda hoy pero lo ve el
+// vendedor recién mañana (cuando entre a planificar SU día), para ÉL ese dato sí es "mañana":
+// por eso toda la UI sigue diciendo "Entrega Mañana" / "Oportunidad" sin que haya que tocar nada
+// ahí — solo este cálculo necesita el +2 en vez del +1. Ejemplo: jueves 29 a las 15hs se sube
+// Facturado 1-29 + VESPER del 30 → esto calcula y guarda la oportunidad del SÁBADO 31 (chequeada
+// contra cobertura 1-30), que es justo lo que el vendedor va a ver mañana viernes al planificar.
+//
+// FERIADOS: si ese día objetivo (hoy+2) cae en un feriado sin entrega (ver FERIADOS_ENTREGA), se
+// corre al próximo día que sí tenga entrega. Ej.: feriado lunes 9/11 → el sábado 7/11 (hoy+2 cae
+// justo en el feriado) la Oportunidad pasa a calcularse para el martes 10/11.
+function fechaObjetivoEntrega() {
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  let guard = 0;
+  while (FERIADOS_ENTREGA.includes(fechaLocalISO(d)) && guard < 14) {
+    d.setDate(d.getDate() + 1);
+    guard++;
+  }
+  return d;
+}
 function diaSemanaManana() {
   const dias = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return dias[d.getDay()];
+  return dias[fechaObjetivoEntrega().getDay()];
 }
 
 // pv -> Set(clienteCod) de los clientes que tienen entrega MAÑANA, según RUTAS_ENTREGA.
@@ -1848,6 +1891,21 @@ function entregaMananaPorPv() {
     mapa.get(r.pv).add(r.clienteCod);
   });
   return mapa;
+}
+
+// Recalcula SOLO "clientes con entrega mañana" por vendedor, a partir de RUTAS_ENTREGA (que llega
+// sincronizado por Firestore a TODOS los navegadores, a diferencia de FILAS_FACTURADO_HASTA_HOY y
+// FILAS_PEDIDOS_MANANA que son transitorios y solo existen en el navegador que subió el archivo).
+// Por eso esto NO depende de que haya pedidos de mañana cargados en este navegador: si dependiera,
+// se quedaba en 0 cada vez que alguien solo actualizaba las rutas de entrega sin subir también el
+// archivo de ventas del día en esa misma sesión.
+function recalcularEntregaManana() {
+  const entregaManana = entregaMananaPorPv();
+  DATA_COMPLETA.vendedores.forEach(v => {
+    v.entregaManana = (entregaManana.get(v.pv) || new Set()).size;
+  });
+  guardarVendedoresCompleto(DATA_COMPLETA.vendedores);
+  return entregaManana;
 }
 
 // Recalcula TODOS los KPI del motor nuevo y los deja en vend.kpis[...].coberturaNueva / .realVesper.
@@ -1882,7 +1940,7 @@ function recalcularVentasAvanzadas() {
   // Oportunidad: de los clientes con entrega MAÑANA (según RUTAS_ENTREGA), cuántos todavía no
   // compraron este mes en el KPI que esa mesa tiene elegido como KPI 1 o KPI 2 — se calcula SOLO
   // para los nombres que estén elegidos ahora mismo en alguna mesa (no los 28 posibles).
-  const entregaManana = entregaMananaPorPv();
+  const entregaManana = recalcularEntregaManana();
   const nombresKpiEnUso = new Set();
   Object.values(DATA_COMPLETA.mesas_kpis || {}).forEach(par => { (par || []).forEach(n => { if (n) nombresKpiEnUso.add(n); }); });
   nombresKpiEnUso.forEach(kpiNombre => {
@@ -1897,12 +1955,6 @@ function recalcularVentasAvanzadas() {
       entregaSet.forEach(c => { if (!cubiertosSet.has(c)) faltan++; });
       v.kpis[kpiNombre].oportunidad = faltan;
     });
-  });
-
-  // Cantidad de clientes con entrega mañana por vendedor, sin filtrar por ningún KPI — es el dato
-  // que se muestra arriba de la tarjeta de Volumen CZA en Planificación.
-  DATA_COMPLETA.vendedores.forEach(v => {
-    v.entregaManana = (entregaManana.get(v.pv) || new Set()).size;
   });
 
   guardarVendedoresCompleto(DATA_COMPLETA.vendedores);
@@ -3026,6 +3078,111 @@ function renderVespertinaCierre() {
     return;
   }
 
+  // MODO 2b: DETALLE DE KPI 1 / KPI 2 DE LA MESA (dinámico: cada mesa puede tener elegido un KPI
+  // distinto) — en vez de Med-nec/Med-Real/7D/14D/Prevendido (que no aplican, estos KPI no tienen
+  // objetivo), se muestra Clientes con entrega mañana + Oportunidad, igual que en Planificación.
+  if (negocio === 'KPI1_MESA' || negocio === 'KPI2_MESA') {
+    const idxSel = negocio === 'KPI1_MESA' ? 0 : 1;
+    const etiqueta = negocio === 'KPI1_MESA' ? 'KPI 1 DE LA MESA' : 'KPI 2 DE LA MESA';
+    let thead2 = `
+      <table class="table table-bordered table-hover table-custom mb-0">
+        <thead>
+          <tr>
+            <th rowspan="2" class="text-start header-cierre" style="min-width: 190px;">${vista === 'MESAS' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + vista + ')'}</th>
+            <th colspan="3" class="header-kpi-sel1">CUMPLIMIENTO DE HOY (${etiqueta})</th>
+            <th colspan="2" class="header-cierre">PARA MAÑANA</th>
+            <th rowspan="2" class="header-kpi-cvz bg-info text-white fw-bold" style="min-width: 110px;">Compromiso p/mañana</th>
+          </tr>
+          <tr>
+            <th class="header-kpi-sel1 bg-primary text-warning fw-bold">Planificación Hoy</th>
+            <th class="header-kpi-sel1 bg-dark text-white fw-bold">Acumulado Hoy</th>
+            <th class="header-kpi-sel1">Desvío (Var %)</th>
+            <th class="header-cierre">Clientes c/ entrega</th>
+            <th class="header-cierre">Oportunidad</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let tbody2 = '';
+    let tot2 = { plan: 0, real: 0, entrega: 0, oport: 0, comp: 0 };
+
+    if (vista === 'MESAS') {
+      SUPERVISORES_LIST.forEach(sv => {
+        const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
+        const kpiNombre = getKpisForMesa(sv)[idxSel];
+        let sP = 0, sR = 0, sEntrega = 0, sOport = 0, sComp = 0;
+
+        vends.forEach(v => {
+          const d = getKpiData(v, kpiNombre);
+          sP += d.plan;
+          sR += getRealTotal(d, kpiNombre);
+          sEntrega += v.entregaManana || 0;
+          sOport += d.oportunidad || 0;
+          sComp += d.compromisoProx || 0;
+        });
+
+        tot2.plan += sP; tot2.real += sR; tot2.entrega += sEntrega; tot2.oport += sOport; tot2.comp += sComp;
+        const varP = sP > 0 ? (sR / sP - 1) : 0;
+
+        tbody2 += `
+          <tr>
+            <td class="text-start fw-bold text-primary">${sv} <small class="text-muted d-block" style="font-size:0.7rem;">${kpiNombre}</small></td>
+            <td class="fw-bold bg-light">${sP.toFixed(1)}</td>
+            <td class="fw-bold">${sR.toFixed(1)}</td>
+            <td>${spanVarPtos(varP * 100)}</td>
+            <td class="fw-semibold">${sEntrega}</td>
+            <td class="text-warning text-dark fw-semibold">${sOport}</td>
+            <td class="fw-bold bg-light text-primary">${sComp.toFixed(1)}</td>
+          </tr>
+        `;
+      });
+    } else {
+      const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
+      const kpiNombre = getKpisForMesa(vista)[idxSel];
+      vends.forEach(v => {
+        const d = getKpiData(v, kpiNombre);
+        const realHoy = getRealTotal(d, kpiNombre);
+        const compM = d.compromisoProx || 0;
+
+        tot2.plan += d.plan; tot2.real += realHoy; tot2.entrega += (v.entregaManana || 0); tot2.oport += (d.oportunidad || 0); tot2.comp += compM;
+        const varP = d.plan > 0 ? (realHoy / d.plan - 1) : 0;
+
+        tbody2 += `
+          <tr>
+            <td class="text-start fw-semibold">${v.nombre}</td>
+            <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
+            <td class="fw-bold">${realHoy.toFixed(1)}</td>
+            <td>${spanVarPtos(varP * 100)}</td>
+            <td class="fw-semibold">${v.entregaManana || 0}</td>
+            <td class="text-warning text-dark fw-semibold">${d.oportunidad || 0}</td>
+            <td style="background-color:#e0f7fa;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info mx-auto" style="width:90px;" value="${compM}" onchange="cambiarCompromisoVendedor(${v.pv}, '${kpiNombre}', this.value)"></td>
+          </tr>
+        `;
+      });
+    }
+
+    const totVarP2 = tot2.plan > 0 ? (tot2.real / tot2.plan - 1) : 0;
+    let tfoot2 = `
+        </tbody>
+        <tfoot class="table-dark fw-bold">
+          <tr>
+            <td class="text-start">${vista === 'MESAS' ? 'TOTAL EMPRESA' : 'TOTAL MESA'}</td>
+            <td>${tot2.plan.toFixed(1)}</td>
+            <td>${tot2.real.toFixed(1)}</td>
+            <td>${spanVarPtos(totVarP2 * 100)}</td>
+            <td>${tot2.entrega}</td>
+            <td>${tot2.oport}</td>
+            <td>${tot2.comp.toFixed(1)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+
+    wrapper.innerHTML = thead2 + tbody2 + tfoot2;
+    return;
+  }
+
   // MODO 2: DETALLE ESPECÍFICO (CON MED-NEC AD-V, MED-REAL AD-V, 7D, 14D, PREVENDIDO, COMPROMISO)
   let kpiKey = negocio;
   let thead = `
@@ -3168,15 +3325,15 @@ function filaVespertinaHtml(row, idx) {
     <td class="fw-bold text-center" style="background-color: #e0f2fe;" title="Suma de los compromisos puestos ruta por ruta en la tabla de arriba">${(row.cza || 0).toFixed(1)}</td>
     <td class="fw-bold text-center" style="background-color: #dcfce7;" title="Suma de los compromisos puestos ruta por ruta en la tabla de arriba">${(row.ung || 0).toFixed(1)}</td>
     <td style="background-color: #fef3c7;">
-      <div class="d-flex align-items-center gap-1 justify-content-center">
+      <div class="d-flex flex-column align-items-center gap-1">
         <select class="form-select form-select-sm fw-bold border-warning" style="width:135px;" onchange="cambiarVesperKpiNombre(${idx}, 'kpi1_name', this.value)">${opts1}</select>
-        <input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-warning" style="width:75px;" value="${row.kpi1}" onchange="cambiarVesperRow(${idx}, 'kpi1', this.value)">
+        <strong class="text-warning text-dark" title="Suma de los compromisos puestos ruta por ruta en el detalle de arriba (Negocio: KPI 1 de cada mesa)">${(row.kpi1 || 0).toFixed(1)}</strong>
       </div>
     </td>
     <td style="background-color: #ede9fe;">
-      <div class="d-flex align-items-center gap-1 justify-content-center">
+      <div class="d-flex flex-column align-items-center gap-1">
         <select class="form-select form-select-sm fw-bold border-info" style="width:135px;" onchange="cambiarVesperKpiNombre(${idx}, 'kpi2_name', this.value)">${opts2}</select>
-        <input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info" style="width:75px;" value="${row.kpi2}" onchange="cambiarVesperRow(${idx}, 'kpi2', this.value)">
+        <strong class="text-info text-dark" title="Suma de los compromisos puestos ruta por ruta en el detalle de arriba (Negocio: KPI 2 de cada mesa)">${(row.kpi2 || 0).toFixed(1)}</strong>
       </div>
     </td>
   `;
@@ -3209,6 +3366,8 @@ function renderVespertina() {
   DATOS_VESPERTINA.forEach(row => {
     row.cza = sumaCompromisoMesa(row.sv, 'CVZ CMQ');
     row.ung = sumaCompromisoMesa(row.sv, 'UNG');
+    row.kpi1 = sumaCompromisoMesa(row.sv, row.kpi1_name);
+    row.kpi2 = sumaCompromisoMesa(row.sv, row.kpi2_name);
   });
 
   const tbody = document.getElementById('cuerpoTablaVespertina');
@@ -3234,6 +3393,8 @@ function refrescarFilaVespertina(idx) {
   const row = DATOS_VESPERTINA[idx];
   row.cza = sumaCompromisoMesa(row.sv, 'CVZ CMQ');
   row.ung = sumaCompromisoMesa(row.sv, 'UNG');
+  row.kpi1 = sumaCompromisoMesa(row.sv, row.kpi1_name);
+  row.kpi2 = sumaCompromisoMesa(row.sv, row.kpi2_name);
   tr.innerHTML = filaVespertinaHtml(row, idx);
   renderPieVespertina();
 }
@@ -3267,6 +3428,8 @@ function cambiarCompromisoVendedor(pv, kpiKey, val) {
   if (row) {
     row.cza = sumaCompromisoMesa(vend.sv, 'CVZ CMQ');
     row.ung = sumaCompromisoMesa(vend.sv, 'UNG');
+    row.kpi1 = sumaCompromisoMesa(vend.sv, row.kpi1_name);
+    row.kpi2 = sumaCompromisoMesa(vend.sv, row.kpi2_name);
     guardarCompromisoMesaEnNube(vend.sv);
   }
 
@@ -3333,6 +3496,62 @@ function renderAnalistaView() {
     elRutas.textContent = RUTAS_ENTREGA.length
       ? `${RUTAS_ENTREGA.length} clientes con ruta de entrega guardados`
       : 'Todavía no hay rutas de entrega guardadas';
+  }
+  renderListaFeriados();
+}
+
+// Pinta la lista de feriados sin entrega como chips, cada uno con su botón de borrar.
+function renderListaFeriados() {
+  const cont = document.getElementById('listaFeriadosEntrega');
+  if (!cont) return;
+  const dias = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
+  const fechas = [...FERIADOS_ENTREGA].sort();
+  if (!fechas.length) {
+    cont.innerHTML = '<span class="text-muted small">No hay feriados cargados.</span>';
+    return;
+  }
+  cont.innerHTML = fechas.map(f => {
+    const [y, m, d] = f.split('-').map(Number);
+    const nombreDia = dias[new Date(y, m - 1, d).getDay()];
+    return `
+      <span class="badge bg-dark d-flex align-items-center gap-2" style="font-size:0.85rem; padding:0.5rem 0.7rem;">
+        ${d}/${m}/${y} (${nombreDia})
+        <i class="bi bi-x-lg" style="cursor:pointer;" title="Quitar feriado" onclick="quitarFeriadoEntrega('${f}')"></i>
+      </span>
+    `;
+  }).join('');
+}
+
+// Agrega el feriado que el analista tipeó en el input de fecha, lo guarda en Firestore y
+// recalcula la Oportunidad/Entrega Mañana para que el corrimiento de día se aplique al toque.
+async function agregarFeriadoEntrega() {
+  const inp = document.getElementById('inputNuevoFeriado');
+  const fecha = inp.value;
+  if (!fecha) { alert('Elegí una fecha primero.'); return; }
+  if (!FERIADOS_ENTREGA.includes(fecha)) FERIADOS_ENTREGA.push(fecha);
+  inp.value = '';
+  await guardarFeriadosEnNube();
+  recalcularEntregaManana();
+  recalcularVentasAvanzadas();
+  renderAnalistaView();
+  renderTodoLoVisible();
+}
+
+async function quitarFeriadoEntrega(fecha) {
+  FERIADOS_ENTREGA = FERIADOS_ENTREGA.filter(f => f !== fecha);
+  await guardarFeriadosEnNube();
+  recalcularEntregaManana();
+  recalcularVentasAvanzadas();
+  renderAnalistaView();
+  renderTodoLoVisible();
+}
+
+async function guardarFeriadosEnNube() {
+  try {
+    await refConfigFeriados().set({ fechas: FERIADOS_ENTREGA });
+  } catch (err) {
+    console.warn('Error guardando feriados:', err);
+    alert('No se pudo guardar el feriado en Firebase: ' + (err.message || err));
   }
 }
 
@@ -3595,8 +3814,12 @@ async function intentarCombinarRutasEntrega() {
     }
   } catch (err) {
     console.warn('Error guardando rutas de entrega:', err);
-    if (badge) { badge.textContent = 'No se pudo guardar en Firebase (revisá la conexión).'; badge.className = 'badge bg-danger'; }
+    if (badge) { badge.textContent = `No se pudo guardar en Firebase: ${err.code || ''} ${err.message || err}`; badge.className = 'badge bg-danger'; }
   }
+  // Se recalcula igual aunque falle el guardado en Firebase: así el que subió el archivo ve el
+  // resultado en su propia pantalla, aunque los demás navegadores no lo vean hasta que se resuelva
+  // el guardado (sin esto, quedaba todo en 0 hasta la próxima vez que llegara un archivo de ventas).
+  recalcularEntregaManana();
   recalcularVentasAvanzadas();
   renderTodoLoVisible();
 }
@@ -4001,9 +4224,20 @@ function iniciarListenersFirestore() {
   // Oportunidad apenas alguien sube un archivo nuevo de rutas, sin tener que resubir las ventas.
   refConfigRutasEntrega().onSnapshot(doc => {
     RUTAS_ENTREGA = (doc.exists && Array.isArray(doc.data().filas)) ? doc.data().filas : [];
+    recalcularEntregaManana();
     recalcularVentasAvanzadas();
     renderTodoLoVisible();
   }, err => console.warn("Listener rutas_entrega:", err));
+
+  // Feriados sin entrega — en vivo, así todas las PCs corren el día objetivo de la Oportunidad
+  // apenas alguien carga o saca un feriado, sin tener que resubir nada más.
+  refConfigFeriados().onSnapshot(doc => {
+    FERIADOS_ENTREGA = (doc.exists && Array.isArray(doc.data().fechas)) ? doc.data().fechas : [];
+    recalcularEntregaManana();
+    recalcularVentasAvanzadas();
+    if (document.getElementById('etapaAnalista') && !document.getElementById('etapaAnalista').classList.contains('d-none')) renderAnalistaView();
+    renderTodoLoVisible();
+  }, err => console.warn("Listener feriados_entrega:", err));
 }
 
 async function inicializarDatos() {
