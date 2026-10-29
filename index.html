@@ -3095,7 +3095,7 @@ function renderVespertinaCierre() {
           </tr>
           <tr>
             <th class="header-kpi-sel1 bg-primary text-warning fw-bold">Planificación Hoy</th>
-            <th class="header-kpi-sel1 bg-dark text-white fw-bold">Acumulado Hoy</th>
+            <th class="header-kpi-sel1 bg-dark text-white fw-bold">Clientes Nuevos Hoy</th>
             <th class="header-kpi-sel1">Desvío (Var %)</th>
             <th class="header-cierre">Clientes c/ entrega</th>
             <th class="header-cierre">Oportunidad</th>
@@ -3116,7 +3116,7 @@ function renderVespertinaCierre() {
         vends.forEach(v => {
           const d = getKpiData(v, kpiNombre);
           sP += d.plan;
-          sR += getRealTotal(d, kpiNombre);
+          sR += getRealHoy(d, kpiNombre);
           sEntrega += v.entregaManana || 0;
           sOport += d.oportunidad || 0;
           sComp += d.compromisoProx || 0;
@@ -3142,7 +3142,7 @@ function renderVespertinaCierre() {
       const kpiNombre = getKpisForMesa(vista)[idxSel];
       vends.forEach(v => {
         const d = getKpiData(v, kpiNombre);
-        const realHoy = getRealTotal(d, kpiNombre);
+        const realHoy = getRealHoy(d, kpiNombre);
         const compM = d.compromisoProx || 0;
 
         tot2.plan += d.plan; tot2.real += realHoy; tot2.entrega += (v.entregaManana || 0); tot2.oport += (d.oportunidad || 0); tot2.comp += compM;
