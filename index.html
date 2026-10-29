@@ -3737,9 +3737,13 @@ function parsearClientesActivosPv(filasExcel) {
   if (!filasExcel.length) return new Map();
   const headers = filasExcel[0];
   const idxCliente = headers.indexOf('Cliente');
-  const idxRuta = headers.indexOf('Fuerza de venta 1 Ruta de venta');
+  // OJO: "Fuerza de venta 1 Ruta de venta" es un código de RUTA FÍSICA (101, 102, ... hasta 206
+  // valores distintos), no el número de vendedor — eso pisaba vendedores reales por coincidencia
+  // numérica y dejaba la mayoría de los clientes sin PV real. El número de vendedor real (el mismo
+  // "Vnd." 1-26 que usa toda la app) está en "Fuerza de venta 1 Personal comercial".
+  const idxRuta = headers.indexOf('Fuerza de venta 1 Personal comercial');
   if (idxCliente === -1 || idxRuta === -1) {
-    alert('El Excel no tiene las columnas esperadas ("Cliente" / "Fuerza de venta 1 Ruta de venta") — revisá que sea el export de Clientes Activos.');
+    alert('El Excel no tiene las columnas esperadas ("Cliente" / "Fuerza de venta 1 Personal comercial") — revisá que sea el export de Clientes Activos.');
     return new Map();
   }
   const mapa = new Map();
