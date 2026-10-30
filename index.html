@@ -550,6 +550,8 @@
           <i class="bi bi-exclamation-triangle-fill"></i>
           <span id="avisoDatosSesionTexto">Cargando estado...</span>
         </div>
+        <!-- Marcas de cerveza que no suman a CORE+VALUE ni a PREMIUM (detalle y botones para corregir en la pestaña AJUSTES) -->
+        <div id="avisoMarcas" class="alert alert-danger py-2 px-3 mb-3 small d-none"></div>
 
         <!-- Carga Directa por Archivos Individuales -->
         <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Cargar Archivos (.xlsx / .csv)</h6>
@@ -783,9 +785,54 @@
   <!-- ETAPA 6: AJUSTES (Segmentación de marcas / Innovaciones Core / Día-Valor / Vendedor→Supervisor) -->
   <!-- ==================================================================== -->
   <div id="etapaAjustes" class="d-none">
-    <div class="card card-custom p-4 bg-white shadow-sm text-center text-muted">
-      <i class="bi bi-cone-striped" style="font-size:2rem;"></i>
-      <p class="mb-0 mt-2">Esta pestaña todavía no tiene nada cargado. La vamos a ir completando más adelante.</p>
+    <!-- Control de marcas: avisa qué marcas de cerveza vendidas NO suman a CORE+VALUE ni a PREMIUM -->
+    <div class="card card-custom p-4 bg-white shadow-sm mb-3">
+      <h5 class="fw-bold mb-1"><i class="bi bi-shield-check me-2 text-primary"></i>Control de marcas</h5>
+      <p class="text-muted small mb-2">Revisa las marcas de cerveza (CZA) que aparecieron en las ventas cargadas y avisa cuáles no están en la tabla de abajo, o están con un segmento que no es CORE + VALUE ni PREMIUM — esas ventas no suman en TOP / CORE + VALUE / PREMIUM / Balanced Choices.</p>
+      <div id="ajustesControlMarcas"></div>
+    </div>
+
+    <div class="card card-custom p-4 bg-white shadow-sm mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-tags me-2 text-primary"></i>Segmentación de marcas</h5>
+        <button class="btn btn-sm btn-outline-dark" onclick="agregarFilaMarca()"><i class="bi bi-plus-lg me-1"></i>Agregar marca</button>
+      </div>
+      <p class="text-muted small mb-2">La <strong>Descripción</strong> tiene que ser igual al texto de la marca que viene en el Excel de Chess. <strong>Segmento</strong>: CORE + VALUE o PREMIUM.</p>
+      <div class="table-responsive" style="max-height:480px; overflow-y:auto;">
+        <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.8rem;">
+          <thead class="table-light" style="position:sticky; top:0;">
+            <tr><th>Código</th><th>Descripción</th><th>Marca agrupada</th><th>Seg. detallado</th><th>Segmento</th><th>0.0</th><th>TOP</th><th>BC</th><th></th></tr>
+          </thead>
+          <tbody id="ajustesMarcasBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card card-custom p-4 bg-white shadow-sm mb-3">
+      <h5 class="fw-bold mb-2"><i class="bi bi-lightbulb me-2 text-primary"></i>Innovaciones Core (códigos de artículo)</h5>
+      <div id="ajustesInnovacionesChips" class="d-flex flex-wrap gap-2 mb-2"></div>
+      <div class="d-flex gap-2">
+        <input type="number" id="ajustesNuevoCodigoArticulo" class="form-control form-control-sm" style="width:160px;" placeholder="Código artículo">
+        <button class="btn btn-sm btn-outline-dark" onclick="agregarCodigoInnovacion()"><i class="bi bi-plus-lg me-1"></i>Agregar</button>
+      </div>
+    </div>
+
+    <div class="card card-custom p-4 bg-white shadow-sm mb-3">
+      <h5 class="fw-bold mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i>Valor del día (excepciones)</h5>
+      <div class="d-flex gap-2 align-items-end flex-wrap mb-2">
+        <div><label class="form-label small fw-semibold mb-1">Fecha</label><input type="date" id="ajustesNuevaFechaExcepcion" class="form-control form-control-sm" style="width:170px;"></div>
+        <div><label class="form-label small fw-semibold mb-1">Valor</label><input type="number" step="0.1" id="ajustesNuevoValorExcepcion" class="form-control form-control-sm" style="width:100px;" value="0"></div>
+        <button class="btn btn-sm btn-outline-dark" onclick="agregarExcepcionDia()"><i class="bi bi-plus-lg me-1"></i>Agregar</button>
+      </div>
+      <table class="table table-sm table-bordered mb-1" style="font-size:0.85rem; max-width:360px;"><thead class="table-light"><tr><th>Fecha</th><th>Valor</th><th></th></tr></thead><tbody id="ajustesDiaValorBody"></tbody></table>
+      <div id="ajustesDiaValorVacioMsg" class="text-muted small"></div>
+    </div>
+
+    <div class="card card-custom p-4 bg-white shadow-sm mb-3">
+      <h5 class="fw-bold mb-2"><i class="bi bi-diagram-3 me-2 text-primary"></i>Vendedor → Supervisor</h5>
+      <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+        <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.85rem;"><thead class="table-light"><tr><th>Vendedor</th><th>Supervisor</th></tr></thead><tbody id="ajustesVendedorSupervisorBody"></tbody></table>
+      </div>
     </div>
   </div>
 
@@ -816,6 +863,7 @@ const refConfigInnovaciones = () => dbFire.collection('config').doc('innovacione
 const refConfigDiaValor = () => dbFire.collection('config').doc('dia_valor');
 const refConfigRutasEntrega = () => dbFire.collection('config').doc('rutas_entrega');
 const refConfigFeriados = () => dbFire.collection('config').doc('feriados_entrega');
+const refConfigControlMarcas = () => dbFire.collection('config').doc('control_marcas');
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
@@ -1873,11 +1921,19 @@ function convivenciaNuevaPorPv(filasHastaHoy, filasHoy) {
 // FERIADOS: si ese día objetivo (hoy+2) cae en un feriado sin entrega (ver FERIADOS_ENTREGA), se
 // corre al próximo día que sí tenga entrega. Ej.: feriado lunes 9/11 → el sábado 7/11 (hoy+2 cae
 // justo en el feriado) la Oportunidad pasa a calcularse para el martes 10/11.
+//
+// MOMENTO DEL DÍA: el +2 vale desde que se sube la Vespertina de hoy (cargas.VESPER === hoy). A la
+// mañana siguiente, antes de subir la nueva Vespertina, ese mismo día objetivo ya es "mañana" (+1):
+// viernes 30 a la mañana el planificador muestra el sábado 31 (el mismo que se calculó el jueves),
+// y recién cuando se sube la Vespertina del viernes pasa a +2 (domingo → no se trabaja → lunes 2/11).
+// DOMINGOS: nunca hay entrega, se saltean igual que un feriado.
 function fechaObjetivoEntrega() {
+  const hoyISO = fechaLocalISO();
+  const vesperHoy = !!(DATA_COMPLETA.cargas && DATA_COMPLETA.cargas.VESPER === hoyISO);
   const d = new Date();
-  d.setDate(d.getDate() + 2);
+  d.setDate(d.getDate() + (vesperHoy ? 2 : 1));
   let guard = 0;
-  while (FERIADOS_ENTREGA.includes(fechaLocalISO(d)) && guard < 14) {
+  while ((d.getDay() === 0 || FERIADOS_ENTREGA.includes(fechaLocalISO(d))) && guard < 14) {
     d.setDate(d.getDate() + 1);
     guard++;
   }
@@ -1906,7 +1962,26 @@ function entregaMananaPorPv() {
 // Por eso esto NO depende de que haya pedidos de mañana cargados en este navegador: si dependiera,
 // se quedaba en 0 cada vez que alguien solo actualizaba las rutas de entrega sin subir también el
 // archivo de ventas del día en esa misma sesión.
+// LECTURA EN VIVO: "clientes con entrega mañana" de un vendedor, calculado en el momento a partir de
+// RUTAS_ENTREGA (que sí está sincronizado por Firestore en todos los navegadores) y de la fecha de
+// HOY. Antes la pantalla leía v.entregaManana, un número GUARDADO dentro del documento de cada
+// vendedor: quedaba viejo de un día para el otro, o en 0 si el documento llegaba de Firestore después
+// de calcularse (carrera entre listeners) o lo pisaba otra carga (AD/AD(V)) — y nadie lo recalculaba.
+// Calculado al leer, no puede quedar desactualizado. Cache por (día objetivo + versión de las rutas).
+let _cacheEntrega = { clave: '', mapa: null };
+function getEntregaManana(v) {
+  const clave = fechaLocalISO(fechaObjetivoEntrega()) + '|' + RUTAS_ENTREGA.length + '|' + (RUTAS_ENTREGA[0] ? RUTAS_ENTREGA[0].clienteCod : '');
+  if (_cacheEntrega.clave !== clave || !_cacheEntrega.mapa) {
+    _cacheEntrega = { clave, mapa: entregaMananaPorPv() };
+  }
+  const set = _cacheEntrega.mapa.get(v.pv);
+  if (set) return set.size;
+  // Sin rutas cargadas en este navegador todavía (el listener de Firestore no llegó): último valor guardado
+  return RUTAS_ENTREGA.length ? 0 : (v.entregaManana || 0);
+}
+
 function recalcularEntregaManana() {
+  _cacheEntrega = { clave: '', mapa: null };
   const entregaManana = entregaMananaPorPv();
   DATA_COMPLETA.vendedores.forEach(v => {
     v.entregaManana = (entregaManana.get(v.pv) || new Set()).size;
@@ -1965,6 +2040,7 @@ function recalcularVentasAvanzadas() {
   });
 
   guardarVendedoresCompleto(DATA_COMPLETA.vendedores);
+  actualizarControlMarcas(); // avisa si alguna marca de cerveza vendida no suma en ningún segmento
 }
 
 // Carga el archivo "FACTURADO HASTA HOY" (venta acumulada del mes, sin el día de hoy)
@@ -2355,7 +2431,118 @@ function cambiarSupervisorVendedor(pv, nuevoSv) {
   guardarVendedorParcial(pv, { sv: nuevoSv });
 }
 
+// ====================================================================
+// CONTROL DE MARCAS — marcas de cerveza (CZA) vendidas que no suman a CORE+VALUE ni a PREMIUM
+// ====================================================================
+let CONTROL_MARCAS = [];          // [{ marca, bultos, clientes, motivo: 'NO_ESTA'|'SEG_INVALIDO', segActual }]
+let CONTROL_MARCAS_FECHA = null;  // null = todavía nunca se controló (no hubo ventas cargadas)
+const MARCAS_IGNORAR_CONTROL = ['NO APLICABLE', ''];
+
+function calcularControlMarcas() {
+  const acc = new Map();
+  [...FILAS_FACTURADO_HASTA_HOY, ...FILAS_PEDIDOS_MANANA].forEach(f => {
+    if (f.unidadNegocio !== 1 || MARCAS_IGNORAR_CONTROL.includes(f.marca)) return;
+    let a = acc.get(f.marca);
+    if (!a) { a = { bultos: 0, clientes: new Set() }; acc.set(f.marca, a); }
+    a.bultos += f.cantidad;
+    a.clientes.add(f.clienteCod);
+  });
+  const out = [];
+  acc.forEach((a, marca) => {
+    if (a.bultos <= 0) return;
+    const info = infoDeMarca(marca);
+    const seg = info ? String(info.segmento || '').replace(/\s+/g, '').toUpperCase() : '';
+    let motivo = null;
+    if (!info) motivo = 'NO_ESTA';
+    else if (seg !== 'CORE+VALUE' && seg !== 'PREMIUM') motivo = 'SEG_INVALIDO';
+    if (motivo) out.push({ marca, bultos: Math.round(a.bultos * 10) / 10, clientes: a.clientes.size, motivo, segActual: info ? (info.segmento || '') : '' });
+  });
+  return out.sort((x, y) => y.bultos - x.bultos);
+}
+
+// Se llama sola cada vez que se recalculan las ventas. Solo controla si en ESTE navegador están
+// cargados los dos archivos (si no, la lista saldría incompleta); el resultado se guarda en Firebase
+// para que se vea desde cualquier PC.
+function actualizarControlMarcas() {
+  if (!FILAS_FACTURADO_HASTA_HOY.length || !FILAS_PEDIDOS_MANANA.length) return;
+  const nuevo = calcularControlMarcas();
+  if (JSON.stringify(nuevo) !== JSON.stringify(CONTROL_MARCAS) || !CONTROL_MARCAS_FECHA) {
+    CONTROL_MARCAS = nuevo;
+    CONTROL_MARCAS_FECHA = fechaLocalISO();
+    refConfigControlMarcas().set({ fecha: CONTROL_MARCAS_FECHA, items: CONTROL_MARCAS }).catch(e => console.warn('control_marcas:', e));
+  }
+  renderControlMarcas();
+}
+
+// Vuelve a clasificar las filas de venta que están en memoria con la tabla de Ajustes actual (se
+// clasifican una sola vez al subir el archivo) y recalcula los volúmenes que dependen de eso.
+function reclasificarFilasEnMemoria() {
+  const rec = f => {
+    const info = infoDeMarca(f.marca);
+    f.segCza = info ? String(info.segmento || '').replace(/\s+/g, '') : '';
+    f.segTop = (info && info.esTop) ? 'TOP' : '';
+    f.segBc = (info && info.esBc) ? 'BALANCEDCHOICES' : '';
+  };
+  FILAS_FACTURADO_HASTA_HOY.forEach(rec);
+  FILAS_PEDIDOS_MANANA.forEach(rec);
+  if (!FILAS_PEDIDOS_MANANA.length) return;
+  ['TOP', 'CORE + VALUE', 'PREMIUM', 'BALANCED CHOICES'].forEach(k => {
+    const mapa = sumaPorPv(FILAS_PEDIDOS_MANANA, FILTROS_COBERTURA_EXTRA[k]);
+    DATA_COMPLETA.vendedores.forEach(v => { if (v.kpis[k]) v.kpis[k].realVesper = parseFloat((mapa.get(v.pv) || 0).toFixed(2)); });
+  });
+}
+
+function corregirMarcaControl(marca, segmento) {
+  const existentes = SEGMENTACION_MARCAS.filter(m => m.descripcion === marca);
+  const detallado = segmento === 'PREMIUM' ? 'PREMIUM' : 'CORE';
+  if (existentes.length) existentes.forEach(m => { m.segmento = segmento; if (!m.segDetallado) m.segDetallado = detallado; });
+  else SEGMENTACION_MARCAS.push({ codigo: 0, descripcion: marca, marcaAgrupada: marca, segDetallado: detallado, segmento, es00: false, esTop: false, esBc: false });
+  guardarSegmentacionMarcas();
+  CONTROL_MARCAS = CONTROL_MARCAS.filter(x => x.marca !== marca);
+  if (CONTROL_MARCAS_FECHA) refConfigControlMarcas().set({ fecha: CONTROL_MARCAS_FECHA, items: CONTROL_MARCAS }).catch(e => console.warn(e));
+  reclasificarFilasEnMemoria();
+  recalcularVentasAvanzadas();
+  actualizarControlMarcas();
+  renderAjustes();
+  renderTodoLoVisible();
+}
+
+function renderControlMarcas() {
+  const cont = document.getElementById('ajustesControlMarcas');
+  const aviso = document.getElementById('avisoMarcas');
+  if (aviso) {
+    if (CONTROL_MARCAS.length) {
+      aviso.classList.remove('d-none');
+      aviso.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-2"></i><strong>${CONTROL_MARCAS.length} marca(s) de cerveza no suman en CORE+VALUE ni PREMIUM:</strong> ${CONTROL_MARCAS.map(x => x.marca).join(', ')}. Corregilo en la pestaña AJUSTES → Control de marcas.`;
+    } else aviso.classList.add('d-none');
+  }
+  if (!cont) return;
+  if (!CONTROL_MARCAS_FECHA) {
+    cont.innerHTML = '<div class="text-muted small">Todavía no hay ventas cargadas para controlar. Se controla solo cuando se suben Facturado Hasta Hoy y Pedidos Para Mañana.</div>';
+    return;
+  }
+  if (!CONTROL_MARCAS.length) {
+    cont.innerHTML = `<div class="alert alert-success py-2 mb-0 small"><i class="bi bi-check-circle-fill me-2"></i>Todas las marcas de cerveza vendidas están clasificadas en CORE + VALUE o PREMIUM (último control: ${CONTROL_MARCAS_FECHA}).</div>`;
+    return;
+  }
+  const esc = s => String(s).replace(/'/g, "\\'");
+  cont.innerHTML = `
+    <div class="alert alert-danger py-2 small"><i class="bi bi-exclamation-octagon-fill me-2"></i>Estas marcas se vendieron pero <strong>no suman en ningún lado</strong> (último control: ${CONTROL_MARCAS_FECHA}). Elegí a qué segmento va cada una y se corrige y recalcula al toque.</div>
+    <table class="table table-sm table-bordered align-middle mb-1" style="font-size:0.85rem;">
+      <thead class="table-light"><tr><th>Marca (como viene de Chess)</th><th>Bultos</th><th>Clientes</th><th>Problema</th><th>Sumarla a</th></tr></thead>
+      <tbody>${CONTROL_MARCAS.map(x => `<tr>
+        <td class="fw-semibold">${x.marca}</td><td>${x.bultos}</td><td>${x.clientes}</td>
+        <td>${x.motivo === 'NO_ESTA' ? 'No está en la tabla' : 'Segmento "' + (x.segActual || 'vacío') + '" no válido'}</td>
+        <td class="text-nowrap">
+          <button class="btn btn-sm btn-outline-primary py-0" onclick="corregirMarcaControl('${esc(x.marca)}','CORE + VALUE')">CORE + VALUE</button>
+          <button class="btn btn-sm btn-outline-success py-0" onclick="corregirMarcaControl('${esc(x.marca)}','PREMIUM')">PREMIUM</button>
+        </td></tr>`).join('')}</tbody>
+    </table>
+    <div class="text-muted small">Si corregís desde una PC que no tiene los archivos de venta cargados, los números se actualizan recién cuando se vuelvan a subir; la tabla ya queda corregida para siempre.</div>`;
+}
+
 function renderAjustes() {
+  renderControlMarcas();
   // --- Segmentación de marcas ---
   const tbodyMarcas = document.getElementById('ajustesMarcasBody');
   if (tbodyMarcas) {
@@ -2433,7 +2620,7 @@ function renderVendedorView() {
   document.getElementById('vendMesaTag').textContent = `Mesa: ${vend.sv}`;
   document.getElementById('badgePlanKpi1').textContent = sel1;
   document.getElementById('badgePlanKpi2').textContent = sel2;
-  document.getElementById('vEntregaMananaCount').textContent = vend.entregaManana || 0;
+  document.getElementById('vEntregaMananaCount').textContent = getEntregaManana(vend);
 
   const badge = document.getElementById('vendEstadoBadge');
   badge.textContent = vend.estado;
@@ -2586,13 +2773,13 @@ function renderSupervisorView() {
     totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan; totSel2.prevendido += dS2.prevendido;
     totSel2.obj += dS2.obj || 0; totSel2.real += realS2; totSel2.oportunidad += dS2.oportunidad || 0;
 
-    totEntregaManana += v.entregaManana || 0;
+    totEntregaManana += getEntregaManana(v);
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-start fw-semibold">${v.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${v.pv}</small></td>
       <td><span class="badge-adv ${v.estado === 'Aprobado' ? 'bg-success text-white' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
-      <td class="fw-semibold">${v.entregaManana || 0}</td>
+      <td class="fw-semibold">${getEntregaManana(v)}</td>
 
       <td class="fw-semibold">${spanAvance(dCvz.avance)}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="text-muted">${dCvz.prevendido.toFixed(1)}</td>
       <td class="${dCvz.plan < dCvz.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dCvz.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'CVZ CMQ', this.value)"></td>
@@ -2845,7 +3032,7 @@ async function renderJefeView() {
         else { s1[campo] += d1[campo] || 0; s2[campo] += d2[campo] || 0; }
       });
       s1.oportunidad += d1.oportunidad || 0; s2.oportunidad += d2.oportunidad || 0;
-      entregaManana += v.entregaManana || 0;
+      entregaManana += getEntregaManana(v);
       if (v.estado === 'Aprobado') aprobados++;
     });
 
@@ -3122,7 +3309,7 @@ function renderVespertinaCierre() {
           const d = getKpiData(v, kpiNombre);
           sP += d.plan;
           sR += getRealHoy(d, kpiNombre);
-          sEntrega += v.entregaManana || 0;
+          sEntrega += getEntregaManana(v);
           sOport += d.oportunidad || 0;
           sComp += d.compromisoProx || 0;
         });
@@ -3150,7 +3337,7 @@ function renderVespertinaCierre() {
         const realHoy = getRealHoy(d, kpiNombre);
         const compM = d.compromisoProx || 0;
 
-        tot2.plan += d.plan; tot2.real += realHoy; tot2.entrega += (v.entregaManana || 0); tot2.oport += (d.oportunidad || 0); tot2.comp += compM;
+        tot2.plan += d.plan; tot2.real += realHoy; tot2.entrega += getEntregaManana(v); tot2.oport += (d.oportunidad || 0); tot2.comp += compM;
         const varP = d.plan > 0 ? (realHoy / d.plan - 1) : 0;
 
         tbody2 += `
@@ -3159,7 +3346,7 @@ function renderVespertinaCierre() {
             <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
             <td class="fw-bold">${realHoy.toFixed(1)}</td>
             <td>${spanVarPtos(varP * 100)}</td>
-            <td class="fw-semibold">${v.entregaManana || 0}</td>
+            <td class="fw-semibold">${getEntregaManana(v)}</td>
             <td class="text-warning text-dark fw-semibold">${d.oportunidad || 0}</td>
             <td style="background-color:#e0f7fa;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info mx-auto" style="width:90px;" value="${compM}" onchange="cambiarCompromisoVendedor(${v.pv}, '${kpiNombre}', this.value)"></td>
           </tr>
@@ -3458,6 +3645,13 @@ function cambiarVesperKpiNombre(idx, campo, nombre) {
   if (campo === 'kpi1_name') DATA_COMPLETA.mesas_kpis[sv][0] = nombre;
   if (campo === 'kpi2_name') DATA_COMPLETA.mesas_kpis[sv][1] = nombre;
   guardarLocal();
+  // OJO: la Oportunidad de un KPI solo se calcula para los nombres que estén elegidos en ALGUNA
+  // mesa en el momento de recalcularVentasAvanzadas() (ver nombresKpiEnUso ahí). Si el supervisor
+  // elige un KPI que nadie tenía elegido todavía, ese nombre nunca se calculó y queda en 0 hasta
+  // que alguien vuelva a subir Facturado/VESPER — por eso hay que recalcular también ACÁ, apenas
+  // cambia la selección (si en este navegador ya hay ventas cargadas; si no, no hace nada, pero no
+  // rompe nada tampoco).
+  recalcularVentasAvanzadas();
   renderVespertina(); // acá sí se reconstruye la fila entera: cambió qué KPI se puede elegir
   guardarCompromisoMesaEnNube(sv);
 }
@@ -3504,6 +3698,7 @@ function renderAnalistaView() {
   }
   renderListaFeriados();
   renderAvisoDatosSesion();
+  renderControlMarcas();
 }
 
 // Avisa si FACTURADO HASTA HOY y/o PEDIDOS PARA MAÑANA no están en memoria de ESTE navegador
@@ -4218,6 +4413,11 @@ function iniciarListenersFirestore() {
       }
     });
     guardarLocal();
+    // Si cambió qué KPI tiene elegido alguna mesa (en esta PC o en otra), hay que recalcular la
+    // Oportunidad de ese KPI — si no, queda en 0 hasta la próxima carga de Facturado/VESPER (ver
+    // el comentario en cambiarVesperKpiNombre). Si en ESTE navegador no hay ventas cargadas ahora,
+    // recalcularVentasAvanzadas() no hace nada (y no rompe nada).
+    recalcularVentasAvanzadas();
     renderTodoLoVisible();
   }, err => console.warn("Listener mesas_kpis:", err));
 
@@ -4235,6 +4435,8 @@ function iniciarListenersFirestore() {
   dbFire.collection('cargas').doc('estado').onSnapshot(doc => {
     if (doc.exists) DATA_COMPLETA.cargas = doc.data();
     guardarLocal();
+    // Subir la Vespertina del día cambia el día objetivo de "Entrega mañana" (+1 → +2): se refresca en vivo
+    renderTodoLoVisible();
   }, err => console.warn("Listener cargas:", err));
 
   // Config de AJUSTES (segmentación de marcas / innovaciones core / valor del día) — en vivo,
@@ -4242,6 +4444,7 @@ function iniciarListenersFirestore() {
   refConfigSegMarcas().onSnapshot(doc => {
     SEGMENTACION_MARCAS = (doc.exists && Array.isArray(doc.data().filas) && doc.data().filas.length)
       ? doc.data().filas : SEMILLA_SEGMENTACION_MARCAS.slice();
+    reclasificarFilasEnMemoria(); // las filas de venta en memoria se clasificaron con la tabla vieja
     recalcularVentasAvanzadas();
     if (document.getElementById('etapaAjustes') && !document.getElementById('etapaAjustes').classList.contains('d-none')) renderAjustes();
   }, err => console.warn("Listener segmentacion_marcas:", err));
@@ -4269,6 +4472,14 @@ function iniciarListenersFirestore() {
 
   // Feriados sin entrega — en vivo, así todas las PCs corren el día objetivo de la Oportunidad
   // apenas alguien carga o saca un feriado, sin tener que resubir nada más.
+  refConfigControlMarcas().onSnapshot(doc => {
+    if (doc.exists) {
+      CONTROL_MARCAS = Array.isArray(doc.data().items) ? doc.data().items : [];
+      CONTROL_MARCAS_FECHA = doc.data().fecha || null;
+    }
+    renderControlMarcas();
+  }, err => console.warn("Listener control_marcas:", err));
+
   refConfigFeriados().onSnapshot(doc => {
     FERIADOS_ENTREGA = (doc.exists && Array.isArray(doc.data().fechas)) ? doc.data().fechas : [];
     recalcularEntregaManana();
