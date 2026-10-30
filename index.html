@@ -53,6 +53,18 @@
     .podio-1 { background-color: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
     .podio-2 { background-color: #e5e7eb; color: #374151; border: 1px solid #9ca3af; }
     .podio-3 { background-color: #fed7aa; color: #9a3412; border: 1px solid #fb923c; }
+    /* Todos los valores de las tablas centrados; solo la primera columna (nombres) queda a la izquierda.
+       (!important para ganarle a las clases text-start de Bootstrap que hay sueltas en columnas del medio) */
+    #etapaCierreD1 table th, #etapaCierreD1 table td,
+    #etapaPlanificacion table th, #etapaPlanificacion table td,
+    #etapaVespertina table th, #etapaVespertina table td,
+    #etapaHistorico table th, #etapaHistorico table td,
+    #etapaAnalista table th, #etapaAnalista table td { text-align: center !important; }
+    #etapaCierreD1 table thead tr:first-child th:first-child, #etapaCierreD1 table tbody tr > :first-child, #etapaCierreD1 table tfoot tr > :first-child,
+    #etapaPlanificacion table thead tr:first-child th:first-child, #etapaPlanificacion table tbody tr > :first-child, #etapaPlanificacion table tfoot tr > :first-child,
+    #etapaVespertina table thead tr:first-child th:first-child, #etapaVespertina table tbody tr > :first-child, #etapaVespertina table tfoot tr > :first-child,
+    #etapaHistorico table thead tr:first-child th:first-child, #etapaHistorico table tbody tr > :first-child, #etapaHistorico table tfoot tr > :first-child,
+    #etapaAnalista table thead tr:first-child th:first-child, #etapaAnalista table tbody tr > :first-child, #etapaAnalista table tfoot tr > :first-child { text-align: left !important; }
     .badge-alerta { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 6px; padding: 2px 8px; display: inline-block; font-size: 0.76rem; font-weight: bold; }
   </style>
 </head>
@@ -104,6 +116,12 @@
 
     <!-- Estado y Controles Rápidos -->
     <div class="d-flex align-items-center gap-2">
+      <!-- Tamaño de letra de toda la pantalla (para proyectar): A- / A+ ; tocar el % vuelve a 100% -->
+      <div class="btn-group btn-group-sm" role="group" title="Tamaño de letra (se recuerda en esta PC)">
+        <button class="btn btn-outline-light py-1 px-2 fw-bold" onclick="cambiarTamanoLetra(-1)" style="font-size:12px;">A−</button>
+        <button id="btnTamanoLetra" class="btn btn-outline-light py-1 px-2" onclick="cambiarTamanoLetra(0)" style="font-size:12px; min-width:48px;" title="Volver a 100%">100%</button>
+        <button class="btn btn-outline-light py-1 px-2 fw-bold" onclick="cambiarTamanoLetra(1)" style="font-size:16px;">A+</button>
+      </div>
       <span id="syncStatusBadge" class="badge bg-success-subtle text-success border border-success fw-semibold py-2 px-2 d-flex align-items-center">
         <i class="bi bi-cloud-check-fill me-1"></i> En vivo (Sheets)
       </span>
@@ -1039,6 +1057,29 @@ function guardarLocal() {
     console.warn("Error guardando en localStorage:", e);
   }
 }
+
+// Tamaño de letra de toda la app (para proyectar): escala el tamaño base (todo está en rem).
+// Se recuerda por PC en localStorage (con try/catch por si el navegador lo bloquea).
+const PASOS_LETRA = [90, 100, 115, 130, 150, 175, 200];
+let _pasoLetra = 1;
+function aplicarTamanoLetra() {
+  const pct = PASOS_LETRA[_pasoLetra];
+  document.documentElement.style.fontSize = pct + '%';
+  const b = document.getElementById('btnTamanoLetra');
+  if (b) b.textContent = pct + '%';
+}
+function cambiarTamanoLetra(delta) {
+  _pasoLetra = delta === 0 ? 1 : Math.max(0, Math.min(PASOS_LETRA.length - 1, _pasoLetra + delta));
+  aplicarTamanoLetra();
+  try { localStorage.setItem('tamanoLetraPaso', String(_pasoLetra)); } catch (e) { /* sin storage: queda solo para esta sesión */ }
+}
+(function iniciarTamanoLetra() {
+  try {
+    const g = parseInt(localStorage.getItem('tamanoLetraPaso'));
+    if (g >= 0 && g < PASOS_LETRA.length) _pasoLetra = g;
+  } catch (e) { /* ignorar */ }
+  aplicarTamanoLetra();
+})();
 
 function marcarSync(estadoTexto, tipo) {
   const badge = document.getElementById('syncStatusBadge');
