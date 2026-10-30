@@ -793,15 +793,33 @@
     </div>
 
     <div class="card card-custom p-4 bg-white shadow-sm mb-3">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="fw-bold mb-0"><i class="bi bi-tags me-2 text-primary"></i>Segmentación de marcas</h5>
-        <button class="btn btn-sm btn-outline-dark" onclick="agregarFilaMarca()"><i class="bi bi-plus-lg me-1"></i>Agregar marca</button>
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-tags me-2 text-primary"></i>Segmentación de marcas <small id="ajustesMarcasContador" class="text-muted fw-normal ms-2"></small></h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-primary" onclick="importarMarcasFaltantes(true)" title="Agrega a la tabla las marcas de cerveza de las ventas cargadas que todavía no están, con los datos en blanco para que los completes"><i class="bi bi-cloud-download me-1"></i>Traer marcas de las ventas</button>
+          <button class="btn btn-sm btn-outline-dark" onclick="agregarFilaMarca()"><i class="bi bi-plus-lg me-1"></i>Agregar marca</button>
+        </div>
       </div>
-      <p class="text-muted small mb-2">La <strong>Descripción</strong> tiene que ser igual al texto de la marca que viene en el Excel de Chess. <strong>Segmento</strong>: CORE + VALUE o PREMIUM.</p>
+      <p class="text-muted small mb-2">La <strong>Descripción</strong> tiene que ser igual al texto de la marca que viene en el Excel de Chess. <strong>Segmento</strong>: CORE + VALUE o PREMIUM. Las marcas nuevas que aparecen en las ventas se agregan solas, en amarillo y con los datos en blanco: completalos vos. Click en un título para ordenar; la fila de abajo filtra.</p>
+      <datalist id="dlSegDetallado"><option value="CORE"></option><option value="CORE+"></option><option value="VALUE"></option><option value="PREMIUM"></option><option value="SUPER PREMIUM"></option><option value="HE"></option></datalist>
+      <datalist id="dlSegmento"><option value="CORE + VALUE"></option><option value="PREMIUM"></option></datalist>
       <div class="table-responsive" style="max-height:480px; overflow-y:auto;">
         <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.8rem;">
-          <thead class="table-light" style="position:sticky; top:0;">
-            <tr><th>Código</th><th>Descripción</th><th>Marca agrupada</th><th>Seg. detallado</th><th>Segmento</th><th>0.0</th><th>TOP</th><th>BC</th><th></th></tr>
+          <thead class="table-light" style="position:sticky; top:0; z-index:2;">
+            <tr id="ajustesMarcasEncabezado" style="cursor:pointer;">
+              <th onclick="ordenarMarcas('codigo')">Código</th><th onclick="ordenarMarcas('descripcion')">Descripción</th><th onclick="ordenarMarcas('marcaAgrupada')">Marca agrupada</th><th onclick="ordenarMarcas('segDetallado')">Seg. detallado</th><th onclick="ordenarMarcas('segmento')">Segmento</th><th onclick="ordenarMarcas('es00')">0.0</th><th onclick="ordenarMarcas('esTop')">TOP</th><th onclick="ordenarMarcas('esBc')">BC</th><th></th>
+            </tr>
+            <tr>
+              <th><input type="text" class="form-control form-control-sm" placeholder="filtrar" oninput="filtrarMarcas('codigo', this.value)"></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="filtrar" oninput="filtrarMarcas('descripcion', this.value)"></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="filtrar" oninput="filtrarMarcas('marcaAgrupada', this.value)"></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="filtrar" oninput="filtrarMarcas('segDetallado', this.value)"></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="filtrar (o 'vacio')" oninput="filtrarMarcas('segmento', this.value)"></th>
+              <th><select class="form-select form-select-sm px-1" onchange="filtrarMarcas('es00', this.value)"><option value="">todos</option><option value="si">sí</option><option value="no">no</option></select></th>
+              <th><select class="form-select form-select-sm px-1" onchange="filtrarMarcas('esTop', this.value)"><option value="">todos</option><option value="si">sí</option><option value="no">no</option></select></th>
+              <th><select class="form-select form-select-sm px-1" onchange="filtrarMarcas('esBc', this.value)"><option value="">todos</option><option value="si">sí</option><option value="no">no</option></select></th>
+              <th></th>
+            </tr>
           </thead>
           <tbody id="ajustesMarcasBody"></tbody>
         </table>
@@ -1683,6 +1701,7 @@ function normalizarFilasVenta(filas) {
       pv,
       clienteCod: String(clienteCod),
       marca: marcaTexto,
+      marcaCod: parseInt(row[19]) || 0, // T: Código de Marca (para traer marcas nuevas a la tabla de Ajustes)
       calibre: parseInt(row[22]) || 0, // W: Calibre
       // SEG_CZA / SEG_TOP / SEG_BC ya NO se leen del Excel (columnas 48/49/50): se calculan en vivo
       // a partir de la tabla "Segmentación de Marcas" de la pestaña Ajustes (infoDeMarca).
@@ -2431,6 +2450,48 @@ function cambiarSupervisorVendedor(pv, nuevoSv) {
   guardarVendedorParcial(pv, { sv: nuevoSv });
 }
 
+// Orden y filtros de la tabla de segmentación (solo cambian lo que se VE, no la tabla guardada)
+let AJUSTES_MARCAS_ORDEN = { col: null, dir: 1 };
+let AJUSTES_MARCAS_FILTRO = {};
+function ordenarMarcas(col) {
+  if (AJUSTES_MARCAS_ORDEN.col === col) AJUSTES_MARCAS_ORDEN.dir *= -1;
+  else AJUSTES_MARCAS_ORDEN = { col, dir: 1 };
+  renderAjustes();
+}
+function filtrarMarcas(col, valor) {
+  AJUSTES_MARCAS_FILTRO[col] = valor;
+  renderAjustes(); // solo redibuja el cuerpo: los filtros están en el encabezado y no pierden el foco
+}
+
+// Agrega a la tabla las marcas de cerveza (CZA) de las ventas cargadas que todavía no están (por
+// descripción), con Segmento / Seg. detallado / 0.0 / TOP / BC EN BLANCO: los completás vos a mano.
+// Se llama sola al cargar ventas; el botón "Traer marcas de las ventas" la fuerza con aviso.
+function importarMarcasFaltantes(manual) {
+  if (!FILAS_FACTURADO_HASTA_HOY.length && !FILAS_PEDIDOS_MANANA.length) {
+    if (manual) alert('Primero cargá Facturado Hasta Hoy y/o Pedidos Para Mañana en esta PC (pestaña Analista).');
+    return 0;
+  }
+  const vistas = new Map(); // descripcion -> { cod, bultos }
+  [...FILAS_FACTURADO_HASTA_HOY, ...FILAS_PEDIDOS_MANANA].forEach(f => {
+    if (f.unidadNegocio !== 1 || MARCAS_IGNORAR_CONTROL.includes(f.marca)) return;
+    const a = vistas.get(f.marca) || { cod: f.marcaCod || 0, bultos: 0 };
+    a.bultos += f.cantidad;
+    vistas.set(f.marca, a);
+  });
+  const nuevas = [];
+  vistas.forEach((a, desc) => {
+    if (a.bultos <= 0 || SEGMENTACION_MARCAS.some(m => m.descripcion === desc)) return;
+    SEGMENTACION_MARCAS.push({ codigo: a.cod, descripcion: desc, marcaAgrupada: '', segDetallado: '', segmento: '', es00: false, esTop: false, esBc: false });
+    nuevas.push(desc);
+  });
+  if (nuevas.length) {
+    guardarSegmentacionMarcas();
+    if (document.getElementById('etapaAjustes') && !document.getElementById('etapaAjustes').classList.contains('d-none')) renderAjustes();
+  }
+  if (manual) alert(nuevas.length ? `Se agregaron ${nuevas.length} marca(s) nueva(s), en amarillo y con los datos en blanco:\n${nuevas.join('\n')}` : 'No falta ninguna: todas las marcas de cerveza de las ventas ya están en la tabla.');
+  return nuevas.length;
+}
+
 // ====================================================================
 // CONTROL DE MARCAS — marcas de cerveza (CZA) vendidas que no suman a CORE+VALUE ni a PREMIUM
 // ====================================================================
@@ -2465,6 +2526,7 @@ function calcularControlMarcas() {
 // para que se vea desde cualquier PC.
 function actualizarControlMarcas() {
   if (!FILAS_FACTURADO_HASTA_HOY.length || !FILAS_PEDIDOS_MANANA.length) return;
+  importarMarcasFaltantes(false); // marcas nuevas de las ventas -> a la tabla, en blanco para completar
   const nuevo = calcularControlMarcas();
   if (JSON.stringify(nuevo) !== JSON.stringify(CONTROL_MARCAS) || !CONTROL_MARCAS_FECHA) {
     CONTROL_MARCAS = nuevo;
@@ -2547,14 +2609,43 @@ function renderAjustes() {
   const tbodyMarcas = document.getElementById('ajustesMarcasBody');
   if (tbodyMarcas) {
     tbodyMarcas.innerHTML = '';
-    SEGMENTACION_MARCAS.forEach((fila, idx) => {
+    const q = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    // filtro + orden SOLO de lo que se ve (el idx de cada fila sigue siendo el de la tabla real)
+    let lista = SEGMENTACION_MARCAS.map((fila, idx) => ({ fila, idx }));
+    Object.entries(AJUSTES_MARCAS_FILTRO).forEach(([col, val]) => {
+      if (!val) return;
+      lista = lista.filter(({ fila }) => {
+        if (CAMPOS_BOOLEANOS_MARCA.includes(col)) return val === 'si' ? !!fila[col] : !fila[col];
+        const txt = String(fila[col] == null ? '' : fila[col]).toLowerCase();
+        if (/^vac[ií]o$/i.test(val.trim())) return txt === '';
+        return txt.includes(val.trim().toLowerCase());
+      });
+    });
+    if (AJUSTES_MARCAS_ORDEN.col) {
+      const { col, dir } = AJUSTES_MARCAS_ORDEN;
+      lista.sort((a, b) => {
+        const x = a.fila[col], y = b.fila[col];
+        if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
+        if (typeof x === 'boolean' || typeof y === 'boolean') return ((x ? 1 : 0) - (y ? 1 : 0)) * dir;
+        return String(x || '').localeCompare(String(y || ''), 'es') * dir;
+      });
+    }
+    const cont = document.getElementById('ajustesMarcasContador');
+    if (cont) cont.textContent = `(${lista.length} de ${SEGMENTACION_MARCAS.length})`;
+    document.querySelectorAll('#ajustesMarcasEncabezado th').forEach((th, i) => {
+      const cols = ['codigo', 'descripcion', 'marcaAgrupada', 'segDetallado', 'segmento', 'es00', 'esTop', 'esBc'];
+      const base = th.textContent.replace(/[ ▲▼]+$/, '');
+      th.textContent = base + (cols[i] && AJUSTES_MARCAS_ORDEN.col === cols[i] ? (AJUSTES_MARCAS_ORDEN.dir === 1 ? ' ▲' : ' ▼') : '');
+    });
+    lista.forEach(({ fila, idx }) => {
       const tr = document.createElement('tr');
+      if (!String(fila.segmento || '').trim()) tr.className = 'table-warning'; // pendiente de completar
       tr.innerHTML = `
         <td><input type="number" class="form-control form-control-sm text-center" value="${fila.codigo}" onchange="cambiarCampoMarca(${idx}, 'codigo', this.value)"></td>
-        <td><input type="text" class="form-control form-control-sm" value="${fila.descripcion}" onchange="cambiarCampoMarca(${idx}, 'descripcion', this.value)"></td>
-        <td><input type="text" class="form-control form-control-sm text-center" value="${fila.marcaAgrupada}" onchange="cambiarCampoMarca(${idx}, 'marcaAgrupada', this.value)"></td>
-        <td><input type="text" class="form-control form-control-sm text-center" value="${fila.segDetallado}" onchange="cambiarCampoMarca(${idx}, 'segDetallado', this.value)" placeholder="CORE / VALUE / PREMIUM..."></td>
-        <td><input type="text" class="form-control form-control-sm text-center" value="${fila.segmento}" onchange="cambiarCampoMarca(${idx}, 'segmento', this.value)" placeholder="CORE + VALUE / PREMIUM"></td>
+        <td><input type="text" class="form-control form-control-sm" value="${q(fila.descripcion)}" onchange="cambiarCampoMarca(${idx}, 'descripcion', this.value)"></td>
+        <td><input type="text" class="form-control form-control-sm text-center" value="${q(fila.marcaAgrupada)}" onchange="cambiarCampoMarca(${idx}, 'marcaAgrupada', this.value)"></td>
+        <td><input type="text" list="dlSegDetallado" class="form-control form-control-sm text-center" value="${q(fila.segDetallado)}" onchange="cambiarCampoMarca(${idx}, 'segDetallado', this.value)" placeholder="CORE / VALUE / PREMIUM..."></td>
+        <td><input type="text" list="dlSegmento" class="form-control form-control-sm text-center" value="${q(fila.segmento)}" onchange="cambiarCampoMarca(${idx}, 'segmento', this.value)" placeholder="CORE + VALUE / PREMIUM"></td>
         <td class="text-center"><input type="checkbox" class="form-check-input" ${fila.es00 ? 'checked' : ''} onchange="cambiarCampoMarca(${idx}, 'es00', this.checked)"></td>
         <td class="text-center"><input type="checkbox" class="form-check-input" ${fila.esTop ? 'checked' : ''} onchange="cambiarCampoMarca(${idx}, 'esTop', this.checked)"></td>
         <td class="text-center"><input type="checkbox" class="form-check-input" ${fila.esBc ? 'checked' : ''} onchange="cambiarCampoMarca(${idx}, 'esBc', this.checked)"></td>
