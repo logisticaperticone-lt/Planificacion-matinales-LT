@@ -229,7 +229,7 @@
 
       <div class="p-2 mb-3 rounded-3 bg-warning bg-opacity-25 border border-warning d-flex align-items-center gap-2" id="vEntregaMananaBanner">
         <i class="bi bi-truck fs-5 text-warning text-dark"></i>
-        <span class="fw-bold text-dark">Clientes con entrega mañana: <span id="vEntregaMananaCount">0</span></span>
+        <span class="fw-bold text-dark">Clientes con entrega <span class="dia-entrega-plan"></span>: <span id="vEntregaMananaCount">0</span></span>
       </div>
 
       <div class="row g-3">
@@ -394,7 +394,7 @@
               <tr>
                 <th rowspan="2" class="text-start" style="min-width: 170px;">VENDEDOR</th>
                 <th rowspan="2" style="width: 75px;">ESTADO</th>
-                <th rowspan="2" style="width: 85px;" title="Clientes con entrega mañana">Entrega Mañana</th>
+                <th rowspan="2" style="width: 85px;" title="Clientes con entrega el día de Planificación (hoy + 1, sin domingos ni feriados)">Entrega <span class="dia-entrega-plan"></span></th>
                 <th colspan="7" class="header-kpi-cvz">VOLUMEN CZA CMQ</th>
                 <th colspan="7" class="header-kpi-ung">VOLUMEN UNG</th>
                 <th colspan="3" class="header-kpi-sel1" id="thSupSel1">IND 1</th>
@@ -441,7 +441,7 @@
               <tr>
                 <th rowspan="2" class="text-start">SUPERVISOR / MESA</th>
                 <th rowspan="2">ESTADO</th>
-                <th rowspan="2" title="Clientes con entrega mañana">Entrega Mañana</th>
+                <th rowspan="2" title="Clientes con entrega el día de Planificación (hoy + 1, sin domingos ni feriados)">Entrega <span class="dia-entrega-plan"></span></th>
                 <th colspan="8" class="header-kpi-cvz">1. VOL. CZA CMQ</th>
                 <th colspan="8" class="header-kpi-ung">2. VOL. UNG</th>
                 <th colspan="5" class="header-kpi-sel1">3. KPI SECUNDARIO 1</th>
@@ -1081,6 +1081,13 @@ function cambiarTamanoLetra(delta) {
   aplicarTamanoLetra();
 })();
 
+// Botón de refrescar del encabezado. Firebase ya sincroniza solo en vivo, así que acá solo se vuelve a
+// dibujar lo que se ve (NO recarga la página: se perderían Facturado/VESPER que están en memoria).
+function sincronizarDesdeGoogleSheets() {
+  renderTodoLoVisible();
+  marcarSync('En vivo (Firebase)', 'ok');
+}
+
 function marcarSync(estadoTexto, tipo) {
   const badge = document.getElementById('syncStatusBadge');
   if (!badge) return;
@@ -1603,6 +1610,7 @@ function onRoleChange() {
 }
 
 function renderPlanCurrentView() {
+  pintarDiaEntrega();
   const rol = document.getElementById('roleSelect').value;
   document.getElementById('viewVendedor').classList.add('d-none');
   document.getElementById('viewSupervisor').classList.add('d-none');
@@ -1982,16 +1990,15 @@ function convivenciaNuevaPorPv(filasHastaHoy, filasHoy) {
 // corre al próximo día que sí tenga entrega. Ej.: feriado lunes 9/11 → el sábado 7/11 (hoy+2 cae
 // justo en el feriado) la Oportunidad pasa a calcularse para el martes 10/11.
 //
-// MOMENTO DEL DÍA: el +2 vale desde que se sube la Vespertina de hoy (cargas.VESPER === hoy). A la
-// mañana siguiente, antes de subir la nueva Vespertina, ese mismo día objetivo ya es "mañana" (+1):
-// viernes 30 a la mañana el planificador muestra el sábado 31 (el mismo que se calculó el jueves),
-// y recién cuando se sube la Vespertina del viernes pasa a +2 (domingo → no se trabaja → lunes 2/11).
-// DOMINGOS: nunca hay entrega, se saltean igual que un feriado.
-function fechaObjetivoEntrega() {
-  const hoyISO = fechaLocalISO();
-  const vesperHoy = !!(DATA_COMPLETA.cargas && DATA_COMPLETA.cargas.VESPER === hoyISO);
+// DOS DÍAS DISTINTOS, SIEMPRE:
+//  - PLANIFICACIÓN (matinal): hoy + 1 día  -> lo que el vendedor planifica mañana a la mañana.
+//  - VESPERTINA: hoy + 2 días -> lo de mañana ya está tomado, lo accionable es pasado mañana.
+// En los dos casos los DOMINGOS y los FERIADOS cargados en Analista no cuentan (hay entrega cero):
+// el día se corre al siguiente con entrega. Ej.: viernes -> Planificación = sábado, Vespertina = lunes.
+// Si coinciden (ej. sábado: ambos caen en el lunes) simplemente muestran el mismo día.
+function fechaObjetivoEntrega(n) {
   const d = new Date();
-  d.setDate(d.getDate() + (vesperHoy ? 2 : 1));
+  d.setDate(d.getDate() + (n === 1 ? 1 : 2));
   let guard = 0;
   while ((d.getDay() === 0 || FERIADOS_ENTREGA.includes(fechaLocalISO(d))) && guard < 14) {
     d.setDate(d.getDate() + 1);
@@ -1999,14 +2006,20 @@ function fechaObjetivoEntrega() {
   }
   return d;
 }
-function diaSemanaManana() {
+function diaSemanaManana(n) {
   const dias = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
-  return dias[fechaObjetivoEntrega().getDay()];
+  return dias[fechaObjetivoEntrega(n).getDay()];
+}
+// Texto corto del día objetivo para mostrar en pantalla, ej. "sáb 7/11"
+function etiquetaDiaEntrega(n) {
+  const d = fechaObjetivoEntrega(n);
+  const nombres = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  return nombres[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
 }
 
-// pv -> Set(clienteCod) de los clientes que tienen entrega MAÑANA, según RUTAS_ENTREGA.
-function entregaMananaPorPv() {
-  const diaManana = diaSemanaManana();
+// pv -> Set(clienteCod) de los clientes que tienen entrega el día objetivo n (1 = Planificación, 2 = Vespertina)
+function entregaMananaPorPv(n) {
+  const diaManana = diaSemanaManana(n);
   const mapa = new Map();
   RUTAS_ENTREGA.forEach(r => {
     if (!r.dias || !r.dias.includes(diaManana)) return;
@@ -2016,33 +2029,34 @@ function entregaMananaPorPv() {
   return mapa;
 }
 
-// Recalcula SOLO "clientes con entrega mañana" por vendedor, a partir de RUTAS_ENTREGA (que llega
-// sincronizado por Firestore a TODOS los navegadores, a diferencia de FILAS_FACTURADO_HASTA_HOY y
-// FILAS_PEDIDOS_MANANA que son transitorios y solo existen en el navegador que subió el archivo).
-// Por eso esto NO depende de que haya pedidos de mañana cargados en este navegador: si dependiera,
-// se quedaba en 0 cada vez que alguien solo actualizaba las rutas de entrega sin subir también el
-// archivo de ventas del día en esa misma sesión.
-// LECTURA EN VIVO: "clientes con entrega mañana" de un vendedor, calculado en el momento a partir de
-// RUTAS_ENTREGA (que sí está sincronizado por Firestore en todos los navegadores) y de la fecha de
-// HOY. Antes la pantalla leía v.entregaManana, un número GUARDADO dentro del documento de cada
-// vendedor: quedaba viejo de un día para el otro, o en 0 si el documento llegaba de Firestore después
-// de calcularse (carrera entre listeners) o lo pisaba otra carga (AD/AD(V)) — y nadie lo recalculaba.
-// Calculado al leer, no puede quedar desactualizado. Cache por (día objetivo + versión de las rutas).
-let _cacheEntrega = { clave: '', mapa: null };
-function getEntregaManana(v) {
-  const clave = fechaLocalISO(fechaObjetivoEntrega()) + '|' + RUTAS_ENTREGA.length + '|' + (RUTAS_ENTREGA[0] ? RUTAS_ENTREGA[0].clienteCod : '');
-  if (_cacheEntrega.clave !== clave || !_cacheEntrega.mapa) {
-    _cacheEntrega = { clave, mapa: entregaMananaPorPv() };
-  }
-  const set = _cacheEntrega.mapa.get(v.pv);
+// LECTURA EN VIVO de "clientes con entrega" de un vendedor, calculada al leer a partir de RUTAS_ENTREGA
+// (sincronizado por Firestore en todos los navegadores) y de la fecha de HOY: no puede quedar viejo.
+// n = 1 -> día de Planificación, n = 2 -> día de Vespertina.
+let _cacheEntrega = {};
+function getEntregaManana(v, n) {
+  n = n === 2 ? 2 : 1;
+  const clave = fechaLocalISO(fechaObjetivoEntrega(n)) + '|' + RUTAS_ENTREGA.length + '|' + (RUTAS_ENTREGA[0] ? RUTAS_ENTREGA[0].clienteCod : '');
+  if (!_cacheEntrega[n] || _cacheEntrega[n].clave !== clave) _cacheEntrega[n] = { clave, mapa: entregaMananaPorPv(n) };
+  const set = _cacheEntrega[n].mapa.get(v.pv);
   if (set) return set.size;
   // Sin rutas cargadas en este navegador todavía (el listener de Firestore no llegó): último valor guardado
   return RUTAS_ENTREGA.length ? 0 : (v.entregaManana || 0);
 }
 
+// Oportunidad de un KPI para el día objetivo n. Se guarda POR FECHA (oportPorFecha) en cada KPI porque
+// se calcula con los archivos de venta, que solo están en la PC que los subió: así el viernes a la
+// mañana la Planificación todavía encuentra el número del sábado que se calculó el jueves a la tarde.
+function oportDe(d, n) {
+  if (d && d.oportPorFecha) {
+    const v = d.oportPorFecha[fechaLocalISO(fechaObjetivoEntrega(n))];
+    return typeof v === 'number' ? v : 0;
+  }
+  return (d && d.oportunidad) || 0; // dato viejo, de antes de separar los dos días
+}
+
 function recalcularEntregaManana() {
-  _cacheEntrega = { clave: '', mapa: null };
-  const entregaManana = entregaMananaPorPv();
+  _cacheEntrega = {};
+  const entregaManana = entregaMananaPorPv(2);
   DATA_COMPLETA.vendedores.forEach(v => {
     v.entregaManana = (entregaManana.get(v.pv) || new Set()).size;
   });
@@ -2082,7 +2096,8 @@ function recalcularVentasAvanzadas() {
   // Oportunidad: de los clientes con entrega MAÑANA (según RUTAS_ENTREGA), cuántos todavía no
   // compraron este mes en el KPI que esa mesa tiene elegido como KPI 1 o KPI 2 — se calcula SOLO
   // para los nombres que estén elegidos ahora mismo en alguna mesa (no los 28 posibles).
-  const entregaManana = recalcularEntregaManana();
+  recalcularEntregaManana();
+  const objetivos = [1, 2].map(n => ({ n, iso: fechaLocalISO(fechaObjetivoEntrega(n)), mapa: entregaMananaPorPv(n) }));
   const nombresKpiEnUso = new Set();
   Object.values(DATA_COMPLETA.mesas_kpis || {}).forEach(par => { (par || []).forEach(n => { if (n) nombresKpiEnUso.add(n); }); });
   nombresKpiEnUso.forEach(kpiNombre => {
@@ -2091,11 +2106,15 @@ function recalcularVentasAvanzadas() {
     const cubiertos = clientesPorPv([...FILAS_FACTURADO_HASTA_HOY, ...FILAS_PEDIDOS_MANANA], filtro);
     DATA_COMPLETA.vendedores.forEach(v => {
       if (!v.kpis[kpiNombre]) v.kpis[kpiNombre] = kpiVacio();
-      const entregaSet = entregaManana.get(v.pv) || new Set();
       const cubiertosSet = cubiertos.get(v.pv) || new Set();
-      let faltan = 0;
-      entregaSet.forEach(c => { if (!cubiertosSet.has(c)) faltan++; });
-      v.kpis[kpiNombre].oportunidad = faltan;
+      const porFecha = {};
+      objetivos.forEach(o => {
+        let faltan = 0;
+        (o.mapa.get(v.pv) || new Set()).forEach(c => { if (!cubiertosSet.has(c)) faltan++; });
+        porFecha[o.iso] = faltan;
+      });
+      v.kpis[kpiNombre].oportPorFecha = porFecha;
+      v.kpis[kpiNombre].oportunidad = porFecha[objetivos[1].iso]; // compat: día de Vespertina
     });
   });
 
@@ -2740,7 +2759,13 @@ function renderAjustes() {
   }
 }
 
+// Escribe el día de Planificación (hoy + 1) en los títulos que lo muestran, ej. "sáb 7/11"
+function pintarDiaEntrega() {
+  document.querySelectorAll('.dia-entrega-plan').forEach(el => { el.textContent = '(' + etiquetaDiaEntrega(1) + ')'; });
+}
+
 function renderVendedorView() {
+  pintarDiaEntrega();
   const pv = parseInt(document.getElementById('userSelect').value);
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
   if (!vend) return;
@@ -2752,7 +2777,7 @@ function renderVendedorView() {
   document.getElementById('vendMesaTag').textContent = `Mesa: ${vend.sv}`;
   document.getElementById('badgePlanKpi1').textContent = sel1;
   document.getElementById('badgePlanKpi2').textContent = sel2;
-  document.getElementById('vEntregaMananaCount').textContent = getEntregaManana(vend);
+  document.getElementById('vEntregaMananaCount').textContent = getEntregaManana(vend, 1);
 
   const badge = document.getElementById('vendEstadoBadge');
   badge.textContent = vend.estado;
@@ -2787,7 +2812,7 @@ function renderVendedorView() {
   const realSel1 = getRealTotal(dSel1, sel1);
   document.getElementById('vCardTitleSel1').textContent = sel1;
   document.getElementById('vRealSel1').textContent = realSel1.toFixed(2);
-  document.getElementById('vOportSel1').textContent = dSel1.oportunidad || 0;
+  document.getElementById('vOportSel1').textContent = oportDe(dSel1, 1);
   document.getElementById('vInpPlanSel1').value = dSel1.plan || 0;
 
   // KPI 2
@@ -2795,7 +2820,7 @@ function renderVendedorView() {
   const realSel2 = getRealTotal(dSel2, sel2);
   document.getElementById('vCardTitleSel2').textContent = sel2;
   document.getElementById('vRealSel2').textContent = realSel2.toFixed(2);
-  document.getElementById('vOportSel2').textContent = dSel2.oportunidad || 0;
+  document.getElementById('vOportSel2').textContent = oportDe(dSel2, 1);
   document.getElementById('vInpPlanSel2').value = dSel2.plan || 0;
 
   evaluarGap('Cvz', 'CVZ CMQ');
@@ -2861,6 +2886,7 @@ async function guardarVendedor() {
 }
 
 function renderSupervisorView() {
+  pintarDiaEntrega();
   const sv = document.getElementById('userSelect').value;
   const [sel1, sel2] = getKpisForMesa(sv);
 
@@ -2900,18 +2926,18 @@ function renderSupervisorView() {
     const realS1 = getRealTotal(dS1, sel1), realS2 = getRealTotal(dS2, sel2);
 
     totSel1.mreal += dS1.mreal; totSel1.mnec += dS1.mnec; totSel1.d14 += dS1.d14; totSel1.d7 += dS1.d7; totSel1.plan += dS1.plan; totSel1.prevendido += dS1.prevendido;
-    totSel1.obj += dS1.obj || 0; totSel1.real += realS1; totSel1.oportunidad += dS1.oportunidad || 0;
+    totSel1.obj += dS1.obj || 0; totSel1.real += realS1; totSel1.oportunidad += oportDe(dS1, 1);
 
     totSel2.mreal += dS2.mreal; totSel2.mnec += dS2.mnec; totSel2.d14 += dS2.d14; totSel2.d7 += dS2.d7; totSel2.plan += dS2.plan; totSel2.prevendido += dS2.prevendido;
-    totSel2.obj += dS2.obj || 0; totSel2.real += realS2; totSel2.oportunidad += dS2.oportunidad || 0;
+    totSel2.obj += dS2.obj || 0; totSel2.real += realS2; totSel2.oportunidad += oportDe(dS2, 1);
 
-    totEntregaManana += getEntregaManana(v);
+    totEntregaManana += getEntregaManana(v, 1);
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-start fw-semibold">${v.nombre} <small class="text-muted d-block" style="font-size:0.70rem;">PV: ${v.pv}</small></td>
       <td><span class="badge-adv ${v.estado === 'Aprobado' ? 'bg-success text-white' : v.estado === 'Enviado' ? 'bg-info text-dark' : 'bg-warning text-dark'}">${v.estado}</span></td>
-      <td class="fw-semibold">${getEntregaManana(v)}</td>
+      <td class="fw-semibold">${getEntregaManana(v, 1)}</td>
 
       <td class="fw-semibold">${spanAvance(dCvz.avance)}</td><td>${dCvz.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dCvz.mnec.toFixed(1)}</td><td>${dCvz.d14.toFixed(1)}</td><td>${dCvz.d7.toFixed(1)}</td><td class="text-muted">${dCvz.prevendido.toFixed(1)}</td>
       <td class="${dCvz.plan < dCvz.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dCvz.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'CVZ CMQ', this.value)"></td>
@@ -2919,10 +2945,10 @@ function renderSupervisorView() {
       <td class="fw-semibold">${spanAvance(dUng.avance)}</td><td>${dUng.mreal.toFixed(1)}</td><td class="text-danger fw-bold">${dUng.mnec.toFixed(1)}</td><td>${dUng.d14.toFixed(1)}</td><td>${dUng.d7.toFixed(1)}</td><td class="text-muted">${dUng.prevendido.toFixed(1)}</td>
       <td class="${dUng.plan < dUng.mnec ? 'cell-gap-danger' : 'cell-gap-ok'}"><input type="number" step="0.25" class="input-plan-cell" value="${dUng.plan}" onchange="cambiarPlanSupervisor(${v.pv}, 'UNG', this.value)"></td>
 
-      <td class="fw-bold">${realS1.toFixed(1)}</td><td class="text-warning text-dark fw-semibold">${dS1.oportunidad || 0}</td>
+      <td class="fw-bold">${realS1.toFixed(1)}</td><td class="text-warning text-dark fw-semibold">${oportDe(dS1, 1)}</td>
       <td><input type="number" step="0.25" class="input-plan-cell" value="${dS1.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel1}', this.value)"></td>
 
-      <td class="fw-bold">${realS2.toFixed(1)}</td><td class="text-info text-dark fw-semibold">${dS2.oportunidad || 0}</td>
+      <td class="fw-bold">${realS2.toFixed(1)}</td><td class="text-info text-dark fw-semibold">${oportDe(dS2, 1)}</td>
       <td><input type="number" step="0.25" class="input-plan-cell" value="${dS2.plan}" onchange="cambiarPlanSupervisor(${v.pv}, '${sel2}', this.value)"></td>
 
       <td class="text-nowrap">
@@ -3163,8 +3189,8 @@ async function renderJefeView() {
         if (campo === "real") { s1.real += real1; s2.real += real2; }
         else { s1[campo] += d1[campo] || 0; s2[campo] += d2[campo] || 0; }
       });
-      s1.oportunidad += d1.oportunidad || 0; s2.oportunidad += d2.oportunidad || 0;
-      entregaManana += getEntregaManana(v);
+      s1.oportunidad += oportDe(d1, 1); s2.oportunidad += oportDe(d2, 1);
+      entregaManana += getEntregaManana(v, 1);
       if (v.estado === 'Aprobado') aprobados++;
     });
 
@@ -3421,7 +3447,7 @@ function renderVespertinaCierre() {
             <th class="header-kpi-sel1 bg-primary text-warning fw-bold">Planificación Hoy</th>
             <th class="header-kpi-sel1 bg-dark text-white fw-bold">Clientes Nuevos Hoy</th>
             <th class="header-kpi-sel1">Desvío (Var %)</th>
-            <th class="header-cierre">Clientes c/ entrega</th>
+            <th class="header-cierre" title="Hoy + 2 días, sin domingos ni feriados">Clientes c/ entrega ${etiquetaDiaEntrega(2)}</th>
             <th class="header-cierre">Oportunidad</th>
           </tr>
         </thead>
@@ -3441,8 +3467,8 @@ function renderVespertinaCierre() {
           const d = getKpiData(v, kpiNombre);
           sP += d.plan;
           sR += getRealHoy(d, kpiNombre);
-          sEntrega += getEntregaManana(v);
-          sOport += d.oportunidad || 0;
+          sEntrega += getEntregaManana(v, 2);
+          sOport += oportDe(d, 2);
           sComp += d.compromisoProx || 0;
         });
 
@@ -3469,7 +3495,7 @@ function renderVespertinaCierre() {
         const realHoy = getRealHoy(d, kpiNombre);
         const compM = d.compromisoProx || 0;
 
-        tot2.plan += d.plan; tot2.real += realHoy; tot2.entrega += getEntregaManana(v); tot2.oport += (d.oportunidad || 0); tot2.comp += compM;
+        tot2.plan += d.plan; tot2.real += realHoy; tot2.entrega += getEntregaManana(v, 2); tot2.oport += oportDe(d, 2); tot2.comp += compM;
         const varP = d.plan > 0 ? (realHoy / d.plan - 1) : 0;
 
         tbody2 += `
@@ -3478,8 +3504,8 @@ function renderVespertinaCierre() {
             <td class="fw-bold bg-light">${d.plan.toFixed(1)}</td>
             <td class="fw-bold">${realHoy.toFixed(1)}</td>
             <td>${spanVarPtos(varP * 100)}</td>
-            <td class="fw-semibold">${getEntregaManana(v)}</td>
-            <td class="text-warning text-dark fw-semibold">${d.oportunidad || 0}</td>
+            <td class="fw-semibold">${getEntregaManana(v, 2)}</td>
+            <td class="text-warning text-dark fw-semibold">${oportDe(d, 2)}</td>
             <td style="background-color:#e0f7fa;"><input type="number" step="0.25" class="form-control form-control-sm text-center fw-bold border-info mx-auto" style="width:90px;" value="${compM}" onchange="cambiarCompromisoVendedor(${v.pv}, '${kpiNombre}', this.value)"></td>
           </tr>
         `;
