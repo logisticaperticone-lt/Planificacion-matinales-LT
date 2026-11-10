@@ -1111,13 +1111,41 @@ function marcarSync(estadoTexto, tipo) {
 
 // Reemplaza el documento COMPLETO de un vendedor (usado por los 3 loaders de Excel,
 // que recalculan todos sus KPIs de una vez — es un refresco total intencional).
-async function guardarVendedoresCompleto(vends) {
+// Copia del vendedor SIN lo que cargan a mano supervisores/vendedores (plan, estado, compromiso de mañana):
+// los archivos de venta recalculan números, pero nunca deben pisar una planificación hecha en otra PC
+// (con una copia desactualizada en memoria se perdía el plan de todos).
+function vendedorSinCamposManuales(v) {
+  const c = Object.assign({}, v);
+  delete c.estado;
+  c.kpis = {};
+  Object.keys(v.kpis || {}).forEach(k => {
+    const kk = Object.assign({}, v.kpis[k]);
+    delete kk.plan; delete kk.compromisoProx;
+    c.kpis[k] = kk;
+  });
+  return c;
+}
+
+// Bitácora de eventos que pueden tocar la planificación (config/eventos en Firebase), para poder
+// saber después qué pasó y a qué hora.
+function registrarEvento(txt) {
+  try {
+    const sel = document.getElementById('userSelect');
+    const clave = new Date().toISOString().replace(/[.:]/g, '-');
+    dbFire.collection('config').doc('eventos').set({ [clave]: txt + ' | usuario: ' + (sel ? sel.value : '?') }, { merge: true }).catch(() => {});
+  } catch (e) { /* bitácora opcional */ }
+}
+
+// opciones.conPlan = true SOLO para el AD de un día nuevo (que arranca los planes en 0 a propósito).
+async function guardarVendedoresCompleto(vends, opciones) {
+  const conPlan = !!(opciones && opciones.conPlan);
   guardarLocal();
   if (!vends.length) return;
+  registrarEvento(conPlan ? 'Carga con reinicio de planes (AD)' : 'Carga de archivos de venta (no toca planes)');
   marcarSync('Guardando en Firebase...', 'wait');
   try {
     const batch = dbFire.batch();
-    vends.forEach(v => batch.set(refVendedor(v.pv), v));
+    vends.forEach(v => batch.set(refVendedor(v.pv), conPlan ? v : vendedorSinCamposManuales(v), { merge: true }));
     await batch.commit();
     marcarSync('En vivo (Firebase)', 'ok');
   } catch (err) {
@@ -2019,7 +2047,10 @@ function etiquetaDiaEntrega(n) {
 
 // pv -> Set(clienteCod) de los clientes que tienen entrega el día objetivo n (1 = Planificación, 2 = Vespertina)
 function entregaMananaPorPv(n) {
-  const diaManana = diaSemanaManana(n);
+  return entregaPorPvEnDia(diaSemanaManana(n));
+}
+// Igual, pero para un día de la semana dado ('LUN'...'SAB')
+function entregaPorPvEnDia(diaManana) {
   const mapa = new Map();
   RUTAS_ENTREGA.forEach(r => {
     if (!r.dias || !r.dias.includes(diaManana)) return;
@@ -2097,7 +2128,19 @@ function recalcularVentasAvanzadas() {
   // compraron este mes en el KPI que esa mesa tiene elegido como KPI 1 o KPI 2 — se calcula SOLO
   // para los nombres que estén elegidos ahora mismo en alguna mesa (no los 28 posibles).
   recalcularEntregaManana();
-  const objetivos = [1, 2].map(n => ({ n, iso: fechaLocalISO(fechaObjetivoEntrega(n)), mapa: entregaMananaPorPv(n) }));
+  // Se calcula para los próximos 10 días corridos (no solo hoy+1 y hoy+2): si el archivo se sube un viernes
+  // y el lunes es feriado, el miércoles igual tiene su número y no queda en 0.
+  const objetivos = [];
+  const nombresDia = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
+  const cacheDia = {};
+  for (let i = 1; i <= 10; i++) {
+    const f = new Date(); f.setDate(f.getDate() + i);
+    const nd = nombresDia[f.getDay()];
+    if (nd === 'DOM') continue;
+    if (!cacheDia[nd]) cacheDia[nd] = entregaPorPvEnDia(nd);
+    objetivos.push({ iso: fechaLocalISO(f), mapa: cacheDia[nd] });
+  }
+  const isoVesper = fechaLocalISO(fechaObjetivoEntrega(2));
   const nombresKpiEnUso = new Set();
   Object.values(DATA_COMPLETA.mesas_kpis || {}).forEach(par => { (par || []).forEach(n => { if (n) nombresKpiEnUso.add(n); }); });
   nombresKpiEnUso.forEach(kpiNombre => {
@@ -2114,7 +2157,7 @@ function recalcularVentasAvanzadas() {
         porFecha[o.iso] = faltan;
       });
       v.kpis[kpiNombre].oportPorFecha = porFecha;
-      v.kpis[kpiNombre].oportunidad = porFecha[objetivos[1].iso]; // compat: día de Vespertina
+      v.kpis[kpiNombre].oportunidad = porFecha[isoVesper] || 0; // compat: día de Vespertina
     });
   });
 
@@ -3054,6 +3097,7 @@ function borrarPlanVendedor(pv) {
   const vend = DATA_COMPLETA.vendedores.find(v => v.pv === pv);
   if (!vend) return;
   if (!confirm(`¿Borrar la planificación de ${vend.nombre}? El PLAN de CZA, UNG y sus KPI foco quedará en 0.`)) return;
+  registrarEvento('Borrar plan de ' + vend.nombre);
   const [k1, k2] = getKpisForMesa(vend.sv);
   const kpisPatch = {};
   ["CVZ CMQ", "UNG", k1, k2].forEach(k => { if (vend.kpis[k]) { vend.kpis[k].plan = 0; kpisPatch[k] = vend.kpis[k]; } });
@@ -3066,6 +3110,7 @@ function borrarPlanVendedor(pv) {
 function borrarPlanMesa() {
   const sv = document.getElementById('userSelect').value;
   if (!confirm(`¿Borrar la planificación de TODA la mesa "${sv}"? El PLAN de CZA, UNG y los KPI foco quedará en 0.`)) return;
+  registrarEvento('Borrar plan de toda la mesa ' + sv);
   const [k1, k2] = getKpisForMesa(sv);
   const vends = DATA_COMPLETA.vendedores.filter(v => v.sv === sv);
   vends.forEach(v => {
@@ -4251,7 +4296,33 @@ function procesarArchivoExcel(evt) {
   reader.readAsArrayBuffer(file);
 }
 
+// Recuperación de emergencia: vuelve a poner el PLAN de cada vendedor desde una foto congelada
+// (fotos_d1). Uso desde la consola del navegador: restaurarPlanDesdeFoto('2026-11-10')
+async function restaurarPlanDesdeFoto(fecha) {
+  const foto = (DATA_COMPLETA.fotos_d1 || {})[fecha];
+  if (!foto) { alert('No hay foto congelada de ' + fecha + '. Fotos disponibles: ' + Object.keys(DATA_COMPLETA.fotos_d1 || {}).join(', ')); return; }
+  let n = 0;
+  (foto.datos || []).forEach(e => {
+    const v = DATA_COMPLETA.vendedores.find(x => x.pv === e.pv);
+    if (!v) return;
+    Object.keys(e.plan || {}).forEach(k => { if (v.kpis[k] && e.plan[k] > 0) { v.kpis[k].plan = e.plan[k]; n++; } });
+  });
+  registrarEvento('Restaurar planes desde la foto ' + fecha);
+  await guardarVendedoresCompleto(DATA_COMPLETA.vendedores, { conPlan: true });
+  renderTodoLoVisible();
+  alert('Planes restaurados desde la foto de ' + fecha + ' (' + n + ' valores).');
+}
+
 function actualizarDesdeFilasAD(filas) {
+  // Si el AD ya se cargó HOY (re-subida para corregir algo), la planificación que los vendedores ya
+  // hicieron se CONSERVA; solo arranca en 0 al cargar el AD de un día nuevo.
+  const adYaCargadoHoy = (DATA_COMPLETA.cargas || {}).AD === fechaLocalISO();
+  // Cargar el AD pone todos los planes en 0. De noche es lo normal; de día casi seguro es un accidente
+  // (los vendedores ya planificaron), así que se pide confirmación si hay planes cargados.
+  if (!adYaCargadoHoy && new Date().getHours() < 17) {
+    const conPlan = DATA_COMPLETA.vendedores.filter(v => Object.values(v.kpis || {}).some(k => k && k.plan > 0)).length;
+    if (conPlan && !confirm(`⚠️ Hay ${conPlan} vendedores con la planificación ya cargada.\n\nSubir el AD ahora la pone en 0 para todos.\n\n¿Seguro que querés continuar?`)) return;
+  }
   autoCongelarFotoSiCorresponde();
   let segActual = null;
   filas.forEach(row => {
@@ -4277,12 +4348,11 @@ function actualizarDesdeFilasAD(filas) {
       vend.kpis[segActual].d14 = parseNum(row[17]);
       vend.kpis[segActual].d7 = parseNum(row[18]);
       vend.kpis[segActual].prevendido = parseNum(row[19]);
-      vend.kpis[segActual].plan = 0; // Default 0
-      vend.estado = "Pendiente";
+      if (!adYaCargadoHoy) { vend.kpis[segActual].plan = 0; vend.estado = "Pendiente"; } // día nuevo: arranca en 0
     }
   });
   DATA_COMPLETA.cargas = Object.assign(DATA_COMPLETA.cargas || {}, { AD: fechaLocalISO() });
-  guardarVendedoresCompleto(DATA_COMPLETA.vendedores);
+  guardarVendedoresCompleto(DATA_COMPLETA.vendedores, { conPlan: !adYaCargadoHoy });
   dbFire.collection('cargas').doc('estado').set({ AD: DATA_COMPLETA.cargas.AD }, { merge: true }).catch(e => console.warn(e));
 }
 
