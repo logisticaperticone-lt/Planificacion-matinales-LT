@@ -129,6 +129,11 @@
     .sp-panel { background: #fff7ee; border: 1px solid #f6d6b3; border-left: 4px solid var(--nx-acc); border-radius: 8px; }
     .sp-chip { background: #fff; border: 1px solid var(--nx-line); border-radius: 6px; padding: 3px 9px; font-size: .82rem; color: #3d4450; }
     .sp-chip b { color: var(--nx-acc-dark); margin-left: 4px; }
+    /* Variación %: positivo = verde sólido con ▲, negativo = rojo sólido con ▼, cero = gris */
+    .var-pos, .var-neg, .var-cero { font-weight: 800 !important; border-radius: 6px; padding: 2px 8px; display: inline-block; font-size: .78rem; border: 1px solid transparent; white-space: nowrap; }
+    .var-pos { background-color: #1e9e5a !important; color: #fff !important; border-color: #167a45 !important; }
+    .var-neg { background-color: #d64545 !important; color: #fff !important; border-color: #a93030 !important; }
+    .var-cero { background-color: #8c8f94 !important; color: #fff !important; border-color: #6d7075 !important; }
   </style>
 </head>
 <body class="pb-5">
@@ -1776,10 +1781,16 @@ function claseAvance(pct) {
   return 'sem-azul';
 }
 function claseVar(pct) {
-  if (pct < -10) return 'sem-rojo';
-  if (pct < 0) return 'sem-amarillo';
-  if (pct <= 10) return 'sem-verde';
-  return 'sem-azul';
+  // Binario y claro: positivo = verde, negativo = rojo (antes había 4 tonos y costaba distinguirlos)
+  return Math.round(pct) < 0 ? 'sem-rojo' : 'sem-verde';
+}
+// Badge de variación: verde ▲ si es positiva, rojo ▼ si es negativa, gris si es 0
+function badgeVar(n) {
+  const r = Math.round(n);
+  const cls = r > 0 ? 'var-pos' : r < 0 ? 'var-neg' : 'var-cero';
+  const flecha = r > 0 ? '▲' : r < 0 ? '▼' : '●';
+  const texto = (r > 0 ? '+' : '') + r + '%';
+  return `<span class="badge-semaforo ${cls}">${flecha} ${texto}</span>`;
 }
 // Recibe un string tipo "87.3%" (lo que ya devuelven calcAv/calcTend/d.avance) y lo pinta
 function spanAvance(strPct) {
@@ -1788,14 +1799,11 @@ function spanAvance(strPct) {
 }
 // Recibe un número (fracción, ej 0.087 = 8.7%) o ya en % — normaliza a "% con signo" y lo pinta
 function spanVarPct(fraccion) {
-  const n = fraccion * 100;
-  const texto = (n >= 0 ? '+' : '') + n.toFixed(0) + '%';
-  return `<span class="badge-semaforo ${claseVar(n)}">${texto}</span>`;
+  return badgeVar(fraccion * 100);
 }
 // Igual que spanVarPct pero ya recibe el número en puntos porcentuales (no fracción)
 function spanVarPtos(n) {
-  const texto = (n >= 0 ? '+' : '') + n.toFixed(0) + '%';
-  return `<span class="badge-semaforo ${claseVar(n)}">${texto}</span>`;
+  return badgeVar(n);
 }
 
 // Prioriza el valor del AD(V) de hoy sobre el del AD normal, pero SIN tratar un 0 legítimo como "vacío"
@@ -2328,7 +2336,7 @@ function celdaRealD1(real) {
 function celdaVarD1(real, plan) {
   if (real === null) return '<span class="text-muted">N/D</span>';
   const v = plan > 0 ? (real / plan - 1) : 0;
-  return `<span class="${v >= 0 ? 'badge-cierre-pos' : 'badge-cierre-neg'}">${(v * 100).toFixed(0)}%</span>`;
+  return badgeVar(v * 100);
 }
 
 function bannerFotoD1() {
