@@ -2373,6 +2373,7 @@ function actualizarRealEnFotoHoy() {
 // después de cargar VESPER o AD(V), y también al guardar la foto por si ya estaban cargados.
 async function actualizarRealYHistorialHoy() {
   const hoy = fechaLocalISO();
+  publicarResumenDiario('venta');
   actualizarRealEnFotoHoy();
   const foto = (DATA_COMPLETA.fotos_d1 || {})[hoy];
   if (foto) {
@@ -4647,6 +4648,19 @@ function actualizarPanelSharePoint() {
   ['btnSpVentaCza', 'btnSpVentaUng'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = !x.ventaLista; });
   set('spAvisoVenta', x.ventaLista ? 'Pegalo en la celda de la fecha de hoy, en la fila "Logística Total SRL" de la pestaña que corresponda.' : 'Se completa cuando cargás VESPER (Pedidos para mañana) en Analista.');
 }
+// Publica los números del día en Firebase (config/resumen_diario) para que el Excel de SharePoint los pueda
+// traer solo (Power Query), sin tipear nada. parte: 'plan' (al congelar la foto) o 'venta' (al cargar VESPER).
+function publicarResumenDiario(parte) {
+  try {
+    const x = datosSharePoint();
+    const hoy = fechaLocalISO();
+    const dato = { actualizado: new Date().toISOString() };
+    if (parte === 'plan') { dato.planCza = x.planCza; dato.planUng = x.planUng; }
+    else { if (!x.ventaLista) return; dato.ventaCza = x.ventaCza; dato.ventaUng = x.ventaUng; }
+    dbFire.collection('config').doc('resumen_diario').set({ [hoy]: dato }, { merge: true })
+      .catch(e => console.warn('resumen_diario:', e));
+  } catch (e) { console.warn('resumen_diario:', e); }
+}
 function copiarParaSharePoint(que) {
   const x = datosSharePoint();
   const n = v => String(v).replace('.', ','); // coma decimal para el Excel en español
@@ -4700,6 +4714,7 @@ async function confirmarPlanificacionJefe() {
     await refFotoD1(hoy).set(foto);
     await actualizarRealYHistorialHoy(); // por si VESPER/AD(V) ya estaban cargados hoy
     actualizarPanelSharePoint();
+    publicarResumenDiario('plan');
     alert("¡Foto AD(D-1) congelada con éxito!\n\nAcordate de pegar el plan en la pestaña BASE PLANI del Excel de SharePoint: el panel de abajo ya lo tiene listo para copiar.");
   } catch (err) {
     console.warn("Error guardando la foto en Firestore:", err);
