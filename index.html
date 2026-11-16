@@ -129,11 +129,12 @@
     .sp-panel { background: #fff7ee; border: 1px solid #f6d6b3; border-left: 4px solid var(--nx-acc); border-radius: 8px; }
     .sp-chip { background: #fff; border: 1px solid var(--nx-line); border-radius: 6px; padding: 3px 9px; font-size: .82rem; color: #3d4450; }
     .sp-chip b { color: var(--nx-acc-dark); margin-left: 4px; }
-    /* Variación %: positivo = verde sólido con ▲, negativo = rojo sólido con ▼, cero = gris */
-    .var-pos, .var-neg, .var-cero { font-weight: 800 !important; border-radius: 6px; padding: 2px 8px; display: inline-block; font-size: .78rem; border: 1px solid transparent; white-space: nowrap; }
-    .var-pos { background-color: #1e9e5a !important; color: #fff !important; border-color: #167a45 !important; }
-    .var-neg { background-color: #d64545 !important; color: #fff !important; border-color: #a93030 !important; }
-    .var-cero { background-color: #8c8f94 !important; color: #fff !important; border-color: #6d7075 !important; }
+    /* Variación %: colores suaves (pastel). Positivo = verde claro con ▲, negativo = rojo claro con ▼, cero = gris claro */
+    .var-pos, .var-neg, .var-cero, .var-cerca { font-weight: 700 !important; border-radius: 6px; padding: 2px 8px; display: inline-block; font-size: .78rem; border: 1px solid transparent; white-space: nowrap; }
+    .var-pos { background-color: #dff3e8 !important; color: #11663a !important; border-color: #9fd6b6 !important; }
+    .var-neg { background-color: #fbe1e1 !important; color: #9b1c1c !important; border-color: #f0b4b4 !important; }
+    .var-cerca { background-color: #fff3d0 !important; color: #7a5b00 !important; border-color: #ecd27a !important; }
+    .var-cero { background-color: #eef0f3 !important; color: #667085 !important; border-color: #d5d9e0 !important; }
   </style>
 </head>
 <body class="pb-5">
@@ -1780,14 +1781,17 @@ function claseAvance(pct) {
   if (pct <= 120) return 'sem-verde';
   return 'sem-azul';
 }
+// Hasta cuántos puntos por debajo del objetivo se considera "cerca" (amarillo). Se puede cambiar acá.
+const UMBRAL_CERCA = 10;
 function claseVar(pct) {
   // Binario y claro: positivo = verde, negativo = rojo (antes había 4 tonos y costaba distinguirlos)
-  return Math.round(pct) < 0 ? 'sem-rojo' : 'sem-verde';
+  const r = Math.round(pct);
+  return r < -UMBRAL_CERCA ? 'sem-rojo' : r < 0 ? 'sem-amarillo' : 'sem-verde';
 }
 // Badge de variación: verde ▲ si es positiva, rojo ▼ si es negativa, gris si es 0
 function badgeVar(n) {
   const r = Math.round(n);
-  const cls = r > 0 ? 'var-pos' : r < 0 ? 'var-neg' : 'var-cero';
+  const cls = r > 0 ? 'var-pos' : r === 0 ? 'var-cero' : r >= -UMBRAL_CERCA ? 'var-cerca' : 'var-neg';
   const flecha = r > 0 ? '▲' : r < 0 ? '▼' : '●';
   const texto = (r > 0 ? '+' : '') + r + '%';
   return `<span class="badge-semaforo ${cls}">${flecha} ${texto}</span>`;
