@@ -4647,7 +4647,7 @@ function datosSharePoint() {
   return {
     planCza: r2(suma('CVZ CMQ', x => x.plan)), planUng: r2(suma('UNG', x => x.plan)),
     ventaCza: r2(suma('CVZ CMQ', getRealHoy)), ventaUng: r2(suma('UNG', getRealHoy)),
-    ventaLista, fecha: `${d}/${m}/${y}`
+    ventaLista, fecha: `${m}/${d}/${y}` // mes/día/año, como lo pide el Excel de SharePoint
   };
 }
 function actualizarPanelSharePoint() {
@@ -4675,7 +4675,7 @@ function publicarResumenDiario(parte) {
 }
 function copiarParaSharePoint(que) {
   const x = datosSharePoint();
-  const n = v => String(v).replace('.', ','); // coma decimal para el Excel en español
+  const n = v => String(v); // punto decimal, como lo pide el Excel de SharePoint
   let texto = '';
   if (que === 'plan') texto = [n(x.planCza), n(x.planUng), '', x.fecha].join('\t'); // B, C, D (oculta), E
   else if (que === 'ventaCza') texto = n(x.ventaCza);
