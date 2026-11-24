@@ -666,6 +666,34 @@
         <!-- Marcas de cerveza que no suman a CORE+VALUE ni a PREMIUM (detalle y botones para corregir en la pestaña AJUSTES) -->
         <div id="avisoMarcas" class="alert alert-danger py-2 px-3 mb-3 small d-none"></div>
 
+        <!-- ===== Actualización automática desde la API de Chess (PC de Ivo) =====
+             La PC de Ivo baja Acumulado Mes y VESPER por la API de Chess en horarios fijos y sube una
+             versión compacta a Firebase (auto_bases/ACUM y auto_bases/VESPER). El navegador que tenga
+             tildado "Procesar automáticamente" la toma y hace lo mismo que subir el archivo a mano. -->
+        <div class="card p-3 mb-4 border bg-white shadow-sm" id="cardAutoApi">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+            <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Actualización automática (API de Chess)</h6>
+            <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle" id="autoApiProxima">—</span>
+          </div>
+          <div class="small text-muted mb-2">La PC de Ivo baja <b>1. ACUMULADO MES</b> y <b>2. VESPER</b> directo de Chess (sin abrir Chess) y los sube acá solos, en estos horarios:</div>
+          <div class="row g-2 small mb-2">
+            <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Lunes a viernes</b><br>
+              08:30 Acumulado + VESPER · 09:00 a 15:00 VESPER cada media hora · 15:15 Acumulado + VESPER</div></div>
+            <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Sábados</b><br>
+              08:30 Acumulado + VESPER · 09:00 a 13:00 VESPER cada media hora · 13:15 Acumulado + VESPER</div></div>
+          </div>
+          <div class="small mb-2" id="autoApiUltimas">Cargando estado…</div>
+          <div class="form-check form-switch small mb-1">
+            <input class="form-check-input" type="checkbox" id="autoApiProcesar" onchange="autoApiToggle(this.checked)">
+            <label class="form-check-label" for="autoApiProcesar"><b>Procesar automáticamente en este navegador</b>
+              (dejá el planificador abierto en una pestaña de la PC de Ivo; activalo en UNA sola PC)</label>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-1">
+            <button class="btn btn-outline-success btn-sm" type="button" onclick="autoApiProcesarAhora()"><i class="bi bi-arrow-repeat me-1"></i>Cargar ahora lo último que subió la PC</button>
+          </div>
+          <div class="small mt-2" id="autoApiEstado" style="min-height:1.4em;"></div>
+        </div>
+
         <!-- Descarga automática de Acumulado Mes y VESPER desde Chess (🔒 Solo Ivo: está dentro de la pestaña
              Analista, que pide PIN). Este botón escribe un pedido en Firebase (config/descarga_matinales);
              el ayudante .ahk de la PC de Ivo lo lee cada 8 segundos y maneja Chess solo. -->
@@ -4980,6 +5008,156 @@ try {
   refDescargaMatinales().onSnapshot(snap => _descargaPintar(snap.exists ? snap.data() : null), e => console.warn('descarga_matinales:', e));
   setInterval(() => { if (_descargaUltimo) _descargaPintar(_descargaUltimo); }, 60000);
 } catch (e) { console.warn('descarga_matinales:', e); }
+</script>
+<script>
+// ---------- Actualización automática desde la API de Chess (auto_bases en Firebase) ----------
+const AUTO_API_HORARIOS = {
+  semana: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:15A'],
+  sabado: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:15A']
+};
+const AUTO_API_TIPOS = ['ACUM', 'VESPER'];               // ACUM primero: VESPER se recalcula contra el acumulado
+const AUTO_API_LS = 'AUTO_API_PROCESAR';
+const _autoApiMeta = {};                                 // último meta visto por tipo
+const _autoApiHecho = {};                                // versión ya procesada en esta sesión
+let _autoApiOcupado = false;
+
+function autoApiActivo() { try { return localStorage.getItem(AUTO_API_LS) === '1'; } catch (e) { return false; } }
+function autoApiToggle(on) {
+  try { localStorage.setItem(AUTO_API_LS, on ? '1' : '0'); } catch (e) {}
+  if (on) autoApiProcesarPendientes(true);
+  autoApiPintar();
+}
+
+function autoApiProximaTexto() {
+  const ahora = new Date();
+  for (let d = 0; d < 8; d++) {
+    const f = new Date(ahora); f.setDate(ahora.getDate() + d);
+    const dow = f.getDay();
+    if (dow === 0) continue;
+    const lista = dow === 6 ? AUTO_API_HORARIOS.sabado : AUTO_API_HORARIOS.semana;
+    for (const h of lista) {
+      const [hh, mm] = h.slice(0, 5).split(':').map(Number);
+      const t = new Date(f); t.setHours(hh, mm, 0, 0);
+      if (t > ahora) {
+        const que = h.endsWith('A') ? 'Acumulado + VESPER' : 'VESPER';
+        const dia = d === 0 ? 'hoy' : t.toLocaleDateString('es-AR', { weekday: 'long' });
+        return 'Próxima: ' + dia + ' ' + h.slice(0, 5) + ' (' + que + ')';
+      }
+    }
+  }
+  return '—';
+}
+
+function autoApiPintar(msg, clase) {
+  const prox = document.getElementById('autoApiProxima');
+  if (prox) prox.textContent = autoApiProximaTexto();
+  const chk = document.getElementById('autoApiProcesar');
+  if (chk) chk.checked = autoApiActivo();
+  const ult = document.getElementById('autoApiUltimas');
+  if (ult) {
+    const linea = (tipo, nombre) => {
+      const m = _autoApiMeta[tipo];
+      if (!m) return '<b>' + nombre + ':</b> <span class="text-muted">todavía no se subió nada</span>';
+      const cuando = new Date(m.version).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const rango = m.desde === m.hasta ? m.desde : (m.desde + ' a ' + m.hasta);
+      const proc = _autoApiHecho[tipo] === m.version ? ' <span class="text-success">✔ cargado en este navegador</span>' : '';
+      return '<b>' + nombre + ':</b> subido ' + cuando + ' · ' + rango + ' · ' + Number(m.hl || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' HL' + proc;
+    };
+    ult.innerHTML = linea('ACUM', '1. Acumulado Mes') + '<br>' + linea('VESPER', '2. VESPER');
+  }
+  if (msg !== undefined) {
+    const est = document.getElementById('autoApiEstado');
+    if (est) est.innerHTML = '<span class="' + (clase || 'text-muted') + '">' + msg + '</span>';
+  }
+}
+
+async function autoApiDescomprimir(b64) {
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return JSON.parse(await new Response(stream).text());
+}
+
+// Arma filas "tipo Excel" (48 columnas) con solo lo que lee el planificador:
+// E(4) cliente · O(14) vendedor · R(17) artículo · T(19)/U(20) marca · W(22) calibre · AI(34) UN · AP(41) cantidad
+function autoApiAFilas(datos) {
+  const filas = [new Array(48).fill('')];
+  datos.filas.forEach(([cli, pv, art, mc, cal, un, cant]) => {
+    const r = new Array(48).fill('');
+    r[4] = cli; r[14] = pv || ''; r[17] = art; r[19] = mc; r[20] = datos.marcas[String(mc)] || '';
+    r[22] = cal; r[34] = un; r[41] = cant;
+    filas.push(r);
+  });
+  return filas;
+}
+
+async function autoApiCargarTipo(tipo) {
+  const ref = dbFire.collection('auto_bases').doc(tipo);
+  const meta = (await ref.get()).data();
+  if (!meta) return false;
+  const snap = await ref.collection('partes').get();
+  const partes = [];
+  snap.forEach(d => { partes[parseInt(d.id)] = d.data(); });
+  for (let i = 0; i < meta.partes; i++) {
+    if (!partes[i] || partes[i].version !== meta.version) throw new Error('la subida de ' + tipo + ' está a medio escribir, reintento en el próximo cambio');
+  }
+  const datos = await autoApiDescomprimir(partes.slice(0, meta.partes).map(p => p.data).join(''));
+  const filas = autoApiAFilas(datos);
+  if (tipo === 'ACUM') actualizarDesdeFilasFacturadoHastaHoy(filas);
+  else actualizarDesdeFilasVesperMaster(filas);
+  _autoApiHecho[tipo] = meta.version;
+  _autoApiMeta[tipo] = meta;
+  const badge = document.getElementById('estadoCargaBadge');
+  if (badge) { badge.textContent = 'Cargado automático: ' + (tipo === 'ACUM' ? '1. ACUMULADO MES' : '2. VESPER') + ' (' + new Date(meta.version).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ')'; badge.className = 'badge bg-success'; }
+  return true;
+}
+
+// forzar=true: carga aunque ya se haya procesado esa versión (p. ej. al abrir la página, porque las
+// filas de venta viven solo en memoria y se pierden al recargar).
+async function autoApiProcesarPendientes(forzar) {
+  if (_autoApiOcupado) return;
+  if (!DATA_COMPLETA.vendedores || !DATA_COMPLETA.vendedores.length) { setTimeout(() => autoApiProcesarPendientes(forzar), 3000); return; }
+  _autoApiOcupado = true;
+  try {
+    let algo = false;
+    for (const tipo of AUTO_API_TIPOS) {
+      const m = _autoApiMeta[tipo];
+      if (!m) continue;
+      if (!forzar && _autoApiHecho[tipo] === m.version) continue;
+      autoApiPintar('⏳ Cargando ' + (tipo === 'ACUM' ? '1. Acumulado Mes' : '2. VESPER') + '…', 'text-primary');
+      if (await autoApiCargarTipo(tipo)) algo = true;
+    }
+    if (algo) {
+      try { renderAnalistaView(); } catch (e) { console.warn(e); }
+      try { renderVespertinaCierre(); } catch (e) { console.warn(e); }
+      try { renderTodoLoVisible(); } catch (e) { console.warn(e); }
+      autoApiPintar('✔ Actualizado automáticamente ' + new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }), 'text-success');
+    } else autoApiPintar();
+  } catch (e) {
+    console.warn('auto_bases:', e);
+    autoApiPintar('✖ No se pudo cargar: ' + e.message, 'text-danger');
+  } finally { _autoApiOcupado = false; }
+}
+
+function autoApiProcesarAhora() { autoApiProcesarPendientes(true); }
+
+try {
+  let arrancando = true;   // los primeros segundos solo se programa UNA carga completa
+  AUTO_API_TIPOS.forEach(tipo => {
+    dbFire.collection('auto_bases').doc(tipo).onSnapshot(snap => {
+      if (!snap.exists) return;
+      _autoApiMeta[tipo] = snap.data();
+      autoApiPintar();
+      if (autoApiActivo()) {
+        // al abrir la página se esperan unos segundos a que lleguen vendedores / marcas / rutas
+        if (arrancando) return;
+        autoApiProcesarPendientes(false);
+      }
+    }, e => console.warn('auto_bases ' + tipo + ':', e));
+  });
+  setTimeout(() => { arrancando = false; if (autoApiActivo()) autoApiProcesarPendientes(true); }, 8000);
+  setInterval(() => autoApiPintar(), 60000);
+  autoApiPintar();
+} catch (e) { console.warn('auto_bases:', e); }
 </script>
 </body>
 </html>
