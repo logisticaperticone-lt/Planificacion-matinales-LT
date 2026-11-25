@@ -681,7 +681,7 @@
             <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Actualización automática (API de Chess)</h6>
             <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle" id="autoApiProxima">—</span>
           </div>
-          <div class="small text-muted mb-2">La PC de Ivo baja <b>1. ACUMULADO MES</b> y <b>2. VESPER</b> directo de Chess (sin abrir Chess) y los sube acá solos, en estos horarios:</div>
+          <div class="small text-muted mb-2">La PC de Ivo baja <b>1. ACUMULADO MES</b> y <b>2. VESPER</b> directo de Chess (sin abrir Chess) y los sube acá solos, en estos horarios. Además arma el <b>AD</b> (19:00, o apenas se prende la PC) y el <b>AD(V)</b> (15:20; sábados 13:20), que se aplican solos al abrir el planificador:</div>
           <div class="row g-2 small mb-2">
             <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Lunes a viernes</b><br>
               08:30 Acumulado + VESPER · 09:00 a 15:00 VESPER cada media hora · 15:15 Acumulado + VESPER</div></div>
@@ -689,13 +689,16 @@
               08:30 Acumulado + VESPER · 09:00 a 13:00 VESPER cada media hora · 13:15 Acumulado + VESPER</div></div>
           </div>
           <div class="small mb-2" id="autoApiUltimas">Cargando estado…</div>
-          <div class="form-check form-switch small mb-1">
+          <div class="alert alert-info small py-2 px-3 mb-2"><i class="bi bi-info-circle me-1"></i><b>Ojo:</b> el AD y el AD(V) automáticos toman las ventas por <b>fecha de ENTREGA</b> (el Excel de Avance Diario y el reporte de Chess usan fecha de comprobante). Se eligió así porque Chess a veces cambia la fecha de las facturas después (ej. las del 20/11 pasaron al 21/11) y eso dejaba días en 0. Por eso <b>M-1 Real</b> puede diferir entre 1% y 4% del Excel y el <b>-7 / -14 días</b> muestra lo que realmente se entregó ese día. Real, DDV y Prevendido dan igual.</div>
+          <div class="form-check form-switch small mb-1" style="display:none;">
             <input class="form-check-input" type="checkbox" id="autoApiProcesar" onchange="autoApiToggle(this.checked)">
-            <label class="form-check-label" for="autoApiProcesar"><b>Procesar automáticamente en este navegador</b>
+            <label class="form-check-label" for="autoApiProcesar"><b>Procesar automáticamente en este navegador</b> (ya no hace falta: lo aplica el primer navegador que tenga el planificador abierto)
               (dejá el planificador abierto en una pestaña de la PC de Ivo; activalo en UNA sola PC)</label>
           </div>
           <div class="d-flex flex-wrap gap-2 mt-1">
             <button class="btn btn-outline-success btn-sm" type="button" onclick="autoApiProcesarAhora()"><i class="bi bi-arrow-repeat me-1"></i>Cargar ahora lo último que subió la PC</button>
+            <button class="btn btn-outline-primary btn-sm" type="button" onclick="adAplicar('AD', true)" title="Arma el AD con la última base que subió la PC. Pone en 0 la planificación si es de un día nuevo."><i class="bi bi-table me-1"></i>Aplicar AD ahora</button>
+            <button class="btn btn-outline-primary btn-sm" type="button" onclick="adAplicar('ADV', true)"><i class="bi bi-table me-1"></i>Aplicar AD(V) ahora</button>
           </div>
           <div class="small mt-2" id="autoApiEstado" style="min-height:1.4em;"></div>
         </div>
@@ -962,6 +965,21 @@
   <!-- ETAPA 6: AJUSTES (Segmentación de marcas / Innovaciones Core / Día-Valor / Vendedor→Supervisor) -->
   <!-- ==================================================================== -->
   <div id="etapaAjustes" class="d-none">
+    <!-- Objetivos del mes para el AD / AD(V) automático (antes: hoja OBJETIVOS del Excel de Avance Diario) -->
+    <div class="card card-custom p-4 bg-white shadow-sm mb-3">
+      <h5 class="fw-bold mb-1"><i class="bi bi-bullseye me-2 text-primary"></i>Objetivos del mes (AD y AD(V) automáticos) <small id="ajustesObjetivosInfo" class="text-muted fw-normal ms-2"></small></h5>
+      <p class="text-muted small mb-2">Copiá en Excel la tabla de objetivos <b>con su fila de títulos</b> (código de vendedor, nombre, y una columna por segmento: CVZ CMQ, PREMIUM, CORE + VALUE, UNG, AGUAS…), pegala acá abajo y tocá <b>Guardar objetivos</b>. Se carga una vez por mes o cuando cambie algo. Con esto, la PC arma sola el AD de la matinal y el AD(V) de la vespertina.</p>
+      <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+        <div>
+          <label class="form-label small fw-semibold mb-1">Mes</label>
+          <input type="month" id="ajustesObjetivosMes" class="form-control form-control-sm" style="width:170px;">
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="guardarObjetivosDesdeTexto()"><i class="bi bi-save me-1"></i>Guardar objetivos</button>
+      </div>
+      <div class="alert alert-info small py-2 px-3 mb-2"><i class="bi bi-info-circle me-1"></i><b>Ojo:</b> el AD y el AD(V) automáticos toman las ventas por <b>fecha de ENTREGA</b> (el Excel de Avance Diario y el reporte de Chess usan fecha de comprobante). Se eligió así porque Chess a veces cambia la fecha de las facturas después (ej. las del 20/11 pasaron al 21/11) y eso dejaba días en 0. Por eso <b>M-1 Real</b> puede diferir entre 1% y 4% del Excel y el <b>-7 / -14 días</b> muestra lo que realmente se entregó ese día. Real, DDV y Prevendido dan igual.</div>
+      <textarea id="ajustesObjetivosTexto" class="form-control form-control-sm mb-2" rows="4" placeholder="Pegá acá la tabla copiada del Excel (Ctrl+V)"></textarea>
+      <div class="table-responsive" style="max-height:360px; overflow-y:auto;" id="ajustesObjetivosTabla"></div>
+    </div>
     <!-- Control de marcas: avisa qué marcas de cerveza vendidas NO suman a CORE+VALUE ni a PREMIUM -->
     <div class="card card-custom p-4 bg-white shadow-sm mb-3">
       <h5 class="fw-bold mb-1"><i class="bi bi-shield-check me-2 text-primary"></i>Control de marcas</h5>
@@ -1059,6 +1077,7 @@ const refConfigDiaValor = () => dbFire.collection('config').doc('dia_valor');
 const refConfigRutasEntrega = () => dbFire.collection('config').doc('rutas_entrega');
 const refConfigFeriados = () => dbFire.collection('config').doc('feriados_entrega');
 const refConfigControlMarcas = () => dbFire.collection('config').doc('control_marcas');
+const refConfigObjetivos = () => dbFire.collection('config').doc('objetivos_ad');
 
 const SUPERVISORES_LIST = [
   "CORSINO PEDRO",
@@ -4480,13 +4499,13 @@ async function restaurarPlanDesdeFoto(fecha) {
   alert('Planes restaurados desde la foto de ' + fecha + ' (' + n + ' valores).');
 }
 
-function actualizarDesdeFilasAD(filas) {
+function actualizarDesdeFilasAD(filas, opciones) {
   // Si el AD ya se cargó HOY (re-subida para corregir algo), la planificación que los vendedores ya
   // hicieron se CONSERVA; solo arranca en 0 al cargar el AD de un día nuevo.
   const adYaCargadoHoy = (DATA_COMPLETA.cargas || {}).AD === fechaLocalISO();
   // Cargar el AD pone todos los planes en 0. De noche es lo normal; de día casi seguro es un accidente
   // (los vendedores ya planificaron), así que se pide confirmación si hay planes cargados.
-  if (!adYaCargadoHoy && new Date().getHours() < 17) {
+  if (!(opciones && opciones.auto) && !adYaCargadoHoy && new Date().getHours() < 17) {
     const conPlan = DATA_COMPLETA.vendedores.filter(v => Object.values(v.kpis || {}).some(k => k && k.plan > 0)).length;
     if (conPlan && !confirm(`⚠️ Hay ${conPlan} vendedores con la planificación ya cargada.\n\nSubir el AD ahora la pone en 0 para todos.\n\n¿Seguro que querés continuar?`)) return;
   }
@@ -4935,6 +4954,12 @@ function iniciarListenersFirestore() {
     renderControlMarcas();
   }, err => console.warn("Listener control_marcas:", err));
 
+  refConfigObjetivos().onSnapshot(doc => {
+    OBJETIVOS_AD = doc.exists ? Object.assign({ mes: '', filas: [] }, doc.data()) : { mes: '', filas: [] };
+    renderObjetivosAjustes();
+    autoApiPintar();
+  }, err => console.warn("Listener objetivos_ad:", err));
+
   refConfigFeriados().onSnapshot(doc => {
     FERIADOS_ENTREGA = (doc.exists && Array.isArray(doc.data().fechas)) ? doc.data().fechas : [];
     recalcularEntregaManana();
@@ -5021,6 +5046,13 @@ const AUTO_API_HORARIOS = {
   semana: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:15A'],
   sabado: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:15A']
 };
+const SEGMENTOS_AD = ['CVZ CMQ', 'PREMIUM', 'CORE + VALUE', 'UNG', 'AGUAS', 'LATONES', 'TOP', 'BALANCED CHOICES'];
+const AD_TIPOS = ['AD', 'ADV'];
+let OBJETIVOS_AD = { mes: '', filas: [] };   // filas: [{ pv, nombre, obj: { 'CVZ CMQ': 730, ... } }]
+const _adMeta = {};
+let _adAplicado = {};
+const _adPendienteManual = {};
+let _adOcupado = false;
 const AUTO_API_TIPOS = ['ACUM', 'VESPER'];               // ACUM primero: VESPER se recalcula contra el acumulado
 const AUTO_API_LS = 'AUTO_API_PROCESAR';
 const _autoApiMeta = {};                                 // último meta visto por tipo
@@ -5066,10 +5098,10 @@ function autoApiPintar(msg, clase) {
       if (!m) return '<b>' + nombre + ':</b> <span class="text-muted">todavía no se subió nada</span>';
       const cuando = new Date(m.version).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
       const rango = m.desde === m.hasta ? m.desde : (m.desde + ' a ' + m.hasta);
-      const proc = _autoApiHecho[tipo] === m.version ? ' <span class="text-success">✔ cargado en este navegador</span>' : '';
+      const proc = (_adAplicado[tipo + '_version'] === m.version || _autoApiHecho[tipo] === m.version) ? ' <span class="text-success">✔ aplicado</span>' : ' <span class="text-muted">⏳ se aplica al abrir el planificador</span>';
       return '<b>' + nombre + ':</b> subido ' + cuando + ' · ' + rango + ' · ' + Number(m.hl || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' HL' + proc;
     };
-    ult.innerHTML = linea('ACUM', '1. Acumulado Mes') + '<br>' + linea('VESPER', '2. VESPER');
+    ult.innerHTML = linea('ACUM', '1. Acumulado Mes') + '<br>' + linea('VESPER', '2. VESPER') + '<br>' + adLinea('AD', '0. AD') + '<br>' + adLinea('ADV', '3. AD(V)');
   }
   const ultV = document.getElementById('autoApiUltimasVesper');
   if (ultV && ult) ultV.innerHTML = ult.innerHTML;
@@ -5148,6 +5180,27 @@ async function autoApiProcesarPendientes(forzar) {
 
 function autoApiProcesarAhora() { autoApiProcesarPendientes(true); }
 
+// Ya no hace falta el switch: el primer navegador que tenga el planificador abierto (o lo abra) aplica
+// cada versión nueva del Acumulado / VESPER, UNA sola vez (se anota en cargas/estado). Carga siempre
+// los dos juntos, porque el VESPER se recalcula contra el Acumulado.
+async function autoApiIntentar() {
+  if (_autoApiOcupado) return;
+  const pendientes = AUTO_API_TIPOS.filter(t => _autoApiMeta[t] && _adAplicado[t + '_version'] !== _autoApiMeta[t].version);
+  if (!pendientes.length) return;
+  try {
+    const versiones = {};
+    AUTO_API_TIPOS.forEach(t => { if (_autoApiMeta[t]) versiones[t + '_version'] = _autoApiMeta[t].version; });
+    const libre = await dbFire.runTransaction(async tx => {
+      const s = await tx.get(refCargas());
+      const d = s.data() || {};
+      if (!Object.keys(versiones).some(k => d[k] !== versiones[k])) return false;
+      tx.set(refCargas(), versiones, { merge: true });
+      return true;
+    });
+    if (libre) await autoApiProcesarPendientes(true);
+  } catch (e) { console.warn('autoApiIntentar:', e); }
+}
+
 try {
   let arrancando = true;   // los primeros segundos solo se programa UNA carga completa
   AUTO_API_TIPOS.forEach(tipo => {
@@ -5155,17 +5208,251 @@ try {
       if (!snap.exists) return;
       _autoApiMeta[tipo] = snap.data();
       autoApiPintar();
-      if (autoApiActivo()) {
-        // al abrir la página se esperan unos segundos a que lleguen vendedores / marcas / rutas
-        if (arrancando) return;
-        autoApiProcesarPendientes(false);
-      }
+      // al abrir la página se esperan unos segundos a que lleguen vendedores / marcas / rutas
+      if (arrancando) return;
+      autoApiIntentar();
     }, e => { console.warn('auto_bases ' + tipo + ':', e); autoApiPintar('✖ No puedo leer las bases automáticas de Firebase (' + (e.code || e.message) + '). Si dice permission-denied, hay que habilitar la colección auto_bases en las reglas de Firestore.', 'text-danger'); });
   });
-  setTimeout(() => { arrancando = false; if (autoApiActivo()) autoApiProcesarPendientes(true); }, 8000);
+  setTimeout(() => { arrancando = false; autoApiIntentar(); }, 8000);
   setInterval(() => autoApiPintar(), 60000);
   autoApiPintar();
 } catch (e) { console.warn('auto_bases:', e); }
+
+// ====================================================================
+// AD y AD(V) AUTOMÁTICOS — la PC sube a auto_bases/AD y auto_bases/ADV los HL por día de entrega x
+// vendedor x marca x calibre x UN (mes actual + mes anterior, con pedidos de los días que vienen).
+// Acá se arma la misma tabla que salía del Excel "Avance Diario" (tableroVOL Planificador) con los
+// objetivos, la segmentación de marcas, el valor del día y los feriados de AJUSTES, y se carga con
+// el mismo motor que la subida manual (actualizarDesdeFilasAD / actualizarDesdeFilasADV).
+// La aplica la PRIMERA PC que tenga el planificador abierto (se anota en cargas/estado para no repetir).
+// ====================================================================
+
+const adNormNombre = x => String(x == null ? '' : x).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+const adNormMarca = x => String(x == null ? '' : x).replace(/\s+/g, ' ').trim().toUpperCase();
+function adSumarDias(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return fechaLocalISO(d); }
+function adHora24(t) { return new Date(t).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); }
+
+// DDV del día: excepción cargada en "Valor del día" > feriado (0) > regla general (L-V 1, sáb 0.5, dom 0)
+function adDdvDia(iso) {
+  if (Object.prototype.hasOwnProperty.call(DIA_VALOR_EXCEPCIONES, iso)) return parseFloat(DIA_VALOR_EXCEPCIONES[iso]) || 0;
+  if ((FERIADOS_ENTREGA || []).includes(iso)) return 0;
+  return valorDelDia(iso);
+}
+
+function adSegmentosDe(marcaDesc, cal, un) {
+  const segs = [];
+  if (un === 1) segs.push('CVZ CMQ');
+  if (un === 3) segs.push('UNG');
+  if (un === 4) segs.push('AGUAS');
+  if (cal === 566) segs.push('LATONES');
+  const info = infoDeMarca(adNormMarca(marcaDesc));
+  if (info) {
+    const s = String(info.segmento || '').replace(/\s+/g, '').toUpperCase();
+    if (s === 'PREMIUM') segs.push('PREMIUM');
+    if (s === 'CORE+VALUE') segs.push('CORE + VALUE');
+    if (info.esTop) segs.push('TOP');
+    if (info.esBc) segs.push('BALANCED CHOICES');
+  }
+  return segs;
+}
+
+function adObjetivo(v, seg) {
+  const filas = OBJETIVOS_AD.filas || [];
+  const f = filas.find(x => x.pv && x.pv === v.pv) || filas.find(x => adNormNombre(x.nombre) === adNormNombre(v.nombre));
+  return f && f.obj ? (parseFloat(f.obj[seg]) || 0) : 0;
+}
+
+// Misma cuenta que el Excel: D2 = "Avance al"; Real = 1 del mes..D2; Tend = Real/DDVtransc*DDVtotal;
+// Avance = Tend/Obj; M-1 = mes anterior completo; Media nec = (Obj-Real)/DDVpend (si pend<=1: Obj-Real);
+// 14 d = día D2-13 (sáb -12); 7 d = D2-6 (sáb -5); Prevendido = D2+1 (sáb +2).
+function adArmarFilas(datos, meta) {
+  const d2 = meta.avanceAl;
+  const [y, m] = d2.split('-').map(Number);
+  const ini = d2.slice(0, 8) + '01';
+  const finMes = fechaLocalISO(new Date(y, m, 0));
+  const iniPrev = fechaLocalISO(new Date(y, m - 2, 1));
+  const finPrev = fechaLocalISO(new Date(y, m - 1, 0));
+  const sab = new Date(d2 + 'T12:00:00').getDay() === 6;
+  let E = 0, G = 0;
+  for (let d = ini; d <= finMes; d = adSumarDias(d, 1)) { const v = adDdvDia(d); G += v; if (d <= d2) E += v; }
+  const F = G - E;
+  const f14 = adSumarDias(d2, sab ? -12 : -13), f7 = adSumarDias(d2, sab ? -5 : -6), fPrev = adSumarDias(d2, sab ? 2 : 1);
+  const acc = {};
+  (datos.filas || []).forEach(([f, pv, mc, cal, un, hl]) => {
+    const segs = adSegmentosDe((datos.marcas || {})[String(mc)] || '', cal, un);
+    segs.forEach(seg => {
+      acc[pv] = acc[pv] || {};
+      const a = acc[pv][seg] = acc[pv][seg] || { real: 0, m1: 0, d14: 0, d7: 0, prev: 0 };
+      if (f >= ini && f <= d2) a.real += hl;
+      if (f >= iniPrev && f <= finPrev) a.m1 += hl;
+      if (f === f14) a.d14 += hl;
+      if (f === f7) a.d7 += hl;
+      if (f === fPrev) a.prev += hl;
+    });
+  });
+  const filas = [];
+  SEGMENTOS_AD.forEach(seg => (DATA_COMPLETA.vendedores || []).forEach(v => {
+    const a = (acc[v.pv] || {})[seg] || { real: 0, m1: 0, d14: 0, d7: 0, prev: 0 };
+    const obj = adObjetivo(v, seg);
+    const tend = E > 0 ? a.real / E * G : 0;
+    const r = new Array(20).fill('');
+    r[0] = seg; r[2] = v.sv || ''; r[3] = v.pv; r[4] = v.nombre || '';
+    r[5] = obj; r[6] = a.real; r[8] = obj ? tend / obj : '-'; r[9] = tend;
+    r[10] = a.m1; r[11] = a.m1 ? tend / a.m1 - 1 : 0;
+    r[12] = E > 0 ? a.real / E : 0; r[13] = F <= 1 ? obj - a.real : (obj - a.real) / F;
+    r[17] = a.d14; r[18] = a.d7; r[19] = a.prev;
+    filas.push(r);
+  }));
+  return { filas, ddv: { transcurridos: E, pendientes: F, total: G } };
+}
+
+async function adLeerDatos(tipo) {
+  const ref = dbFire.collection('auto_bases').doc(tipo);
+  const meta = (await ref.get()).data();
+  if (!meta) throw new Error('la PC todavía no subió el ' + tipo);
+  const snap = await ref.collection('partes').get();
+  const partes = [];
+  snap.forEach(d => { partes[parseInt(d.id)] = d.data(); });
+  for (let i = 0; i < meta.partes; i++) {
+    if (!partes[i] || partes[i].version !== meta.version) throw new Error('la subida del ' + tipo + ' está a medio escribir, reintento en el próximo cambio');
+  }
+  return { meta, datos: await autoApiDescomprimir(partes.slice(0, meta.partes).map(p => p.data).join('')) };
+}
+
+// manual=true: botón "Aplicar ... ahora" (siempre aplica). Automático: el AD solo se aplica solo
+// de 19:00 a 07:30 (y el AD(V) desde las 15:20), para no poner en 0 una planificación que el equipo ya está haciendo.
+async function adAplicar(tipo, manual) {
+  if (_adOcupado) return;
+  if (!DATA_COMPLETA.vendedores || !DATA_COMPLETA.vendedores.length) { setTimeout(() => adAplicar(tipo, manual), 3000); return; }
+  const nombre = tipo === 'AD' ? 'AD' : 'AD(V)';
+  _adOcupado = true;
+  try {
+    const { meta, datos } = await adLeerDatos(tipo);
+    const campo = tipo + '_version';
+    if (!manual) {
+      if (_adAplicado[campo] === meta.version) return;
+      const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
+      const desdeADV = (ahora.getDay() === 6 ? 13 : 15) * 60 + 20;
+      const fueraDeHorario = tipo === 'AD'
+        ? (min >= 7 * 60 + 30 && min < 19 * 60)      // AD: solo se aplica solo de 19:00 a 07:30
+        : (min < desdeADV);                          // AD(V): solo desde las 15:20 (sábados 13:20)
+      if (fueraDeHorario) {
+        _adPendienteManual[tipo] = meta.version;
+        autoApiPintar(tipo === 'AD'
+          ? '⚠ Llegó un AD nuevo fuera del horario (19:00 a 07:30): no lo apliqué solo para no poner en 0 lo planificado. Si corresponde, tocá "Aplicar AD ahora".'
+          : '⚠ Llegó un AD(V) antes del cierre: no lo apliqué solo. Si corresponde, tocá "Aplicar AD(V) ahora".', 'text-warning');
+        return;
+      }
+      const libre = await dbFire.runTransaction(async tx => {
+        const s = await tx.get(refCargas());
+        if (((s.data() || {})[campo]) === meta.version) return false;
+        tx.set(refCargas(), { [campo]: meta.version }, { merge: true });
+        return true;
+      });
+      if (!libre) return;
+    } else {
+      if (tipo === 'AD' && !confirm('¿Aplicar el AD (avance al ' + meta.avanceAl + ')?\n\nSi es de un día nuevo, la planificación de los vendedores vuelve a 0.')) return;
+      await refCargas().set({ [campo]: meta.version }, { merge: true });
+    }
+    autoApiPintar('⏳ Armando el ' + nombre + '…', 'text-primary');
+    const { filas, ddv } = adArmarFilas(datos, meta);
+    if (tipo === 'AD') actualizarDesdeFilasAD(filas, { auto: true });
+    else actualizarDesdeFilasADV(filas);
+    delete _adPendienteManual[tipo];
+    try { renderAnalistaView(); } catch (e) { console.warn(e); }
+    try { renderVespertinaCierre(); } catch (e) { console.warn(e); }
+    try { renderTodoLoVisible(); } catch (e) { console.warn(e); }
+    autoApiPintar('✔ ' + nombre + ' aplicado (avance al ' + meta.avanceAl + ' · DDV ' + ddv.transcurridos + ' / ' + ddv.pendientes + ' / ' + ddv.total + ')', 'text-success');
+  } catch (e) {
+    console.warn('AD automático:', e);
+    autoApiPintar('✖ No se pudo armar el ' + nombre + ': ' + e.message, 'text-danger');
+  } finally { _adOcupado = false; }
+}
+
+function adLinea(tipo, nombre) {
+  const m = _adMeta[tipo];
+  if (!m) return '<b>' + nombre + ':</b> <span class="text-muted">todavía no se subió nada</span>';
+  let estado = _adAplicado[tipo + '_version'] === m.version ? ' <span class="text-success">✔ aplicado</span>'
+    : (_adPendienteManual[tipo] === m.version ? ' <span class="text-warning">⚠ sin aplicar</span>' : ' <span class="text-muted">⏳ se aplica al abrir el planificador</span>');
+  const mesObj = (m.avanceAl || '').slice(0, 7);
+  if (OBJETIVOS_AD.mes !== mesObj) estado += ' <span class="text-danger">⚠ faltan los objetivos de ' + mesObj + ' (AJUSTES)</span>';
+  return '<b>' + nombre + ':</b> subido ' + adHora24(m.version) + ' · avance al ' + m.avanceAl + estado;
+}
+
+// ---- Objetivos (AJUSTES) ----
+function adParseNum(t) {
+  t = String(t == null ? '' : t).trim().replace(/\s/g, '');
+  if (!t) return 0;
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  return parseFloat(t) || 0;
+}
+
+async function guardarObjetivosDesdeTexto() {
+  const texto = document.getElementById('ajustesObjetivosTexto').value;
+  const mes = document.getElementById('ajustesObjetivosMes').value;
+  if (!mes) { alert('Elegí el mes de los objetivos.'); return; }
+  const lineas = texto.split(/\r?\n/).map(l => l.split('\t'));
+  const iHead = lineas.findIndex(c => c.some(x => SEGMENTOS_AD.map(adNormNombre).includes(adNormNombre(x))));
+  if (iHead < 0) { alert('No encontré la fila de títulos (CVZ CMQ, PREMIUM, CORE + VALUE, UNG, AGUAS…). Copiá la tabla junto con los títulos.'); return; }
+  const head = lineas[iHead];
+  const colSeg = {};
+  head.forEach((x, i) => { const s = SEGMENTOS_AD.find(sg => adNormNombre(sg) === adNormNombre(x)); if (s) colSeg[s] = i; });
+  const primeraSeg = Math.min(...Object.values(colSeg));
+  const filas = [];
+  lineas.slice(iHead + 1).forEach(c => {
+    const textos = c.slice(0, primeraSeg).map(x => String(x || '').trim());
+    const pv = parseInt(textos.find(x => /^\d+$/.test(x))) || 0;
+    const nombre = textos.filter(x => x && !/^\d+$/.test(x)).pop() || '';
+    if (!pv && !nombre) return;
+    const obj = {};
+    Object.entries(colSeg).forEach(([s, i]) => { obj[s] = adParseNum(c[i]); });
+    filas.push({ pv, nombre, obj });
+  });
+  if (!filas.length) { alert('No encontré filas de vendedores debajo de los títulos.'); return; }
+  const sinMatch = (DATA_COMPLETA.vendedores || []).filter(v => !filas.some(f => (f.pv && f.pv === v.pv) || adNormNombre(f.nombre) === adNormNombre(v.nombre))).map(v => v.nombre);
+  try {
+    await refConfigObjetivos().set({ mes, filas, cargado: new Date().toISOString() });
+    document.getElementById('ajustesObjetivosTexto').value = '';
+    alert('Objetivos de ' + mes + ' guardados (' + filas.length + ' filas, segmentos: ' + Object.keys(colSeg).join(', ') + ').'
+      + (sinMatch.length ? '\n\nOJO: estos vendedores no aparecen en la tabla y quedan con objetivo 0:\n' + sinMatch.join('\n') : ''));
+  } catch (err) { alert('No se pudo guardar en Firebase: ' + (err.message || err)); }
+}
+
+function renderObjetivosAjustes() {
+  const cont = document.getElementById('ajustesObjetivosTabla');
+  const info = document.getElementById('ajustesObjetivosInfo');
+  const inpMes = document.getElementById('ajustesObjetivosMes');
+  if (inpMes && !inpMes.value) inpMes.value = OBJETIVOS_AD.mes || fechaLocalISO().slice(0, 7);
+  if (info) info.textContent = OBJETIVOS_AD.mes ? '· cargados: ' + OBJETIVOS_AD.mes + (OBJETIVOS_AD.cargado ? ' (' + adHora24(OBJETIVOS_AD.cargado) + ')' : '') : '· todavía no hay objetivos cargados';
+  if (!cont) return;
+  const filas = OBJETIVOS_AD.filas || [];
+  if (!filas.length) { cont.innerHTML = ''; return; }
+  const segs = SEGMENTOS_AD.filter(s => filas.some(f => f.obj && f.obj[s]));
+  const fmt = n => Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+  cont.innerHTML = '<table class="table table-sm table-bordered mb-0" style="font-size:0.8rem;"><thead class="table-light" style="position:sticky;top:0;"><tr><th>PV</th><th>Vendedor</th>'
+    + segs.map(s => '<th class="text-end">' + s + '</th>').join('') + '</tr></thead><tbody>'
+    + filas.map(f => '<tr><td>' + (f.pv || '') + '</td><td>' + (f.nombre || '') + '</td>' + segs.map(s => '<td class="text-end">' + fmt((f.obj || {})[s]) + '</td>').join('') + '</tr>').join('')
+    + '</tbody></table>';
+}
+(function () {
+  const orig = renderAjustes;
+  renderAjustes = function () { orig.apply(this, arguments); renderObjetivosAjustes(); };
+})();
+
+try {
+  refCargas().onSnapshot(doc => { _adAplicado = doc.exists ? doc.data() : {}; autoApiPintar(); }, e => console.warn('cargas AD:', e));
+  let adArrancando = true;
+  AD_TIPOS.forEach(tipo => {
+    dbFire.collection('auto_bases').doc(tipo).onSnapshot(snap => {
+      if (!snap.exists) return;
+      _adMeta[tipo] = snap.data();
+      autoApiPintar();
+      if (!adArrancando) adAplicar(tipo, false);
+    }, e => console.warn('auto_bases ' + tipo + ':', e));
+  });
+  // al abrir: se espera a que lleguen vendedores, marcas, objetivos y feriados
+  setTimeout(() => { adArrancando = false; (async () => { for (const t of AD_TIPOS) if (_adMeta[t]) await adAplicar(t, false); })(); }, 9000);
+} catch (e) { console.warn('AD automático:', e); }
 </script>
 </body>
 </html>
