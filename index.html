@@ -691,12 +691,12 @@
             <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Actualización automática (API de Chess)</h6>
             <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle" id="autoApiProxima">—</span>
           </div>
-          <div class="small text-muted mb-2">La PC de Ivo baja <b>1. ACUMULADO MES</b> y <b>2. VESPER</b> directo de Chess (sin abrir Chess) y los sube acá solos, en estos horarios. Además arma el <b>AD</b> (19:00, o apenas se prende la PC) y el <b>AD(V)</b> (15:20; sábados 13:20), que se aplican solos al abrir el planificador:</div>
+          <div class="small text-muted mb-2">La PC de Ivo baja <b>1. ACUMULADO MES</b> y <b>2. VESPER</b> directo de Chess (sin abrir Chess) y los sube acá solos, en estos horarios. Además arma el <b>AD</b> (19:00, o apenas se prende la PC) y el <b>AD(V)</b> (en el cierre de las 15:05; sábados 13:05), que se aplican solos al abrir el planificador:</div>
           <div class="row g-2 small mb-2">
             <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Lunes a viernes</b><br>
-              08:30 Acumulado + VESPER · 09:00 a 15:00 VESPER cada media hora · 15:15 Acumulado + VESPER</div></div>
+              08:30 Acumulado + VESPER · 09:00 a 14:30 VESPER cada media hora · <b>15:05 cierre: Acumulado + VESPER + AD(V)</b> · 19:00 AD (dom a vie)</div></div>
             <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Sábados</b><br>
-              08:30 Acumulado + VESPER · 09:00 a 13:00 VESPER cada media hora · 13:15 Acumulado + VESPER</div></div>
+              08:30 Acumulado + VESPER · 09:00 a 12:30 VESPER cada media hora · <b>13:05 cierre: Acumulado + VESPER + AD(V)</b></div></div>
           </div>
           <div class="small mb-2" id="autoApiUltimas">Cargando estado…</div>
           <div class="alert alert-info small py-2 px-3 mb-2"><i class="bi bi-info-circle me-1"></i><b>Ojo:</b> el AD y el AD(V) automáticos toman las ventas por <b>fecha de COMPROBANTE</b>, igual que el Excel de Avance Diario y el reporte de Chess (los pedidos, por su fecha de entrega). Por eso dan lo mismo que el Excel, incluso cuando Chess cambia la fecha de las facturas después (ej. las del 20/11 pasaron al 21/11): ese día puede quedar en 0 en el -7 / -14 días, igual que en el Excel.</div>
@@ -5110,8 +5110,8 @@ try {
 <script>
 // ---------- Actualización automática desde la API de Chess (auto_bases en Firebase) ----------
 const AUTO_API_HORARIOS = {
-  semana: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:15A'],
-  sabado: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:15A']
+  semana: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:05A'],
+  sabado: ['08:30A', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:05A']
 };
 const SEGMENTOS_AD = ['CVZ CMQ', 'PREMIUM', 'CORE + VALUE', 'UNG', 'AGUAS', 'LATONES', 'TOP', 'BALANCED CHOICES'];
 const AD_TIPOS = ['AD', 'ADV'];
@@ -5186,12 +5186,12 @@ const BASES_HORARIOS = (() => {
   const cada30 = (desde, hasta) => { const r = []; for (let m = desde; m <= hasta; m += 30) r.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')); return r; };
   return {
     AD:     { 0: ['19:00'], 1: ['19:00'], 2: ['19:00'], 3: ['19:00'], 4: ['19:00'], 5: ['19:00'] },
-    ACUM:   { 1: ['08:30', '15:15'], 2: ['08:30', '15:15'], 3: ['08:30', '15:15'], 4: ['08:30', '15:15'], 5: ['08:30', '15:15'], 6: ['08:30', '13:15'] },
-    VESPER: Object.assign({}, ...[1, 2, 3, 4, 5].map(d => ({ [d]: ['08:30', ...cada30(9 * 60, 15 * 60), '15:15'] })), { 6: ['08:30', ...cada30(9 * 60, 13 * 60), '13:15'] }),
-    ADV:    { 1: ['15:20'], 2: ['15:20'], 3: ['15:20'], 4: ['15:20'], 5: ['15:20'], 6: ['13:20'] },
+    ACUM:   { 1: ['08:30', '15:05'], 2: ['08:30', '15:05'], 3: ['08:30', '15:05'], 4: ['08:30', '15:05'], 5: ['08:30', '15:05'], 6: ['08:30', '13:05'] },
+    VESPER: Object.assign({}, ...[1, 2, 3, 4, 5].map(d => ({ [d]: ['08:30', ...cada30(9 * 60, 14 * 60 + 30), '15:05'] })), { 6: ['08:30', ...cada30(9 * 60, 12 * 60 + 30), '13:05'] }),
+    ADV:    { 1: ['15:05'], 2: ['15:05'], 3: ['15:05'], 4: ['15:05'], 5: ['15:05'], 6: ['13:05'] },
   };
 })();
-const BASES_MARGEN_MIN = { AD: 40, ACUM: 20, VESPER: 15, ADV: 40 };   // lo que puede tardar la bajada
+const BASES_MARGEN_MIN = { AD: 40, ACUM: 20, VESPER: 15, ADV: 45 };   // lo que puede tardar la bajada
 
 function basesTurnos(tipo, ahora, haciaAdelante) {
   const out = [];
@@ -5488,7 +5488,7 @@ async function adLeerDatos(tipo) {
 }
 
 // manual=true: botón "Aplicar ... ahora" (siempre aplica). Automático: el AD solo se aplica solo
-// de 19:00 a 07:30 (y el AD(V) desde las 15:20), para no poner en 0 una planificación que el equipo ya está haciendo.
+// de 19:00 a 07:30 (y el AD(V) desde las 15:05), para no poner en 0 una planificación que el equipo ya está haciendo.
 async function adAplicar(tipo, manual) {
   if (_adOcupado) return;
   if (!DATA_COMPLETA.vendedores || !DATA_COMPLETA.vendedores.length) { setTimeout(() => adAplicar(tipo, manual), 3000); return; }
@@ -5500,10 +5500,10 @@ async function adAplicar(tipo, manual) {
     if (!manual) {
       if (_adAplicado[campo] === meta.version) return;
       const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
-      const desdeADV = (ahora.getDay() === 6 ? 13 : 15) * 60 + 20;
+      const desdeADV = (ahora.getDay() === 6 ? 13 : 15) * 60 + 5;
       const fueraDeHorario = tipo === 'AD'
         ? (min >= 7 * 60 + 30 && min < 19 * 60)      // AD: solo se aplica solo de 19:00 a 07:30
-        : (min < desdeADV);                          // AD(V): solo desde las 15:20 (sábados 13:20)
+        : (min < desdeADV);                          // AD(V): solo desde las 15:05 (sábados 13:05)
       if (fueraDeHorario) {
         _adPendienteManual[tipo] = meta.version;
         autoApiPintar(tipo === 'AD'
