@@ -611,6 +611,16 @@
       <div class="table-responsive" id="tablaVesperCierreWrapper"></div>
     </div>
 
+    <!-- Totales por negocio: Real de hoy vs Media necesaria del AD(V) -->
+    <details class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-4" id="vesperTotNegocioDetalle">
+      <summary class="px-3 py-2" style="cursor:pointer; list-style:revert;">
+        <span class="fw-bold"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Extra · Totales por negocio (Real de hoy vs Media necesaria del AD(V))</span>
+        <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">no es parte del manual Galaxia</span>
+      </summary>
+      <div class="px-3 pb-2 small text-muted" id="vesperTotNegocioNota"></div>
+      <div class="table-responsive" id="vesperTotNegocioWrapper"></div>
+    </details>
+
     <!-- PARTE 2: COMPROMISOS Y ELECCIÓN DE KPIS PARA MAÑANA (POR CADA MESA) -->
     <div class="card card-custom p-3 bg-white mb-3 shadow-sm border-top border-4 border-warning">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -3498,6 +3508,61 @@ async function renderJefeView() {
 // ====================================================================
 // 3. VESPERTINA (REAL EXACTO DE VESPER + ELECCIÓN POR MESA)
 // ====================================================================
+function renderVesperTotalesNegocio() {
+  const wrap = document.getElementById('vesperTotNegocioWrapper');
+  if (!wrap) return;
+  const vista = (document.getElementById('vesperVistaSelect') || {}).value || 'MESAS';
+  const NEG = [
+    { k: 'CVZ CMQ', t: 'TOTAL CERVEZA', cls: 'header-kpi-cvz' },
+    { k: 'CORE + VALUE', t: 'CORE + VALUE', cls: 'header-kpi-cvz' },
+    { k: 'PREMIUM', t: 'PREMIUM', cls: 'header-kpi-cvz' },
+    { k: 'UNG', t: 'TOTAL UNG', cls: 'header-kpi-ung' },
+    { k: 'AGUAS', t: 'AGUAS', cls: 'header-kpi-ung' },
+  ];
+  const sumar = vends => {
+    const r = {};
+    NEG.forEach(n => {
+      r[n.k] = { real: 0, mnec: 0 };
+      vends.forEach(v => {
+        const d = getKpiData(v, n.k);
+        r[n.k].real += getRealHoy(d, n.k);
+        r[n.k].mnec += valorADV(d.mnec_adv, d.mnec);
+      });
+    });
+    return r;
+  };
+  const grupos = vista === 'MESAS'
+    ? SUPERVISORES_LIST.map(sv => ({ nombre: sv, vends: DATA_COMPLETA.vendedores.filter(v => v.sv === sv) }))
+    : DATA_COMPLETA.vendedores.filter(v => v.sv === vista).map(v => ({ nombre: v.nombre, vends: [v] }));
+  const celdas = (r, esTotal) => NEG.map(n => {
+    const x = r[n.k], varP = x.mnec > 0 ? (x.real / x.mnec - 1) * 100 : 0;
+    return `<td class="fw-bold">${x.real.toFixed(1)}</td><td${esTotal ? '' : ' class="bg-light"'}>${x.mnec.toFixed(1)}</td><td>${x.mnec > 0 ? spanVarPtos(varP) : '<span class="text-muted">-</span>'}</td>`;
+  }).join('');
+  let html = `<table class="table table-bordered table-hover table-custom mb-0"><thead><tr>
+      <th rowspan="2" class="text-start header-cierre" style="min-width:180px;">${vista === 'MESAS' ? 'SUPERVISOR / MESA' : 'VENDEDOR (' + vista + ')'}</th>
+      ${NEG.map(n => `<th colspan="3" class="${n.cls}">${n.t}</th>`).join('')}</tr><tr>
+      ${NEG.map(n => `<th class="${n.cls}">Real Hoy</th><th class="${n.cls}">Media Nec.</th><th class="${n.cls}">Var %</th>`).join('')}
+    </tr></thead><tbody>`;
+  grupos.forEach(g => { html += `<tr><td class="text-start fw-bold text-primary">${g.nombre}</td>${celdas(sumar(g.vends))}</tr>`; });
+  const todos = vista === 'MESAS' ? DATA_COMPLETA.vendedores.filter(v => SUPERVISORES_LIST.includes(v.sv)) : DATA_COMPLETA.vendedores.filter(v => v.sv === vista);
+  const tot = sumar(todos);
+  html += `<tr class="table-dark fw-bold"><td class="text-start">${vista === 'MESAS' ? 'TOTAL EMPRESA' : 'TOTAL ' + vista}</td>${celdas(tot, true)}</tr></tbody></table>`;
+  wrap.innerHTML = html;
+  const nota = document.getElementById('vesperTotNegocioNota');
+  if (nota) {
+    const cerv = tot['CVZ CMQ'].real, suma = tot['CORE + VALUE'].real + tot['PREMIUM'].real, dif = cerv - suma;
+    nota.innerHTML = 'Var % = Real de hoy vs Media necesaria del AD(V). Control: Core + Value + Premium = <b>' + suma.toFixed(1) + '</b> vs Total cerveza <b>' + cerv.toFixed(1) + '</b> '
+      + (Math.abs(dif) < 0.5 ? '<span class="text-success">✔ cierra</span>'
+        : '<span class="text-danger">⚠ faltan ' + dif.toFixed(1) + ' HL: hay alguna marca de cerveza sin segmento en AJUSTES → Segmentación de marcas</span>');
+  }
+}
+
+// la tabla de totales se redibuja junto con la de cierre (mismo filtro de Vista)
+setTimeout(() => {
+  const orig = renderVespertinaCierre;
+  renderVespertinaCierre = function () { const r = orig.apply(this, arguments); try { renderVesperTotalesNegocio(); } catch (e) { console.warn('totales por negocio:', e); } return r; };
+}, 0);
+
 function renderVespertinaCierre() {
   const vista = document.getElementById('vesperVistaSelect').value;
   const negocio = document.getElementById('vesperNegocioSelect').value;
@@ -4605,12 +4670,13 @@ function actualizarDesdeFilasVesperMaster(filas) {
 
     if (!pv) continue;
     if (!ventasPorPv[pv]) {
-      ventasPorPv[pv] = { "CVZ CMQ": 0, "UNG": 0, "LATONES": 0, "TOP": 0, "CORE + VALUE": 0, "PREMIUM": 0, "BALANCED CHOICES": 0 };
+      ventasPorPv[pv] = { "CVZ CMQ": 0, "UNG": 0, "AGUAS": 0, "LATONES": 0, "TOP": 0, "CORE + VALUE": 0, "PREMIUM": 0, "BALANCED CHOICES": 0 };
     }
     const acc = ventasPorPv[pv];
 
     if (un === 1) acc["CVZ CMQ"] += cant;
     if (un === 3) acc["UNG"] += cant;
+    if (un === 4) acc["AGUAS"] += cant;
     if (calibre === 566) acc["LATONES"] += cant;
     if (segTop === 'TOP') acc["TOP"] += cant;
     if (segCza === 'CORE+VALUE') acc["CORE + VALUE"] += cant;
@@ -4620,7 +4686,8 @@ function actualizarDesdeFilasVesperMaster(filas) {
 
   DATA_COMPLETA.vendedores.forEach(v => {
     const acc = ventasPorPv[v.pv] || {};
-    ["CVZ CMQ", "UNG", "LATONES", "TOP", "CORE + VALUE", "PREMIUM", "BALANCED CHOICES"].forEach(k => {
+    ["CVZ CMQ", "UNG", "AGUAS", "LATONES", "TOP", "CORE + VALUE", "PREMIUM", "BALANCED CHOICES"].forEach(k => {
+      if (k === "AGUAS" && !v.kpis[k]) v.kpis[k] = kpiVacio();
       if (v.kpis[k]) v.kpis[k].realVesper = parseFloat((acc[k] || 0).toFixed(2));
     });
   });
