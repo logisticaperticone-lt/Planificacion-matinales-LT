@@ -566,7 +566,7 @@
 
     <div class="alert alert-light border small py-2 mb-3 shadow-sm">
       <div class="fw-bold mb-1"><i class="bi bi-cloud-check me-1"></i>Bases actualizadas
-        <span class="fw-normal text-muted">· Lun a Vie 08:30 / 09:00 a 15:00 cada media hora / 15:15 · Sáb 08:30 / 09:00 a 13:00 cada media hora / 13:15</span></div>
+        <span class="fw-normal text-muted">· se actualizan solas desde la PC de Ivo</span></div>
       <div id="autoApiUltimasVesper">Cargando estado…</div>
     </div>
 
@@ -5101,7 +5101,7 @@ function autoApiPintar(msg, clase) {
       const proc = (_adAplicado[tipo + '_version'] === m.version || _autoApiHecho[tipo] === m.version) ? ' <span class="text-success">✔ aplicado</span>' : ' <span class="text-muted">⏳ se aplica al abrir el planificador</span>';
       return '<b>' + nombre + ':</b> subido ' + cuando + ' · ' + rango + ' · ' + Number(m.hl || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' HL' + proc;
     };
-    ult.innerHTML = linea('ACUM', '1. Acumulado Mes') + '<br>' + linea('VESPER', '2. VESPER') + '<br>' + adLinea('AD', '0. AD') + '<br>' + adLinea('ADV', '3. AD(V)');
+    ult.innerHTML = basesEstadoHtml();
   }
   const ultV = document.getElementById('autoApiUltimasVesper');
   if (ultV && ult) ultV.innerHTML = ult.innerHTML;
@@ -5110,6 +5110,107 @@ function autoApiPintar(msg, clase) {
     if (est) est.innerHTML = '<span class="' + (clase || 'text-muted') + '">' + msg + '</span>';
   }
 }
+
+// ---- Tabla "Bases actualizadas" con semáforo ----
+// El semáforo compara la última subida con los HORARIOS en que la PC tenía que subir esa base:
+//  verde = tiene la última subida que tocaba · amarillo = se saltó una · rojo = se saltó dos o más (o no hay nada).
+// Así no se pone en rojo de noche ni el fin de semana, cuando no hay bajadas.
+const BASES_HORARIOS = (() => {
+  const cada30 = (desde, hasta) => { const r = []; for (let m = desde; m <= hasta; m += 30) r.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')); return r; };
+  return {
+    AD:     { 0: ['19:00'], 1: ['19:00'], 2: ['19:00'], 3: ['19:00'], 4: ['19:00'], 5: ['19:00'] },
+    ACUM:   { 1: ['08:30', '15:15'], 2: ['08:30', '15:15'], 3: ['08:30', '15:15'], 4: ['08:30', '15:15'], 5: ['08:30', '15:15'], 6: ['08:30', '13:15'] },
+    VESPER: Object.assign({}, ...[1, 2, 3, 4, 5].map(d => ({ [d]: ['08:30', ...cada30(9 * 60, 15 * 60), '15:15'] })), { 6: ['08:30', ...cada30(9 * 60, 13 * 60), '13:15'] }),
+    ADV:    { 1: ['15:20'], 2: ['15:20'], 3: ['15:20'], 4: ['15:20'], 5: ['15:20'], 6: ['13:20'] },
+  };
+})();
+const BASES_MARGEN_MIN = { AD: 40, ACUM: 20, VESPER: 15, ADV: 40 };   // lo que puede tardar la bajada
+
+function basesTurnos(tipo, ahora, haciaAdelante) {
+  const out = [];
+  for (let d = haciaAdelante ? 0 : -8; d <= (haciaAdelante ? 8 : 0); d++) {
+    const dia = new Date(ahora); dia.setDate(ahora.getDate() + d);
+    (BASES_HORARIOS[tipo][dia.getDay()] || []).forEach(h => {
+      const t = new Date(dia); const [hh, mm] = h.split(':').map(Number); t.setHours(hh, mm, 0, 0); out.push(t);
+    });
+  }
+  return out.sort((a, b) => a - b);
+}
+
+function basesSemaforo(tipo, meta) {
+  if (!meta) return 'rojo';
+  const ahora = new Date(), subida = new Date(meta.version);
+  const margen = (BASES_MARGEN_MIN[tipo] || 20) * 60000;
+  const vencidos = basesTurnos(tipo, ahora, false).filter(t => t.getTime() + margen <= ahora.getTime()).reverse();
+  if (!vencidos.length) return 'verde';
+  const tol = 10 * 60000;   // la bajada puede terminar unos minutos antes o después del horario
+  if (subida.getTime() >= vencidos[0].getTime() - tol) return 'verde';
+  if (vencidos[1] && subida.getTime() >= vencidos[1].getTime() - tol) return 'amarillo';
+  return 'rojo';
+}
+
+function basesProxima(tipo) {
+  const ahora = new Date();
+  const t = basesTurnos(tipo, ahora, true).find(x => x > ahora);
+  if (!t) return '—';
+  const hoy = fechaLocalISO(ahora) === fechaLocalISO(t);
+  const dia = hoy ? 'hoy' : t.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '');
+  return dia + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+}
+
+function basesHace(t) {
+  const min = Math.max(0, Math.round((Date.now() - new Date(t).getTime()) / 60000));
+  if (min < 60) return 'hace ' + min + ' min';
+  const h = Math.floor(min / 60);
+  if (h < 48) return 'hace ' + h + ' h' + (min % 60 ? ' ' + (min % 60) + ' min' : '');
+  return 'hace ' + Math.round(h / 24) + ' días';
+}
+
+function basesDia(iso) {
+  if (!iso) return '';
+  const d = new Date(String(iso).slice(0, 10) + 'T12:00:00');
+  return d.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '') + ' ' + String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function basesEstadoHtml() {
+  const fmtHL = n => Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' HL';
+  const filas = [
+    { tipo: 'AD',     nombre: '0. AD',             meta: _adMeta.AD,
+      trae: m => 'Matinal del <b>' + basesDia(m.avanceAl) + '</b> · comprobantes hasta ese día + prevendido' },
+    { tipo: 'ACUM',   nombre: '1. Acumulado Mes',  meta: _autoApiMeta.ACUM,
+      trae: m => 'Comprobantes del <b>' + basesDia(m.desde) + '</b> al <b>' + basesDia(m.hasta) + '</b> · ' + fmtHL(m.hl) },
+    { tipo: 'VESPER', nombre: '2. VESPER',         meta: _autoApiMeta.VESPER,
+      trae: m => 'Comprobantes y pedidos con entrega <b>' + basesDia(m.desde) + '</b>' + (m.hasta && m.hasta !== m.desde ? ' al <b>' + basesDia(m.hasta) + '</b>' : '') + ' · ' + fmtHL(m.hl) },
+    { tipo: 'ADV',    nombre: '3. AD(V)',          meta: _adMeta.ADV,
+      trae: m => 'Vespertina: meta del <b>' + basesDia(m.avanceAl) + '</b> · comprobantes + pedidos de ese día y el siguiente' },
+  ];
+  const color = { verde: '#1e9e5a', amarillo: '#e0a800', rojo: '#d64545' };
+  const textoSem = { verde: 'al día', amarillo: 'se saltó una subida', rojo: 'atrasada' };
+  const filasHtml = filas.map(f => {
+    const m = f.meta, sem = basesSemaforo(f.tipo, m);
+    let estado = '<span class="text-muted">—</span>';
+    if (m) {
+      const aplicado = _adAplicado[f.tipo + '_version'] === m.version || (_autoApiHecho && _autoApiHecho[f.tipo] === m.version);
+      estado = aplicado ? '<span class="text-success fw-semibold">✔ aplicado</span>'
+        : (_adPendienteManual[f.tipo] === m.version ? '<span class="text-warning fw-semibold">⚠ sin aplicar (usá el botón)</span>' : '<span class="text-muted">⏳ se aplica al abrir</span>');
+      if ((f.tipo === 'AD' || f.tipo === 'ADV') && OBJETIVOS_AD.mes !== String(m.avanceAl || '').slice(0, 7))
+        estado += '<br><span class="text-danger small">⚠ faltan objetivos de ' + String(m.avanceAl || '').slice(0, 7) + ' (AJUSTES)</span>';
+    }
+    return '<tr>'
+      + '<td class="text-center"><span title="' + textoSem[sem] + '" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:' + color[sem] + ';box-shadow:0 0 0 3px ' + color[sem] + '33;"></span></td>'
+      + '<td class="fw-bold text-nowrap">' + f.nombre + '</td>'
+      + (m ? '<td class="text-nowrap">' + adHora24(m.version) + '<br><span class="text-muted small">' + basesHace(m.version) + '</span></td><td>' + f.trae(m) + '</td>'
+           : '<td colspan="2" class="text-muted">todavía no se subió nada</td>')
+      + '<td class="text-nowrap small">' + basesProxima(f.tipo) + '</td>'
+      + '<td class="small">' + estado + '</td></tr>';
+  }).join('');
+  return '<div class="table-responsive"><table class="table table-sm align-middle mb-1" style="font-size:0.85rem;">'
+    + '<thead class="table-light"><tr><th></th><th>Base</th><th>Subida</th><th>Qué trae</th><th>Próxima</th><th>Estado</th></tr></thead><tbody>'
+    + filasHtml + '</tbody></table></div>'
+    + '<div class="small text-muted"><span style="color:#1e9e5a">●</span> al día (tiene la última subida que tocaba) · '
+    + '<span style="color:#e0a800">●</span> se saltó una subida · <span style="color:#d64545">●</span> se saltó dos o más: revisar la PC de Ivo</div>';
+}
+setInterval(() => { try { autoApiPintar(); } catch (e) { } }, 60000);
 
 async function autoApiDescomprimir(b64) {
   const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
