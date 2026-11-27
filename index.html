@@ -843,6 +843,22 @@
         <div id="listaFeriadosEntrega" class="d-flex flex-wrap gap-2"></div>
       </div>
 
+      <!-- Filtro de mesa para los dos consolidados -->
+      <div class="card card-custom p-2 bg-white mb-2 shadow-sm">
+        <div class="input-group input-group-sm" style="width:auto;">
+          <span class="input-group-text bg-light fw-bold"><i class="bi bi-funnel me-1"></i> Supervisor:</span>
+          <select id="filtroMesaConsolidado" class="form-select fw-bold" style="max-width:360px" onchange="renderConsolidadoSupervisor(); renderConsolidadoSupervisorADV();">
+            <option value="TODAS" selected>Todas las mesas (con total compañía)</option>
+            <option value="CORSINO PEDRO">Mesa de Corsino Pedro</option>
+            <option value="MORENO FERNANDO">Mesa de Fernando Moreno</option>
+            <option value="ANTUAL PAULA">Mesa de Paula Antual</option>
+            <option value="SECO">Mesa de Seco Roberto (Autoservicio + Mayorista)</option>
+            <option value="MESA AS">&nbsp;&nbsp;· Mesa Autoservicio</option>
+            <option value="MESA MAYORISTA">&nbsp;&nbsp;· Mesa Mayorista</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Tabla consolidada por supervisor — AD (matinal) -->
       <div class="card card-custom p-4 bg-white mb-4 border-start border-4 border-dark shadow-sm">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -1808,6 +1824,14 @@ const CV_MESAS = [
 ];
 function cvAvanceAl() { try { return (_adMeta.AD && _adMeta.AD.avanceAl) ? String(_adMeta.AD.avanceAl) : ''; } catch (e) { return ''; } }
 function cvMesAD() { return cvAvanceAl().slice(0, 7) || fechaLocalISO().slice(0, 7); }
+// Objetivo del vendedor: se toma en vivo de AJUSTES → Objetivos (si son del mes del AD), así una
+// corrección de la tabla se ve al instante sin esperar al próximo AD. Si no, el que vino en el AD.
+function cvObjetivo(v, seg, guardado) {
+  try {
+    if ((OBJETIVOS_AD.filas || []).length && (!OBJETIVOS_AD.mes || OBJETIVOS_AD.mes === cvMesAD())) return adObjetivo(v, seg);
+  } catch (e) { /* sigue con el guardado */ }
+  return guardado || 0;
+}
 function cvBadgeVar(x) {      // comparaciones: crece = verde, cae = rojo
   if (x === null || !isFinite(x)) return '<span class="text-muted">-</span>';
   const r = Math.round(x * 100);
@@ -1825,7 +1849,7 @@ function htmlCierreVolumenes(modo) {
   const dato = v => {
     const d = getKpiData(v, seg);
     const y1 = y1Mes ? (+((y1Mes[String(v.pv)] || {})[seg]) || 0) : null;
-    return { obj: +d.obj || 0, real: +d.real || 0, tend: +d.tend || 0, m1: +d.m1real || 0, y1, mreal: +d.mreal || 0, mnec: +d.mnec || 0 };
+    return { obj: cvObjetivo(v, seg, +d.obj || 0), real: +d.real || 0, tend: +d.tend || 0, m1: +d.m1real || 0, y1, mreal: +d.mreal || 0, mnec: +d.mnec || 0 };
   };
   const cero = () => ({ obj: 0, real: 0, tend: 0, m1: 0, y1: y1Mes ? 0 : null, mreal: 0, mnec: 0 });
   const sumar = (a, b) => { ['obj', 'real', 'tend', 'm1', 'mreal', 'mnec'].forEach(k => a[k] += b[k]); if (a.y1 !== null && b.y1 !== null) a.y1 += b.y1; return a; };
@@ -4369,68 +4393,61 @@ function renderConsolidadoGenerico(tbodyId, selectId, sufijo) {
   if (!tbody) return;
   const select = document.getElementById(selectId);
   const segmento = select ? select.value : 'CVZ CMQ';
+  const fMesa = (document.getElementById('filtroMesaConsolidado') || {}).value || 'TODAS';
+  const todas = fMesa === 'TODAS';
 
+  // Mesas en orden; la de Seco tiene dos submesas (cada vendedor está en UNA sola: no se duplica)
+  const grupos = CV_MESAS.map(m => ({ t: m.t, subs: m.subs.filter(sb => todas || (fMesa === 'SECO' && m.t.includes('SECO')) || sb.sv.includes(fMesa)) }))
+                         .filter(m => m.subs.length);
+  if (todas) {
+    const conocidos = new Set(CV_MESAS.flatMap(m => m.subs.flatMap(sb => sb.sv)));
+    const otros = [...new Set(DATA_COMPLETA.vendedores.map(v => v.sv || '').filter(x => !conocidos.has(x)))];
+    if (otros.length) grupos.push({ t: 'OTROS / SIN SUPERVISOR', subs: [{ t: '', sv: otros }] });
+  }
+  const cero = () => ({ obj: 0, real: 0, tend: 0, m1: 0 });
+  const fila = (etq, x, estilo, colsp) => {
+    const av = x.obj > 0 ? (x.tend / x.obj) * 100 : 0;
+    return `<tr class="fw-bold" style="${estilo}"><td class="text-start" colspan="3">${etq}</td>
+      <td>${x.obj.toFixed(1)}</td><td>${x.real.toFixed(1)}</td><td>${x.obj > 0 ? spanAvance(av.toFixed(1) + '%') : '-'}</td>
+      <td>${x.tend.toFixed(1)}</td><td>${x.m1.toFixed(1)}</td><td>${x.m1 > 0 ? spanVarPct(x.tend / x.m1 - 1) : '-'}</td></tr>`;
+  };
   let filas = '';
-  let totalObj = 0, totalReal = 0, totalTend = 0, totalM1 = 0;
-
-  SUPERVISORES_LIST.forEach(sv => {
-    const vendedoresMesa = DATA_COMPLETA.vendedores.filter(v => v.sv === sv).sort((a, b) => a.nombre.localeCompare(b.nombre));
-    if (!vendedoresMesa.length) return;
-    let subObj = 0, subReal = 0, subTend = 0, subM1 = 0;
-    vendedoresMesa.forEach(v => {
-      const k = (v.kpis && v.kpis[segmento]) ? v.kpis[segmento] : {};
-      const obj = k['obj' + sufijo] || 0;
-      const real = k['real' + sufijo] || 0;
-      const tend = k['tend' + sufijo] || 0;       // volumen proyectado del mes (ya viene del Excel)
-      const m1real = k['m1real' + sufijo] || 0;   // volumen real del mes anterior (del Excel)
-      const vsm1 = k['vsm1' + sufijo] || 0;       // fracción, ej. 0.1647 = +16.47% (del Excel)
-      // Avance = Tend / Objetivo (así lo define el propio Excel: la columna "Avance" es el
-      // resultado de Tend/Objetivo, no Real/Objetivo — lo confirmé celda por celda en el AD).
-      const avanceNum = obj > 0 ? (tend / obj) * 100 : 0;
-      subObj += obj; subReal += real; subTend += tend; subM1 += m1real;
-      filas += `
+  const tot = cero();
+  grupos.forEach(g => {
+    const stG = cero(); let n = 0, h = `<tr><td colspan="9" class="text-start fw-bold text-white" style="background:#2b2f36">${g.t}</td></tr>`;
+    g.subs.forEach(sb => {
+      const vends = DATA_COMPLETA.vendedores.filter(v => sb.sv.includes(v.sv || '')).sort((a, b) => a.nombre.localeCompare(b.nombre));
+      if (!vends.length) return;
+      if (sb.t) h += `<tr><td colspan="9" class="text-start fw-bold" style="background:#fff4ea;color:#7a3e0a">${sb.t}</td></tr>`;
+      const st = cero();
+      vends.forEach(v => {
+        const k = (v.kpis && v.kpis[segmento]) ? v.kpis[segmento] : {};
+        const obj = cvObjetivo(v, segmento, k['obj' + sufijo] || 0);
+        const real = k['real' + sufijo] || 0, tend = k['tend' + sufijo] || 0, m1real = k['m1real' + sufijo] || 0;
+        const avanceNum = obj > 0 ? (tend / obj) * 100 : 0;    // Avance = Tend / Objetivo (como el Excel)
+        st.obj += obj; st.real += real; st.tend += tend; st.m1 += m1real;
+        h += `
         <tr>
-          <td class="text-start text-muted">${sv}</td>
+          <td class="text-start text-muted">${v.sv || ''}</td>
           <td class="text-start">${v.nombre}</td>
           <td>${v.pv}</td>
           <td>${obj.toFixed(1)}</td>
           <td>${real.toFixed(1)}</td>
-          <td>${spanAvance(avanceNum.toFixed(1) + '%')}</td>
+          <td>${obj > 0 ? spanAvance(avanceNum.toFixed(1) + '%') : '-'}</td>
           <td>${tend.toFixed(1)}</td>
           <td>${m1real.toFixed(1)}</td>
-          <td>${spanVarPct(vsm1)}</td>
+          <td>${m1real > 0 ? spanVarPct(tend / m1real - 1) : '-'}</td>
         </tr>`;
+      });
+      if (sb.t) h += fila('SUBTOTAL ' + sb.t.toUpperCase(), st, 'background:#f6f7f9');
+      Object.keys(st).forEach(c => stG[c] += st[c]); n++;
     });
-    const subAvancePct = subObj > 0 ? (subTend / subObj) * 100 : 0;
-    const subVsM1 = subM1 > 0 ? (subReal - subM1) / subM1 : 0;
-    filas += `
-      <tr class="fw-bold" style="background:#e9ecef;">
-        <td class="text-start" colspan="2">SUBTOTAL ${sv}</td>
-        <td></td>
-        <td>${subObj.toFixed(1)}</td>
-        <td>${subReal.toFixed(1)}</td>
-        <td>${spanAvance(subAvancePct.toFixed(1) + '%')}</td>
-        <td>${subTend.toFixed(1)}</td>
-        <td>${subM1.toFixed(1)}</td>
-        <td>${spanVarPct(subVsM1)}</td>
-      </tr>`;
-    totalObj += subObj; totalReal += subReal; totalTend += subTend; totalM1 += subM1;
+    if (!n) return;
+    if (!(g.subs.length === 1 && g.subs[0].t)) h += fila('TOTAL ' + g.t, stG, 'background:#e9ecef');
+    filas += h;
+    Object.keys(stG).forEach(c => tot[c] += stG[c]);
   });
-
-  const totalAvancePct = totalObj > 0 ? (totalTend / totalObj) * 100 : 0;
-  const totalVsM1 = totalM1 > 0 ? (totalReal - totalM1) / totalM1 : 0;
-  filas += `
-    <tr class="fw-bold text-white" style="background:#212529;">
-      <td class="text-start" colspan="2">LOGISTICA TOTAL</td>
-      <td></td>
-      <td>${totalObj.toFixed(1)}</td>
-      <td>${totalReal.toFixed(1)}</td>
-      <td>${totalAvancePct.toFixed(1)}%</td>
-      <td>${totalTend.toFixed(1)}</td>
-      <td>${totalM1.toFixed(1)}</td>
-      <td>${(totalVsM1 * 100).toFixed(0)}%</td>
-    </tr>`;
-
+  if (todas) filas += fila('LOGISTICA TOTAL', tot, 'background:#212529;color:#fff');
   tbody.innerHTML = filas;
 }
 
