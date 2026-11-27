@@ -237,6 +237,7 @@
               <option value="UNG">📦 TOTAL UNG (Detalle con Medias)</option>
               <option value="SEL1">⭐ KPI 1</option>
               <option value="SEL2">🎯 KPI 2</option>
+              <option value="VOLUMENES">📈 CIERRE DE VOLÚMENES (Objetivo · M-1 · Año anterior)</option>
             </select>
           </div>
         </div>
@@ -1672,6 +1673,9 @@ function renderCierreD1() {
     return;
   }
 
+  // MODO 3: CIERRE DE VOLÚMENES (como el "Cierre vendedores" del tablero) — respeta el filtro de mesa
+  if (negocio === 'VOLUMENES') { wrapper.innerHTML = htmlCierreVolumenes(modo); return; }
+
   // MODO 2: DETALLE ESPECÍFICO DE UN NEGOCIO (CON MEDIAS Y DESVÍOS)
   let kpiKey = negocio;
   if (negocio === 'SEL1') kpiKey = 'COB MICHELOB';
@@ -1788,6 +1792,120 @@ function renderCierreD1() {
   `;
 
   wrapper.innerHTML = bannerFotoD1() + bannerSinDatoD1(huboSinDato) + thead + tbody + tfoot;
+}
+
+// ====================================================================
+// 1b. CIERRE DE VOLÚMENES (Objetivo · Real · Avance · Tendencia · M-1 · Y-1 · Medias)
+// Sale del AD cargado (vend.kpis[segmento]). El Y-1 es el MISMO MES DEL AÑO PASADO COMPLETO de los
+// clientes que HOY tiene cada vendedor en su cartera (incluye clientes anulados, en su último vendedor):
+// lo calcula y sube la PC (config/ad_y1), así un cambio de zona no ensucia la comparación.
+// ====================================================================
+const CV_MESAS = [
+  { t: 'MESA DE CORSINO PEDRO', subs: [{ t: '', sv: ['CORSINO PEDRO'] }] },
+  { t: 'MESA DE FERNANDO MORENO', subs: [{ t: '', sv: ['MORENO FERNANDO'] }] },
+  { t: 'MESA DE PAULA ANTUAL', subs: [{ t: '', sv: ['ANTUAL PAULA'] }] },
+  { t: 'MESA DE SECO ROBERTO', subs: [{ t: 'Mesa Autoservicio', sv: ['MESA AS'] }, { t: 'Mesa Mayorista', sv: ['MESA MAYORISTA'] }] },
+];
+function cvAvanceAl() { try { return (_adMeta.AD && _adMeta.AD.avanceAl) ? String(_adMeta.AD.avanceAl) : ''; } catch (e) { return ''; } }
+function cvMesAD() { return cvAvanceAl().slice(0, 7) || fechaLocalISO().slice(0, 7); }
+function cvBadgeVar(x) {      // comparaciones: crece = verde, cae = rojo
+  if (x === null || !isFinite(x)) return '<span class="text-muted">-</span>';
+  const r = Math.round(x * 100);
+  const cls = r > 0 ? 'var-pos' : r < 0 ? 'var-neg' : 'var-cero';
+  return `<span class="badge-semaforo ${cls}">${r > 0 ? '▲ +' : r < 0 ? '▼ ' : '● '}${r}%</span>`;
+}
+function cvBadgeAv(x) {
+  if (x === null || !isFinite(x)) return '<span class="text-muted">-</span>';
+  return `<span class="badge-semaforo ${claseAvance(x * 100)}">${(x * 100).toFixed(1)}%</span>`;
+}
+function htmlCierreVolumenes(modo) {
+  const seg = CV_SEG, mes = cvMesAD(), y1Mes = (AD_Y1.meses || {})[mes] || null;
+  const f1 = n => (n === null || n === undefined || !isFinite(n)) ? '-' : n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const vends = (DATA_COMPLETA.vendedores || []).slice().sort((a, b) => a.pv - b.pv);
+  const dato = v => {
+    const d = getKpiData(v, seg);
+    const y1 = y1Mes ? (+((y1Mes[String(v.pv)] || {})[seg]) || 0) : null;
+    return { obj: +d.obj || 0, real: +d.real || 0, tend: +d.tend || 0, m1: +d.m1real || 0, y1, mreal: +d.mreal || 0, mnec: +d.mnec || 0 };
+  };
+  const cero = () => ({ obj: 0, real: 0, tend: 0, m1: 0, y1: y1Mes ? 0 : null, mreal: 0, mnec: 0 });
+  const sumar = (a, b) => { ['obj', 'real', 'tend', 'm1', 'mreal', 'mnec'].forEach(k => a[k] += b[k]); if (a.y1 !== null && b.y1 !== null) a.y1 += b.y1; return a; };
+  const celdas = x => `
+      <td>${x.obj ? f1(x.obj) : '-'}</td><td class="fw-bold">${f1(x.real)}</td><td>${x.obj ? cvBadgeAv(x.tend / x.obj) : '<span class="text-muted">-</span>'}</td>
+      <td>${f1(x.tend)}</td><td>${f1(x.m1)}</td><td>${x.m1 ? cvBadgeVar(x.tend / x.m1 - 1) : '<span class="text-muted">-</span>'}</td>
+      <td>${x.y1 === null ? '<span class="text-muted">s/d</span>' : f1(x.y1)}</td><td>${x.y1 ? cvBadgeVar(x.tend / x.y1 - 1) : '<span class="text-muted">-</span>'}</td>
+      <td>${f1(x.mreal)}</td><td class="text-danger">${x.obj ? f1(x.mnec) : '-'}</td>`;
+  const titulo = (t, estilo) => `<tr><td colspan="11" class="text-start fw-bold" style="${estilo}">${t}</td></tr>`;
+  const csv = [];
+  const filaV = (v, x, grupo) => { csv.push([grupo, v.pv, v.nombre, x]); return `<tr><td class="text-start ps-4">${v.pv} · ${v.nombre || ''}</td>${celdas(x)}</tr>`; };
+  const filaT = (t, x, estilo, grupo) => { csv.push([grupo, '', t, x]); return `<tr style="${estilo}"><td class="text-start fw-bold">${t}</td>${celdas(x)}</tr>`; };
+  const conDato = x => x.obj || Math.abs(x.real) > 0.05 || Math.abs(x.m1) > 0.05 || (x.y1 && Math.abs(x.y1) > 0.05);
+
+  // qué mesas se muestran: todas (vista de supervisores) o la elegida en "Vista"
+  const todas = modo === 'RESUMEN_SUPERVISORES';
+  const conocidos = new Set(CV_MESAS.flatMap(m => m.subs.flatMap(s => s.sv)));
+  // Y-1 de clientes cuyo vendedor de hoy no está en el planificador (o no tienen vendedor): van a OTROS
+  if (todas && y1Mes) Object.keys(y1Mes).forEach(k => { if (!vends.some(v => String(v.pv) === k))
+    vends.push({ pv: +k, nombre: +k ? 'Vendedor ' + k + ' (no está en el planificador)' : '(clientes sin vendedor hoy)', sv: '(fuera del planificador)', kpis: {} }); });
+  const grupos = CV_MESAS.map(m => ({ t: m.t, subs: m.subs.filter(s => todas || s.sv.includes(modo)) })).filter(m => m.subs.length);
+  if (todas) {
+    const otrosSv = [...new Set(vends.map(v => v.sv || '').filter(x => !conocidos.has(x)))];
+    if (otrosSv.length) grupos.push({ t: 'OTROS / VENDEDOR SIN SUPERVISOR', subs: [{ t: '', sv: otrosSv }] });
+  }
+  let html = '', tot = cero();
+  grupos.forEach(g => {
+    let h = titulo(g.t, 'background:#2b2f36;color:#fff'), stG = cero(), n = 0;
+    g.subs.forEach(sb => {
+      const lista = vends.filter(v => sb.sv.includes(v.sv || '')).map(v => [v, dato(v)]).filter(([, x]) => conDato(x));
+      if (!lista.length) return;
+      const st = cero();
+      if (sb.t) h += titulo(sb.t, 'background:#fff4ea;color:#7a3e0a');
+      lista.forEach(([v, x]) => { h += filaV(v, x, g.t + (sb.t ? ' · ' + sb.t : '')); sumar(st, x); });
+      if (sb.t) h += filaT('Subtotal ' + sb.t, st, 'background:#f6f7f9', g.t + ' · ' + sb.t);
+      sumar(stG, st); n++;
+    });
+    if (!n) return;
+    if (!(g.subs.length === 1 && g.subs[0].t)) h += filaT('TOTAL ' + g.t, stG, 'background:#eef0f3', g.t);
+    html += h; sumar(tot, stG);
+  });
+  const pie = todas ? `<tfoot class="table-dark fw-bold"><tr><td class="text-start">TOTAL EMPRESA · LOGÍSTICA TOTAL</td>${celdas(tot)}</tr></tfoot>` : '';
+  if (todas) csv.push(['', '', 'TOTAL EMPRESA', tot]);
+  window._cvCSV = csv;
+  const chips = SEGMENTOS_AD.map(sg => `<button class="btn btn-sm ${sg === seg ? 'btn-dark' : 'btn-outline-secondary'} py-0 px-2" onclick="CV_SEG='${sg}'; renderCierreD1()">${sg}</button>`).join(' ');
+  const avAl = cvAvanceAl() ? cvAvanceAl().split('-').reverse().join('/') : '';
+  const [yy, mm] = mes.split('-');
+  const nota = `Avance${avAl ? ' al ' + avAl : ''} (AD) · Real y M-1 por vendedor del comprobante · <b>Y-1</b> = ${mm}/${+yy - 1} completo, de los clientes que hoy tiene cada vendedor en su cartera (incluye anulados)` +
+    (y1Mes ? '' : ' · <span class="text-danger">todavía no llegó el Y-1 de este mes (lo sube la PC con la próxima actualización del tablero)</span>');
+  return `
+    <div class="card card-custom p-2 bg-white mb-2 shadow-sm">
+      <div class="d-flex flex-wrap gap-1 align-items-center">${chips}
+        <button class="btn btn-sm btn-outline-success py-0 px-2 ms-auto" onclick="cvExportar()"><i class="bi bi-file-earmark-excel"></i> Excel</button></div>
+      <small class="text-muted mt-1">${nota}</small>
+    </div>
+    <div class="card card-custom p-0 bg-white overflow-hidden shadow-sm mb-3">
+      <div class="px-3 py-2 fw-bold header-cierre">CIERRE ${seg}${todas ? '' : ' · ' + modo}</div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-custom mb-0">
+          <thead><tr>
+            <th class="text-start header-cierre">VENDEDOR</th><th class="header-cierre">Objetivo</th><th class="header-cierre">Real</th><th class="header-cierre">Avance</th>
+            <th class="header-cierre">Tendencia</th><th class="header-cierre">M-1 Real</th><th class="header-cierre">Vs M-1</th>
+            <th class="header-cierre" title="Mismo mes del año pasado, cartera actual">Y-1</th><th class="header-cierre">Vs Y-1</th>
+            <th class="header-cierre">Med. real</th><th class="header-cierre">Med. nec.</th>
+          </tr></thead>
+          <tbody>${html || '<tr><td colspan="11" class="text-muted">Sin datos para esta vista.</td></tr>'}</tbody>${pie}
+        </table>
+      </div>
+    </div>`;
+}
+function cvExportar() {
+  const num = n => (n === null || n === undefined || !isFinite(n)) ? '' : String(Math.round(n * 1000) / 1000).replace('.', ',');
+  const pct = (a, b) => b ? num((a / b - 1) * 100) : '';
+  const head = ['Mesa', 'PV', 'Vendedor', 'Objetivo', 'Real', 'Avance %', 'Tendencia', 'M-1 real', 'Vs M-1 %', 'Y-1', 'Vs Y-1 %', 'Media real', 'Media nec.'];
+  const filas = (window._cvCSV || []).map(([g, pv, n, x]) => [g, pv, n, num(x.obj), num(x.real), x.obj ? num(x.tend / x.obj * 100) : '', num(x.tend), num(x.m1), pct(x.tend, x.m1), num(x.y1), pct(x.tend, x.y1), num(x.mreal), num(x.mnec)]);
+  const txt = [head, ...filas].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + txt], { type: 'text/csv;charset=utf-8' }));
+  a.download = `Cierre ${CV_SEG} ${document.getElementById('cierreMesaSelect').value} ${cvMesAD()}.csv`;
+  document.body.append(a); a.click(); a.remove();
 }
 
 // ====================================================================
@@ -5021,6 +5139,12 @@ function iniciarListenersFirestore() {
     renderControlMarcas();
   }, err => console.warn("Listener control_marcas:", err));
 
+  dbFire.collection('config').doc('ad_y1').onSnapshot(doc => {
+    AD_Y1 = doc.exists ? Object.assign({ meses: {}, topCal: [] }, doc.data()) : { meses: {}, topCal: [] };
+    const sel = document.getElementById('cierreNegocioSelect');
+    if (sel && sel.value === 'VOLUMENES') renderCierreD1();
+  }, err => console.warn("Listener ad_y1:", err));
+
   refConfigObjetivos().onSnapshot(doc => {
     OBJETIVOS_AD = doc.exists ? Object.assign({ mes: '', filas: [] }, doc.data()) : { mes: '', filas: [] };
     renderObjetivosAjustes();
@@ -5115,7 +5239,10 @@ const AUTO_API_HORARIOS = {
 };
 const SEGMENTOS_AD = ['CVZ CMQ', 'PREMIUM', 'CORE + VALUE', 'UNG', 'AGUAS', 'LATONES', 'TOP', 'BALANCED CHOICES'];
 const AD_TIPOS = ['AD', 'ADV'];
-let OBJETIVOS_AD = { mes: '', filas: [] };   // filas: [{ pv, nombre, obj: { 'CVZ CMQ': 730, ... } }]
+let OBJETIVOS_AD = { mes: '', filas: [] };
+// Y-1 por vendedor (lo sube la PC con el tablero): { meses: { 'AAAA-MM': { pv: { seg: HL } } }, topCal: [calibres TOP] }
+let AD_Y1 = { meses: {}, topCal: [] };
+let CV_SEG = 'CVZ CMQ';      // segmento elegido en "Cierre de volúmenes"   // filas: [{ pv, nombre, obj: { 'CVZ CMQ': 730, ... } }]
 const _adMeta = {};
 let _adAplicado = {};
 const _adPendienteManual = {};
@@ -5421,12 +5548,19 @@ function adSegmentosDe(marcaDesc, cal, un) {
     if (info.esTop) segs.push('TOP');
     if (info.esBc) segs.push('BALANCED CHOICES');
   }
+  // Vol TOP = UNG en los calibres TOP (lista del tablero, Ajustes → Calibres TOP; la sube la PC)
+  if (un === 3 && (AD_Y1.topCal || []).includes(cal) && !segs.includes('TOP')) segs.push('TOP');
   return segs;
 }
 
 function adObjetivo(v, seg) {
   const filas = OBJETIVOS_AD.filas || [];
-  const f = filas.find(x => x.pv && x.pv === v.pv) || filas.find(x => adNormNombre(x.nombre) === adNormNombre(v.nombre));
+  // Si la tabla pegada trae filas de mesa/total (ej. "SECO ROBERTO ENRIQUE MESA" con el mismo PV que el
+  // vendedor "SECO ROBERTO ENRIQUE SV"), primero se busca PV + nombre, después nombre, y recién ahí PV solo.
+  const esGrupo = x => /MESA|TOTAL/i.test(String(x.nombre || ''));
+  const f = filas.find(x => x.pv && x.pv === v.pv && adNormNombre(x.nombre) === adNormNombre(v.nombre))
+         || filas.find(x => adNormNombre(x.nombre) === adNormNombre(v.nombre))
+         || filas.find(x => x.pv && x.pv === v.pv && !esGrupo(x));
   return f && f.obj ? (parseFloat(f.obj[seg]) || 0) : 0;
 }
 
