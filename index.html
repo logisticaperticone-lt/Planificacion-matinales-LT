@@ -694,7 +694,7 @@
           <div class="small text-muted mb-2">La PC de Ivo baja <b>1. ACUMULADO MES</b> y <b>2. VESPER</b> directo de Chess (sin abrir Chess) y los sube acá solos, en estos horarios. Además arma el <b>AD</b> (19:00, o apenas se prende la PC) y el <b>AD(V)</b> (en el cierre de las 15:05; sábados 13:05), que se aplican solos al abrir el planificador:</div>
           <div class="row g-2 small mb-2">
             <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Lunes a viernes</b><br>
-              08:30 Acumulado + VESPER · 09:00 a 14:30 VESPER cada media hora · <b>15:05 cierre: Acumulado + VESPER + AD(V)</b> · 19:00 AD (dom a vie)</div></div>
+              08:30 Acumulado + VESPER · 09:00 a 14:30 VESPER cada media hora · <b>15:05 cierre: Acumulado + VESPER + AD(V)</b> · AD: 19:00 y 22:00 (dom a vie) y 06:30 de repaso</div></div>
             <div class="col-md-6"><div class="border rounded p-2 h-100"><b>Sábados</b><br>
               08:30 Acumulado + VESPER · 09:00 a 12:30 VESPER cada media hora · <b>13:05 cierre: Acumulado + VESPER + AD(V)</b></div></div>
           </div>
@@ -5185,7 +5185,7 @@ function autoApiPintar(msg, clase) {
 const BASES_HORARIOS = (() => {
   const cada30 = (desde, hasta) => { const r = []; for (let m = desde; m <= hasta; m += 30) r.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')); return r; };
   return {
-    AD:     { 0: ['19:00'], 1: ['19:00'], 2: ['19:00'], 3: ['19:00'], 4: ['19:00'], 5: ['19:00'] },
+    AD:     { 0: ['19:00', '22:00'], 1: ['06:30', '19:00', '22:00'], 2: ['06:30', '19:00', '22:00'], 3: ['06:30', '19:00', '22:00'], 4: ['06:30', '19:00', '22:00'], 5: ['06:30', '19:00', '22:00'], 6: ['06:30'] },
     ACUM:   { 1: ['08:30', '15:05'], 2: ['08:30', '15:05'], 3: ['08:30', '15:05'], 4: ['08:30', '15:05'], 5: ['08:30', '15:05'], 6: ['08:30', '13:05'] },
     VESPER: Object.assign({}, ...[1, 2, 3, 4, 5].map(d => ({ [d]: ['08:30', ...cada30(9 * 60, 14 * 60 + 30), '15:05'] })), { 6: ['08:30', ...cada30(9 * 60, 12 * 60 + 30), '13:05'] }),
     ADV:    { 1: ['15:05'], 2: ['15:05'], 3: ['15:05'], 4: ['15:05'], 5: ['15:05'], 6: ['13:05'] },
@@ -5501,13 +5501,16 @@ async function adAplicar(tipo, manual) {
       if (_adAplicado[campo] === meta.version) return;
       const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
       const desdeADV = (ahora.getDay() === 6 ? 13 : 15) * 60 + 5;
+      // AD: se aplica solo si la PC lo SUBIÓ entre las 19:00 y las 07:30 (aunque el planificador se abra
+      // más tarde) y todavía es para hoy o para adelante. Si se subió después de las 07:30, lo libera Ivo.
+      const sub = new Date(meta.version), minSub = sub.getHours() * 60 + sub.getMinutes();
       const fueraDeHorario = tipo === 'AD'
-        ? (min >= 7 * 60 + 30 && min < 19 * 60)      // AD: solo se aplica solo de 19:00 a 07:30
+        ? ((minSub >= 7 * 60 + 30 && minSub < 19 * 60) || fechaLocalISO(ahora) > String(meta.avanceAl || ''))
         : (min < desdeADV);                          // AD(V): solo desde las 15:05 (sábados 13:05)
       if (fueraDeHorario) {
         _adPendienteManual[tipo] = meta.version;
         autoApiPintar(tipo === 'AD'
-          ? '⚠ Llegó un AD nuevo fuera del horario (19:00 a 07:30): no lo apliqué solo para no poner en 0 lo planificado. Si corresponde, tocá "Aplicar AD ahora".'
+          ? '⚠ Llegó un AD subido después de las 07:30: no lo apliqué solo para no poner en 0 lo planificado. Si corresponde, tocá "Aplicar AD ahora".'
           : '⚠ Llegó un AD(V) antes del cierre: no lo apliqué solo. Si corresponde, tocá "Aplicar AD(V) ahora".', 'text-warning');
         return;
       }
